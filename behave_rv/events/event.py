@@ -22,3 +22,23 @@ class Event:
     bindings: dict[str, str]       # correlation key values, e.g. {"order_id": "4471"}
     payload: dict[str, Any]        # the observable fields a step may reference
     source: str                    # which adapter produced it (provenance)
+
+    def to_dict(self) -> dict[str, Any]:
+        """A JSON-serializable mapping. Used by the replay recorder/source."""
+        return {
+            "type": self.type,
+            "event_time": self.event_time,
+            "bindings": self.bindings,
+            "payload": self.payload,
+            "source": self.source,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Event":
+        return cls(
+            type=data["type"],
+            event_time=data["event_time"],
+            bindings=data["bindings"],
+            payload=data["payload"],
+            source=data["source"],
+        )
