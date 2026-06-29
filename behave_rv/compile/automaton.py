@@ -1,4 +1,137 @@
 """Per-key state-machine templates: trigger, scope guard, obligation, deadline, correlation key.
 
-Stub: to be implemented per the build sequence in the project design.
+A :class:`Policy` is the compiled, shardable unit the engine runs: a correlation
+key, the event types it cares about (for dispatch indexing), and a factory that
+mints a fresh :class:`Monitor` per distinct key value.
+
+Two operators are implemented for v1:
+
+* ``never`` -- a safety property. Violated the moment a "bad" event matches;
+  otherwise silent. No deadline.
+* ``within`` -- a bounded-response property. A trigger arms a deadline; a
+  response before it satisfies, the deadline passing without one violates.
+
+Monitors are pure: they read the event and bounded instance state and return a
+verdict status or ``None``. They never mutate the outside world.
 """
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
+from typing import Optional
+
+from behave_rv.events.event import Event
+
+Predicate = Callable[[Event], bool]
+
+
+def _normalize_key(correlation_key: str | Iterable[str]) -> tuple[str, ...]:
+    if isinstance(correlation_key, str):
+        return (correlation_key,)
+    return tuple(correlation_key)
+
+
+class Monitor:
+    """The per-key automaton interface the engine drives.
+
+    ``trigger_event`` is the event that opened the current obligation; the engine
+    uses it as the trigger on a timeout verdict, where no incoming event caused
+    the verdict.
+    """
+
+    settled: bool = False
+    trigger_event: Optional[Event] = None
+
+    def on_event(self, event: Event) -> Optional[str]:
+        raise NotImplementedError
+
+    def next_deadline(self) -> Optional[float]:
+        return None
+
+    def on_timeout(self, now: float) -> Optional[str]:
+        return None
+
+
+class NeverMonitor(Monitor):
+    def __init__(self, bad: Predicate) -> None:
+        self.bad = bad
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if self.bad(event):
+            self.settled = True
+            self.trigger_event = event
+            return "violated"
+        return None
+
+
+class WithinMonitor(Monitor):
+    def __init__(self, is_trigger: Predicate, is_response: Predicate, seconds: float) -> None:
+        self.is_trigger = is_trigger
+        self.is_response = is_response
+        self.seconds = seconds
+        self._deadline: Optional[float] = None
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if self._deadline is None:
+            if self.is_trigger(event):
+                self._deadline = event.event_time + self.seconds
+                self.trigger_event = event
+            return None
+        if self.is_response(event):
+            self.settled = True
+            return "satisfied" if event.event_time <= self._deadline else "violated"
+        return None
+
+    def next_deadline(self) -> Optional[float]:
+        return None if self.settled else self._deadline
+
+    def on_timeout(self, now: float) -> Optional[str]:
+        if self.settled or self._deadline is None or now < self._deadline:
+            return None
+        self.settled = True
+        return "violated"
+
+
+@dataclass(frozen=True)
+class Policy:
+    policy_id: str
+    correlation_key: tuple[str, ...]
+    event_types: frozenset[str]
+    monitor_factory: Callable[[], Monitor]
+
+
+def never(
+    policy_id: str,
+    *,
+    correlation_key: str | Iterable[str],
+    event_types: Iterable[str],
+    bad: Predicate,
+) -> Policy:
+    return Policy(
+        policy_id=policy_id,
+        correlation_key=_normalize_key(correlation_key),
+        event_types=frozenset(event_types),
+        monitor_factory=lambda: NeverMonitor(bad),
+    )
+
+
+def within(
+    policy_id: str,
+    *,
+    correlation_key: str | Iterable[str],
+    seconds: float,
+    is_trigger: Predicate,
+    is_response: Predicate,
+    event_types: Iterable[str],
+) -> Policy:
+    return Policy(
+        policy_id=policy_id,
+        correlation_key=_normalize_key(correlation_key),
+        event_types=frozenset(event_types),
+        monitor_factory=lambda: WithinMonitor(is_trigger, is_response, seconds),
+    )
