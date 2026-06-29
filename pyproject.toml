@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "behave-rv"
+version = "0.0.1"
+description = "Runtime verification over a live event stream, authored in Gherkin. A modified fork of behave."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "moraneus" }]
+keywords = ["runtime-verification", "gherkin", "behave", "monitoring", "bdd", "temporal-logic"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "behave>=1.2.6",
+]
+
+[project.optional-dependencies]
+otel = ["opentelemetry-sdk"]
+dev = ["pytest>=8", "ruff", "mypy"]
+
+[project.urls]
+Homepage = "https://github.com/moraneus/behave-rv"
+Repository = "https://github.com/moraneus/behave-rv"
+
+[tool.setuptools.packages.find]
+include = ["behave_rv*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100

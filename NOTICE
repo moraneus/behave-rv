@@ -1,0 +1,18 @@
+behave-rv
+=========
+
+This product derives from `behave`, the Python Behaviour-Driven Development
+framework, which is licensed under the BSD 2-Clause License.
+
+  behave: https://github.com/behave/behave
+  Copyright (c) Benno Rice, Richard Jones, Jens Engel and others.
+
+`behave-rv` reuses `behave`'s Gherkin parser and feature/scenario/step model
+unchanged (wrapped, not edited, under behave_rv/vendor_behave). All other code
+in this repository — the event layer, the step catalog and signature system,
+the temporal vocabulary, the compiler, the runtime engine, the verdict and
+explanation sinks, and the build-time notification channel — is new work and
+is not part of upstream `behave`.
+
+The original `behave` copyright notice and warranty disclaimer are retained in
+the LICENSE file as required by the BSD 2-Clause License.
