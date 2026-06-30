@@ -21,9 +21,11 @@ class Instance:
     entity_key: dict[str, str]
     monitor: Monitor
     trace: deque[Event] = field(default_factory=lambda: deque(maxlen=DEFAULT_TRACE_WINDOW))
+    last_activity: float = 0.0  # event time of the most recent witnessed event
 
     def witness(self, event: Event) -> None:
         self.trace.append(event)
+        self.last_activity = event.event_time
 
     def witnessing_trace(self) -> list[Event]:
         return list(self.trace)

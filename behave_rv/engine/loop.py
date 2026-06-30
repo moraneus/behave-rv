@@ -2,9 +2,16 @@
 
 The same pipeline runs over live and replay sources. For each incoming event the
 loop first fires any deadlines the advancing event time has passed (a timeout is
-the absence of an event, so it must be checked before the next event is handled),
-then dispatches the event to the candidate policies' per-key instances. A monitor
+the absence of an event, so it must be checked before the next event is handled)
+and reclaims any instances that have gone quiescent past their TTL, then
+dispatches the event to the candidate policies' per-key instances. A monitor
 returning a status produces a :class:`Verdict`.
+
+Garbage collection has two tiers. Primary: an explicit terminal event the agent
+exposed retires every instance for that entity and lets each monitor emit a final
+verdict (the entity's lifetime is definitively over). Fallback: a quiescence TTL
+silently reclaims instances of entities with no declared terminal event. Either
+way the witnessing trace is dropped when the instance retires.
 
 This module is deterministic and contains no language model: the same trace
 produces the same verdicts every time.
@@ -31,69 +38,132 @@ class _Source:
 
 
 class Engine:
-    def __init__(self, policies: Iterable[Policy]) -> None:
+    def __init__(
+        self,
+        policies: Iterable[Policy],
+        *,
+        terminal_event_types: Iterable[str] = (),
+        quiescence_ttl: Optional[float] = None,
+    ) -> None:
         self._policies = {p.policy_id: p for p in policies}
         self._dispatcher = Dispatcher(self._policies.values())
+        self._terminal = frozenset(terminal_event_types)
+        self._ttl = quiescence_ttl
+        # observability, populated by run()
+        self.live_instances = 0
+        self.reclaimed = 0
 
     def run(self, source: _Source) -> list[Verdict]:
-        """Run the loop to exhaustion over ``source`` and collect verdicts.
-
-        Live mode would consume this generator without exhausting it; replay
-        returns the full list once the recorded stream ends.
-        """
+        """Run the loop to exhaustion over ``source`` and collect verdicts."""
         instances: dict[InstanceId, Instance] = {}
-        timers = TimerQueue()
+        deadlines = TimerQueue()
+        ttl_timers = TimerQueue()
         verdicts: list[Verdict] = []
+        self.reclaimed = 0
 
         for event in source.events():
-            self._fire_due_timers(event.event_time, instances, timers, verdicts)
+            now = event.event_time
+            self._fire_due_deadlines(now, instances, deadlines, verdicts)
+            self._reclaim_quiescent(now, instances, ttl_timers)
 
             for policy in self._dispatcher.candidates(event):
                 key = Dispatcher.key_of(policy, event)
                 if key is None:
                     continue
-                instance_id = (policy.policy_id, key)
-                instance = instances.get(instance_id)
-                if instance is None:
-                    instance = Instance(
-                        policy_id=policy.policy_id,
-                        entity_key=dict(zip(policy.correlation_key, key)),
-                        monitor=policy.monitor_factory(),
-                    )
-                    instances[instance_id] = instance
-
+                instance = self._instance_for(policy, key, instances)
                 instance.witness(event)
                 status = instance.monitor.on_event(event)
                 if status is not None:
-                    verdicts.append(self._verdict(instance, status, event, event.event_time))
+                    verdicts.append(self._verdict(instance, status, event, now))
                 else:
-                    self._reschedule(instance_id, instance, timers)
+                    self._reschedule(instance, instances, deadlines, ttl_timers)
 
+            if event.type in self._terminal:
+                self._retire_entity(event, instances, verdicts)
+
+        self.live_instances = len(instances)
         return verdicts
 
-    # -- helpers ------------------------------------------------------------
+    # -- dispatch helpers ---------------------------------------------------
 
-    def _fire_due_timers(
+    def _instance_for(
+        self, policy: Policy, key: tuple[str, ...], instances: dict[InstanceId, Instance]
+    ) -> Instance:
+        instance_id = (policy.policy_id, key)
+        instance = instances.get(instance_id)
+        if instance is None:
+            instance = Instance(
+                policy_id=policy.policy_id,
+                entity_key=dict(zip(policy.correlation_key, key)),
+                monitor=policy.monitor_factory(),
+            )
+            instances[instance_id] = instance
+        return instance
+
+    def _reschedule(
+        self,
+        instance: Instance,
+        instances: dict[InstanceId, Instance],
+        deadlines: TimerQueue,
+        ttl_timers: TimerQueue,
+    ) -> None:
+        instance_id = (instance.policy_id, tuple(instance.entity_key.values()))
+        deadline = instance.monitor.next_deadline()
+        if deadline is not None:
+            deadlines.schedule(deadline, instance_id)
+        if self._ttl is not None:
+            ttl_timers.schedule(instance.last_activity + self._ttl, instance_id)
+
+    # -- garbage collection -------------------------------------------------
+
+    def _fire_due_deadlines(
         self,
         now: float,
         instances: dict[InstanceId, Instance],
-        timers: TimerQueue,
+        deadlines: TimerQueue,
         verdicts: list[Verdict],
     ) -> None:
-        for when, instance_id in timers.due(now):
+        for when, instance_id in deadlines.due(now):
             instance = instances.get(instance_id)
             if instance is None:
                 continue
             status = instance.monitor.on_timeout(when)
             if status is not None:
-                trigger = instance.monitor.trigger_event
-                verdicts.append(self._verdict(instance, status, trigger, when))
+                verdicts.append(
+                    self._verdict(instance, status, instance.monitor.trigger_event, when)
+                )
 
-    @staticmethod
-    def _reschedule(instance_id: InstanceId, instance: Instance, timers: TimerQueue) -> None:
-        deadline = instance.monitor.next_deadline()
-        if deadline is not None:
-            timers.schedule(deadline, instance_id)
+    def _reclaim_quiescent(
+        self, now: float, instances: dict[InstanceId, Instance], ttl_timers: TimerQueue
+    ) -> None:
+        if self._ttl is None:
+            return
+        for _, instance_id in ttl_timers.due(now):
+            instance = instances.get(instance_id)
+            if instance is None:
+                continue
+            # Validate against live state: a refreshed instance has a later timer.
+            if now - instance.last_activity >= self._ttl:
+                del instances[instance_id]  # drops the witnessing trace
+                self.reclaimed += 1
+
+    def _retire_entity(
+        self, event: Event, instances: dict[InstanceId, Instance], verdicts: list[Verdict]
+    ) -> None:
+        for policy in self._policies.values():
+            key = Dispatcher.key_of(policy, event)
+            if key is None:
+                continue
+            instance = instances.pop((policy.policy_id, key), None)  # drops the trace
+            if instance is None:
+                continue
+            status = instance.monitor.on_terminal()
+            if status is not None:
+                verdicts.append(
+                    self._verdict(instance, status, instance.monitor.trigger_event, event.event_time)
+                )
+
+    # -- verdict construction ----------------------------------------------
 
     @staticmethod
     def _verdict(

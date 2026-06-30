@@ -52,6 +52,10 @@ class Monitor:
     def on_timeout(self, now: float) -> Optional[str]:
         return None
 
+    def on_terminal(self) -> Optional[str]:
+        """Final verdict when the entity's lifetime ends (a terminal event)."""
+        return None
+
 
 class NeverMonitor(Monitor):
     def __init__(self, bad: Predicate) -> None:
@@ -65,6 +69,13 @@ class NeverMonitor(Monitor):
             self.trigger_event = event
             return "violated"
         return None
+
+    def on_terminal(self) -> Optional[str]:
+        # The bad event never arrived over the entity's whole life: it held.
+        if self.settled:
+            return None
+        self.settled = True
+        return "satisfied"
 
 
 class WithinMonitor(Monitor):
@@ -92,6 +103,13 @@ class WithinMonitor(Monitor):
 
     def on_timeout(self, now: float) -> Optional[str]:
         if self.settled or self._deadline is None or now < self._deadline:
+            return None
+        self.settled = True
+        return "violated"
+
+    def on_terminal(self) -> Optional[str]:
+        # Armed but unfulfilled when the entity ends: the response can never come.
+        if self.settled or self._deadline is None:
             return None
         self.settled = True
         return "violated"
