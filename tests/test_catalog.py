@@ -60,6 +60,18 @@ def test_decorated_step_remains_a_callable_predicate(reg):
     assert _t(None, FakeEvent(), "placed") is False
 
 
+def test_reregistering_an_identical_step_is_idempotent(reg):
+    # Re-importing a steps module (same step_id, phrasing, signature) must not
+    # raise: it is a reload, not a reuse.
+    for _ in range(2):
+        @reg.trigger('an order is "{status}"', step_id="order.is",
+                     event_type="order.status", correlation_key="order_id")
+        def _t(ctx, event, status):
+            return True
+
+    assert len(reg.entries()) == 1
+
+
 def test_step_id_is_never_reused(reg):
     @reg.trigger("a", step_id="dup", event_type="e", correlation_key="k")
     def _a(ctx, event):

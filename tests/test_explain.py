@@ -8,7 +8,12 @@ invalidation.
 
 from behave_rv.compile.parser_bridge import parse_feature
 from behave_rv.events.event import Event
-from behave_rv.verdict.explain import bind_text, bindings_from_verdict, render_explanation
+from behave_rv.verdict.explain import (
+    bind_text,
+    bindings_from_verdict,
+    explain_verdict,
+    render_explanation,
+)
 from behave_rv.verdict.record import Verdict
 
 FEATURE = """
@@ -72,3 +77,28 @@ def test_render_marks_only_the_failing_step():
                               bindings={"service": "express", "seconds": "30"},
                               failing_step_index=1)
     assert text.count("✗") == 1
+
+
+# --- full verdict explanation ----------------------------------------------
+
+BEFORE_FEATURE = """
+Feature: payment safety
+  Scenario: an order may only be paid after it was authorized
+    When an order is "paid"
+    Then an order is "authorized" before
+"""
+
+
+def test_explain_verdict_composes_header_scenario_and_trace():
+    (scenario,) = parse_feature(BEFORE_FEATURE).scenarios
+    paid = Event("order.status", 2.0, {"order_id": "B"}, {"status": "paid"}, "recorded")
+    verdict = Verdict("an order may only be paid after it was authorized",
+                      {"order_id": "B"}, "violated", paid, [paid], 2.0)
+
+    text = explain_verdict(verdict, scenario, failing_step_index=1)
+
+    assert "order_id=B" in text
+    assert "violated" in text
+    assert "✗" in text and 'an order is "authorized" before' in text
+    assert "order.status" in text and "2.0" in text  # the witnessing trace
+

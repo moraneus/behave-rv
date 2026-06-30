@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from behave_rv.events.event import Event
 
@@ -115,12 +115,42 @@ class WithinMonitor(Monitor):
         return "violated"
 
 
+class BeforeMonitor(Monitor):
+    """Precedence: the trigger event must have been preceded by the prior condition.
+
+    "B may only happen after A" -- when B (the trigger) occurs, A (the prior) must
+    already have been seen for this entity. Pending until the trigger fires; then
+    satisfied if the prior was seen, violated otherwise. A past-time check over the
+    instance's own witnessed state, with no deadline.
+    """
+
+    def __init__(self, prior: Predicate, trigger: Predicate) -> None:
+        self.prior = prior
+        self.trigger = trigger
+        self._seen_prior = False
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if self.prior(event):
+            self._seen_prior = True
+        if self.trigger(event):
+            self.settled = True
+            self.trigger_event = event
+            return "satisfied" if self._seen_prior else "violated"
+        return None
+
+
 @dataclass(frozen=True)
 class Policy:
     policy_id: str
     correlation_key: tuple[str, ...]
     event_types: frozenset[str]
     monitor_factory: Callable[[], Monitor]
+    # Set by the Gherkin compiler so a verdict can be explained as the authored
+    # scenario with the failing step marked. The engine ignores both.
+    authored_scenario: Any = None
+    failing_step_index: Optional[int] = None
 
 
 def never(
@@ -152,4 +182,20 @@ def within(
         correlation_key=_normalize_key(correlation_key),
         event_types=frozenset(event_types),
         monitor_factory=lambda: WithinMonitor(is_trigger, is_response, seconds),
+    )
+
+
+def before(
+    policy_id: str,
+    *,
+    correlation_key: str | Iterable[str],
+    prior: Predicate,
+    trigger: Predicate,
+    event_types: Iterable[str],
+) -> Policy:
+    return Policy(
+        policy_id=policy_id,
+        correlation_key=_normalize_key(correlation_key),
+        event_types=frozenset(event_types),
+        monitor_factory=lambda: BeforeMonitor(prior, trigger),
     )

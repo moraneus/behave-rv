@@ -68,6 +68,41 @@ annotated taps, the `never` and `within` operators, replay mode, and verdict
 logs with explanations. Prove it on recorded logs before pointing it at live
 traffic.
 
+## Authoring a policy in Gherkin (the closed loop)
+
+A human writes a policy as a `.feature` file; the engine compiles and runs it
+against a recorded (or live) event stream with **no Python policy construction in
+the path**. The agent's only Python is the monitorable surface — the registered
+RV steps.
+
+```gherkin
+# examples/order_authorized.feature
+Feature: payment safety
+  Scenario: an order may only be paid after it was authorized
+    When an order is "paid"
+    Then an order is "authorized" before
+```
+
+```bash
+python -m behave_rv \
+  --steps  examples/order_steps.py \
+  --policy examples/order_authorized.feature \
+  --trace  examples/order_trace.jsonl
+```
+
+This emits a verdict per entity — `satisfied`, `violated` (rendered back as the
+authored scenario with the failing step marked and the real event values), and
+`pending` — and refuses a scenario that needs more than one independent entity key
+at compile time.
+
+**v1 policy grammar.** One scenario = one policy: exactly one `When` (a registered
+step, the trigger) and one `Then` (a temporal obligation). The obligations wired
+today are `it must never happen` (`never`), `<step> within "<n>" seconds`
+(`within`), and `<step> before` (`before`/precedence). Steps resolve by stable
+`step_id`, so a rephrasing that maps to the same `step_id` still compiles.
+`Given`/scope steps are recognized but **not yet wired** into the operators, and
+are refused at compile time with a clear message rather than silently ignored.
+
 ## Non-negotiables
 
 1. No language model in the per-event runtime path.
@@ -94,9 +129,14 @@ recorded trace replays through the deterministic engine and produces per-entity
 reclaimed on terminal events and quiescence, and a catalog signature diff surfaces
 breaks, weakenings, and suggestions.
 
+The authoring surface and the runtime are connected: a `.feature` policy compiles
+to the same `compile.Policy` the engine runs (see "Authoring a policy in Gherkin"
+above and `examples/`).
+
 Deferred (per the design's "defer until the core loop is proven"): the
-OpenTelemetry and structured-log sources beyond their stubs, a fuller Gherkin →
-automaton compiler binding scenarios to registered steps, and cross-entity /
-aggregate policies (the first-order backend slot).
+OpenTelemetry and structured-log sources beyond their stubs, the remaining
+temporal operators (`always`, `since`, `previously`), `Given`/scope wiring,
+multi-step (`And`/`But`) scenarios, and cross-entity / aggregate policies (the
+first-order backend slot).
 
 Run the tests with `pytest` (or `uv run --with pytest python -m pytest`).

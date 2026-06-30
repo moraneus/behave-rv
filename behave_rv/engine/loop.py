@@ -53,8 +53,12 @@ class Engine:
         self.live_instances = 0
         self.reclaimed = 0
 
-    def run(self, source: _Source) -> list[Verdict]:
-        """Run the loop to exhaustion over ``source`` and collect verdicts."""
+    def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
+        """Run the loop to exhaustion over ``source`` and collect verdicts.
+
+        With ``emit_pending`` (useful for replay), every instance still open when
+        the recorded stream ends is reported as a three-valued ``pending`` verdict.
+        """
         instances: dict[InstanceId, Instance] = {}
         deadlines = TimerQueue()
         ttl_timers = TimerQueue()
@@ -80,6 +84,18 @@ class Engine:
 
             if event.type in self._terminal:
                 self._retire_entity(event, instances, verdicts)
+
+        if emit_pending:
+            for instance in instances.values():
+                if not instance.monitor.settled:
+                    verdicts.append(
+                        self._verdict(
+                            instance,
+                            "pending",
+                            instance.monitor.trigger_event,
+                            instance.last_activity,
+                        )
+                    )
 
         self.live_instances = len(instances)
         return verdicts

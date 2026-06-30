@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Any, Iterable
+
+import parse
 
 from behave_rv.catalog.entry import CatalogEntry, StepSignature
 
@@ -21,6 +24,17 @@ from behave_rv.catalog.entry import CatalogEntry, StepSignature
 _PLACEHOLDER = re.compile(r"\{\s*(\w+)\s*(?::[^}]*)?\}")
 
 Step = Callable[..., bool]
+
+
+@dataclass(frozen=True)
+class Resolution:
+    """A feature step line resolved to a registered step, bound by step_id."""
+
+    step_id: str
+    func: Step
+    params: dict[str, Any]
+    signature: StepSignature
+    phrasing: str  # the phrasing (primary or alias) that matched
 
 
 def referenced_fields(phrasing: str) -> set[str]:
@@ -38,6 +52,7 @@ class StepRegistry:
     def __init__(self) -> None:
         self._entries: dict[str, CatalogEntry] = {}
         self._funcs: dict[str, Step] = {}
+        self._aliases: dict[str, list[str]] = {}
 
     # -- registration -------------------------------------------------------
 
@@ -52,9 +67,6 @@ class StepRegistry:
         correlation_key: str | Iterable[str],
         provenance: str = "llm",
     ) -> CatalogEntry:
-        if step_id in self._entries:
-            raise ValueError(f"step_id {step_id!r} is already registered; ids are never reused")
-
         signature = StepSignature(
             event_type=event_type,
             trigger_condition=phrasing,
@@ -71,6 +83,22 @@ class StepRegistry:
             observed=False,
             version=1,
         )
+
+        existing = self._entries.get(step_id)
+        if existing is not None:
+            # A reload of the same step (identical kind, phrasing, signature) is a
+            # no-op; a genuinely different step under the same id is a reuse error.
+            if (existing.kind, existing.phrasing, existing.signature) == (
+                entry.kind,
+                entry.phrasing,
+                entry.signature,
+            ):
+                return existing
+            raise ValueError(
+                f"step_id {step_id!r} is already registered with a different "
+                "signature; ids are never reused"
+            )
+
         self._entries[step_id] = entry
         self._funcs[step_id] = func
         return entry
@@ -93,6 +121,40 @@ class StepRegistry:
     def obligation(self, phrasing: str, **meta):
         """A Then. The property evaluated continuously. No side effects."""
         return self._decorator("obligation", phrasing, **meta)
+
+    def alias(self, step_id: str, phrasing: str) -> None:
+        """Register another phrasing for an existing step_id.
+
+        A human may phrase the same step differently; an alias keeps both
+        wordings resolving to the one stable step_id.
+        """
+        if step_id not in self._entries:
+            raise KeyError(f"cannot alias unknown step_id {step_id!r}")
+        self._aliases.setdefault(step_id, []).append(phrasing)
+
+    def resolve(self, text: str) -> list[Resolution]:
+        """Resolve a feature step line to registered steps by matching phrasings.
+
+        Returns one :class:`Resolution` per distinct matching step_id (a step is
+        matched against its primary phrasing and any aliases). The caller decides
+        what to do with zero or multiple matches.
+        """
+        resolutions: list[Resolution] = []
+        for step_id, entry in self._entries.items():
+            for phrasing in (entry.phrasing, *self._aliases.get(step_id, [])):
+                match = parse.parse(phrasing, text)
+                if match is not None:
+                    resolutions.append(
+                        Resolution(
+                            step_id=step_id,
+                            func=self._funcs[step_id],
+                            params=dict(match.named),
+                            signature=entry.signature,
+                            phrasing=phrasing,
+                        )
+                    )
+                    break  # one match per step_id is enough
+        return resolutions
 
     # -- access -------------------------------------------------------------
 

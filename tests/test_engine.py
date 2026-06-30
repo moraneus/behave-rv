@@ -132,3 +132,15 @@ def test_engine_stays_pending_when_stream_ends_before_deadline():
     src.emit(ev("order.touch", 5.0))  # before the 31.0 deadline
 
     assert Engine([policy]).run(src) == []
+
+
+def test_emit_pending_surfaces_open_instances_at_stream_end():
+    policy = within("deliver-fast", correlation_key="order_id", seconds=30,
+                    is_trigger=is_requested, is_response=is_fulfilled,
+                    event_types={"delivery.requested", "delivery.fulfilled"})
+    src = InProcessSource()
+    src.emit(ev("delivery.requested", 1.0))
+
+    (v,) = Engine([policy]).run(src, emit_pending=True)
+    assert v.verdict == "pending"
+    assert v.entity_key == {"order_id": "A"}

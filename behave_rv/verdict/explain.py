@@ -41,6 +41,26 @@ def bindings_from_verdict(verdict: Verdict) -> dict[str, str]:
     return bindings
 
 
+def explain_verdict(verdict: Verdict, scenario: Any, failing_step_index: int) -> str:
+    """The full counterexample: a header, the authored scenario with the failing
+    step marked and values bound, and the witnessing trace with event times."""
+    entity = ", ".join(f"{k}={v}" for k, v in verdict.entity_key.items())
+    header = (
+        f"POLICY {verdict.policy_id!r}  ENTITY {entity}  "
+        f"VERDICT {verdict.verdict} @ t={verdict.at}"
+    )
+    body = render_explanation(
+        scenario,
+        bindings=bindings_from_verdict(verdict),
+        failing_step_index=failing_step_index,
+        mark=verdict.verdict,
+    )
+    trace = ["Trace:"] + [
+        f"  t={e.event_time}  {e.type}  {e.payload}" for e in verdict.witnessing_trace
+    ]
+    return "\n".join([header, body, *trace])
+
+
 def render_explanation(
     scenario: Any,
     *,
