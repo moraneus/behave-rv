@@ -55,13 +55,13 @@ behave_rv/
 
 ## Build sequence
 
-- **Phase 0** — Fork, license hygiene, behave's parser/model usable as a library.
-- **Phase 1** — Event model; in-process emitter + replay sources.
-- **Phase 2** — RV step decorators (`trigger`, `scope`, `obligation`) + catalog/signatures.
-- **Phase 3** — Temporal vocabulary (`never`, `always`, `before`, `within`); compiler; engine.
-- **Phase 4** — Verdicts + explanation renderer.
-- **Phase 5** — Garbage collection + bounded explanation retention.
-- **Phase 6** — Signature diffing + notification channel.
+- **Phase 0** ✅ — Fork, license hygiene, behave's parser/model usable as a library.
+- **Phase 1** ✅ — Event model; in-process emitter + replay sources.
+- **Phase 2** ✅ — RV step decorators (`trigger`, `scope`, `obligation`) + catalog/signatures.
+- **Phase 3** ✅ — Temporal operators (`never`, `within`); engine (loop, dispatch, per-key instance, timer wheel).
+- **Phase 4** ✅ — Verdicts + explanation renderer + JSON sink.
+- **Phase 5** ✅ — Garbage collection (terminal + quiescence TTL) + bounded explanation retention.
+- **Phase 6** ✅ — Signature diffing + notification channel (break / weakening / suggestion).
 
 **First end-to-end target:** one entity type, one correlation key, a handful of
 annotated taps, the `never` and `within` operators, replay mode, and verdict
@@ -88,5 +88,15 @@ Engel and others); see [`NOTICE`](NOTICE) and [`LICENSE`](LICENSE).
 
 ## Status
 
-Pre-alpha scaffolding. The package tree mirrors the design; modules are stubs
-to be filled in following the build sequence above.
+The full build sequence (Phases 0–6) is implemented and tested end to end: a
+recorded trace replays through the deterministic engine and produces per-entity
+`never`/`within` verdicts with authored-scenario explanations, instances are
+reclaimed on terminal events and quiescence, and a catalog signature diff surfaces
+breaks, weakenings, and suggestions.
+
+Deferred (per the design's "defer until the core loop is proven"): the
+OpenTelemetry and structured-log sources beyond their stubs, a fuller Gherkin →
+automaton compiler binding scenarios to registered steps, and cross-entity /
+aggregate policies (the first-order backend slot).
+
+Run the tests with `pytest` (or `uv run --with pytest python -m pytest`).
