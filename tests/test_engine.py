@@ -134,6 +134,31 @@ def test_engine_stays_pending_when_stream_ends_before_deadline():
     assert Engine([policy]).run(src) == []
 
 
+def test_grace_window_reorders_out_of_order_arrival():
+    # Precedence: "paid only after authorized". Correct event times are
+    # authorized@1 then paid@2, but they ARRIVE in the wrong order.
+    from behave_rv.compile.automaton import before
+
+    policy = before("paid-after-auth", correlation_key="order_id",
+                    prior=lambda e: e.payload.get("status") == "authorized",
+                    trigger=lambda e: e.payload.get("status") == "paid",
+                    event_types={"order.status"})
+
+    def oe(status, t):
+        return Event("order.status", t, {"order_id": "A"}, {"status": status}, "test")
+
+    def fresh():
+        s = InProcessSource()
+        s.emit(oe("paid", 2.0))         # arrives first...
+        s.emit(oe("authorized", 1.0))   # ...but happened earlier
+        return s
+
+    # grace=0 (no reordering): processed in arrival order -> WRONG verdict
+    assert [v.verdict for v in Engine([policy]).run(fresh())] == ["violated"]
+    # a grace window reorders by event time -> CORRECT verdict
+    assert [v.verdict for v in Engine([policy], grace=5).run(fresh())] == ["satisfied"]
+
+
 def test_emit_pending_surfaces_open_instances_at_stream_end():
     policy = within("deliver-fast", correlation_key="order_id", seconds=30,
                     is_trigger=is_requested, is_response=is_fulfilled,

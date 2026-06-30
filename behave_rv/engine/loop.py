@@ -27,6 +27,7 @@ from behave_rv.engine.dispatch import Dispatcher
 from behave_rv.engine.instance import Instance
 from behave_rv.engine.timers import TimerQueue
 from behave_rv.events.event import Event
+from behave_rv.events.watermark import ReorderBuffer
 from behave_rv.verdict.record import Verdict
 
 InstanceId = tuple[str, tuple[str, ...]]
@@ -44,14 +45,17 @@ class Engine:
         *,
         terminal_event_types: Iterable[str] = (),
         quiescence_ttl: Optional[float] = None,
+        grace: float = 0.0,
     ) -> None:
         self._policies = {p.policy_id: p for p in policies}
         self._dispatcher = Dispatcher(self._policies.values())
         self._terminal = frozenset(terminal_event_types)
         self._ttl = quiescence_ttl
+        self._grace = grace
         # observability, populated by run()
         self.live_instances = 0
         self.reclaimed = 0
+        self.late_events = 0
 
     def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
         """Run the loop to exhaustion over ``source`` and collect verdicts.
@@ -64,8 +68,12 @@ class Engine:
         ttl_timers = TimerQueue()
         verdicts: list[Verdict] = []
         self.reclaimed = 0
+        self.late_events = 0
 
-        for event in source.events():
+        buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
+        stream = self._ordered(source, buffer) if buffer is not None else source.events()
+
+        for event in stream:
             now = event.event_time
             self._fire_due_deadlines(now, instances, deadlines, verdicts)
             self._reclaim_quiescent(now, instances, ttl_timers)
@@ -85,6 +93,9 @@ class Engine:
             if event.type in self._terminal:
                 self._retire_entity(event, instances, verdicts)
 
+        if buffer is not None:
+            self.late_events = len(buffer.late)
+
         if emit_pending:
             for instance in instances.values():
                 if not instance.monitor.settled:
@@ -99,6 +110,19 @@ class Engine:
 
         self.live_instances = len(instances)
         return verdicts
+
+    @staticmethod
+    def _ordered(source: _Source, buffer: ReorderBuffer):
+        """Yield events in event-time order using the reordering window.
+
+        Within the grace window late arrivals are sorted back into place; an event
+        that arrives after the watermark has passed it is dropped from the ordered
+        stream and recorded on ``buffer.late``.
+        """
+        for raw in source.events():
+            buffer.push(raw)
+            yield from buffer.releasable()
+        yield from buffer.flush()
 
     # -- dispatch helpers ---------------------------------------------------
 
