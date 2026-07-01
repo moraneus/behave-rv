@@ -7,7 +7,7 @@ why the authorable vocabulary is restricted to the monitorable fragment.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from behave_rv.events.event import Event
@@ -19,8 +19,9 @@ class Verdict:
     entity_key: dict[str, str]       # which entity, e.g. {"order_id": "4471"}
     verdict: str                     # "satisfied" | "violated" | "pending"
     trigger_event: Optional[Event]   # None when a verdict has no triggering event
-    witnessing_trace: list[Event]    # the events that drove this instance to the verdict
+    witnessing_trace: list[Event]    # bounded recent-context window (for the explanation)
     at: float                        # event time of the verdict
+    deciding_events: list[Event] = field(default_factory=list)  # the events that decided it
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -30,4 +31,5 @@ class Verdict:
             "trigger_event": self.trigger_event.to_dict() if self.trigger_event else None,
             "witnessing_trace": [e.to_dict() for e in self.witnessing_trace],
             "at": self.at,
+            "deciding_events": [e.to_dict() for e in self.deciding_events],
         }

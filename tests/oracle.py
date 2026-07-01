@@ -21,6 +21,49 @@ from math import inf
 from behave_rv.events.event import Event
 
 
+def decisive_for_key(policy: dict, events: list[Event], horizon):
+    """(verdict, decisive_events) for one key's canonical events, by direct
+    definition, mirroring which events each operator uses to decide.
+
+    never:  the bad event.
+    before: the trigger, plus the first prior when satisfied.
+    within: the arming trigger, plus the response when satisfied.
+    """
+    op = policy["operator"]
+
+    if op == "never":
+        for e in events:
+            if e.payload.get("status") == policy["bad"]:
+                return "violated", [e]
+        return "pending", []
+
+    if op == "before":
+        prior_ev = None
+        for e in events:
+            if e.payload.get("status") == policy["prior"] and prior_ev is None:
+                prior_ev = e
+            if e.payload.get("status") == policy["trigger"]:
+                return ("satisfied", [prior_ev, e]) if prior_ev is not None else ("violated", [e])
+        return "pending", []
+
+    if op == "within":
+        arm = None
+        deadline = None
+        for e in events:
+            if arm is not None and e.event_time >= deadline:
+                return "violated", [arm]
+            if arm is None and e.payload.get("status") == policy["trigger"]:
+                arm = e
+                deadline = e.event_time + policy["seconds"]
+            elif arm is not None and e.payload.get("status") == policy["response"]:
+                return "satisfied", [arm, e]
+        if arm is not None and horizon is not None and horizon >= deadline:
+            return "violated", [arm]
+        return "pending", []
+
+    raise ValueError(f"unknown operator {op!r}")
+
+
 def canonical_sorted(events: list[Event]) -> list[Event]:
     return sorted(
         events,

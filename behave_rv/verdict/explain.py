@@ -55,10 +55,22 @@ def explain_verdict(verdict: Verdict, scenario: Any, failing_step_index: int) ->
         failing_step_index=failing_step_index,
         mark=verdict.verdict,
     )
-    trace = ["Trace:"] + [
-        f"  t={e.event_time}  {e.type}  {e.payload}" for e in verdict.witnessing_trace
-    ]
-    return "\n".join([header, body, *trace])
+
+    def _fmt(e):
+        return f"  t={e.event_time}  {e.type}  {e.payload}"
+
+    lines = [header, body]
+    # The deciding events are always shown, whatever their age, so the explanation
+    # can never omit the evidence that produced the verdict.
+    if verdict.deciding_events:
+        lines.append("Deciding events:")
+        lines += [_fmt(e) for e in verdict.deciding_events]
+    # Recent context from the bounded window, minus anything already shown above.
+    context = [e for e in verdict.witnessing_trace if e not in verdict.deciding_events]
+    if context:
+        lines.append("Recent context:")
+        lines += [_fmt(e) for e in context]
+    return "\n".join(lines)
 
 
 def render_explanation(

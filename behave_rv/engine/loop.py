@@ -238,4 +238,5 @@ class Engine:
             trigger_event=trigger,
             witnessing_trace=instance.witnessing_trace(),
             at=at,
+            deciding_events=instance.monitor.deciding_events(),
         )

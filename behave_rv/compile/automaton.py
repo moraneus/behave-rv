@@ -56,6 +56,15 @@ class Monitor:
         """Final verdict when the entity's lifetime ends (a terminal event)."""
         return None
 
+    def deciding_events(self) -> list[Event]:
+        """The small, fixed set of events that actually decided the verdict.
+
+        Kept separate from the instance's bounded recent-context window so an
+        explanation always shows the deciding evidence, however old it is. At most
+        a handful of events; never grows with trace length.
+        """
+        return []
+
 
 class NeverMonitor(Monitor):
     def __init__(self, bad: Predicate) -> None:
@@ -77,6 +86,10 @@ class NeverMonitor(Monitor):
         self.settled = True
         return "satisfied"
 
+    def deciding_events(self) -> list[Event]:
+        # The single bad event that caused the violation (None if it held).
+        return [self.trigger_event] if self.trigger_event is not None else []
+
 
 class WithinMonitor(Monitor):
     def __init__(self, is_trigger: Predicate, is_response: Predicate, seconds: float) -> None:
@@ -84,6 +97,7 @@ class WithinMonitor(Monitor):
         self.is_response = is_response
         self.seconds = seconds
         self._deadline: Optional[float] = None
+        self._response_event: Optional[Event] = None
 
     def on_event(self, event: Event) -> Optional[str]:
         if self.settled:
@@ -95,6 +109,7 @@ class WithinMonitor(Monitor):
             return None
         if self.is_response(event):
             self.settled = True
+            self._response_event = event
             return "satisfied" if event.event_time <= self._deadline else "violated"
         return None
 
@@ -114,6 +129,11 @@ class WithinMonitor(Monitor):
         self.settled = True
         return "violated"
 
+    def deciding_events(self) -> list[Event]:
+        # The arming trigger, plus the response when one settled it (a timeout
+        # violation has no response, so just the trigger).
+        return [e for e in (self.trigger_event, self._response_event) if e is not None]
+
 
 class BeforeMonitor(Monitor):
     """Precedence: the trigger event must have been preceded by the prior condition.
@@ -128,17 +148,25 @@ class BeforeMonitor(Monitor):
         self.prior = prior
         self.trigger = trigger
         self._seen_prior = False
+        self._prior_event: Optional[Event] = None
 
     def on_event(self, event: Event) -> Optional[str]:
         if self.settled:
             return None
         if self.prior(event):
+            if self._prior_event is None:  # capture the first prior that established precedence
+                self._prior_event = event
             self._seen_prior = True
         if self.trigger(event):
             self.settled = True
             self.trigger_event = event
             return "satisfied" if self._seen_prior else "violated"
         return None
+
+    def deciding_events(self) -> list[Event]:
+        # On satisfaction: the prior that was seen, then the trigger. On violation:
+        # the trigger only (no prior existed before it).
+        return [e for e in (self._prior_event, self.trigger_event) if e is not None]
 
 
 @dataclass(frozen=True)
