@@ -161,6 +161,18 @@ class StepRegistry:
 
     # -- access -------------------------------------------------------------
 
+    def mark_observed(self, observed_types: Iterable[str]) -> list[CatalogEntry]:
+        """Flip ``observed`` for steps whose event type appears in ``observed_types``.
+
+        Returns the steps still never observed -- likely dead or wrong, or an
+        event the system never actually emits (a silent telemetry gap).
+        """
+        seen = set(observed_types)
+        for entry in self._entries.values():
+            if entry.signature.event_type in seen:
+                entry.observed = True
+        return [e for e in self._entries.values() if not e.observed]
+
     def get(self, step_id: str) -> CatalogEntry:
         return self._entries[step_id]
 

@@ -29,7 +29,9 @@ Given/scope steps are recognized but not yet wired into the operators.
 from __future__ import annotations
 
 import re
+import warnings
 from collections.abc import Callable
+from typing import Optional
 
 from behave_rv.catalog.registry import Resolution, StepRegistry
 from behave_rv.compile.automaton import (
@@ -54,13 +56,34 @@ class CompileError(Exception):
     """A policy could not be compiled, with a human-readable reason."""
 
 
-def compile_feature(text_or_feature, registry: StepRegistry) -> list[Policy]:
-    """Compile every scenario in a feature into a Policy."""
+class UncheckablePolicyWarning(UserWarning):
+    """A compiled policy depends on a step whose event has never been observed."""
+
+
+def compile_feature(
+    text_or_feature,
+    registry: StepRegistry,
+    *,
+    observed_event_types: Optional[set[str]] = None,
+) -> list[Policy]:
+    """Compile every scenario in a feature into a Policy.
+
+    If ``observed_event_types`` is given, warn (do not refuse) when a policy
+    depends on a step whose event type has never been observed in that stream.
+    """
     feature = parse_feature(text_or_feature) if isinstance(text_or_feature, str) else text_or_feature
-    return [compile_scenario(scenario, registry) for scenario in feature.scenarios]
+    return [
+        compile_scenario(scenario, registry, observed_event_types=observed_event_types)
+        for scenario in feature.scenarios
+    ]
 
 
-def compile_scenario(scenario, registry: StepRegistry) -> Policy:
+def compile_scenario(
+    scenario,
+    registry: StepRegistry,
+    *,
+    observed_event_types: Optional[set[str]] = None,
+) -> Policy:
     when_steps, then_steps = _split_steps(scenario)
 
     when = when_steps[0]
@@ -73,6 +96,7 @@ def compile_scenario(scenario, registry: StepRegistry) -> Policy:
     used = [trigger_res] + ([operand_res] if operand_res is not None else [])
     correlation_key = _single_key(used, scenario)
     event_types = frozenset(r.signature.event_type for r in used)
+    _warn_if_uncheckable(scenario, used, observed_event_types)
 
     if operator == "never":
         factory = _never_factory(trigger_pred)
@@ -136,6 +160,20 @@ def _parse_obligation(text, registry):
 
 
 # -- resolution + predicates ------------------------------------------------
+
+
+def _warn_if_uncheckable(scenario, used, observed_event_types) -> None:
+    if observed_event_types is None:
+        return
+    for res in used:
+        if res.signature.event_type not in observed_event_types:
+            warnings.warn(
+                f"policy {scenario.name!r} depends on step {res.step_id!r} whose event "
+                f"{res.signature.event_type!r} has never been observed in the available "
+                "stream; the policy may be uncheckable.",
+                UncheckablePolicyWarning,
+                stacklevel=3,
+            )
 
 
 def _resolve_one(registry: StepRegistry, text: str, where: str) -> Resolution:

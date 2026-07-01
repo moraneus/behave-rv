@@ -56,6 +56,7 @@ class Engine:
         self.live_instances = 0
         self.reclaimed = 0
         self.late_events = 0
+        self.observed_types: set[str] = set()
 
     def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
         """Run the loop to exhaustion over ``source`` and collect verdicts.
@@ -69,12 +70,14 @@ class Engine:
         verdicts: list[Verdict] = []
         self.reclaimed = 0
         self.late_events = 0
+        self.observed_types = set()
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
         stream = self._ordered(source, buffer) if buffer is not None else source.events()
 
         for event in stream:
             now = event.event_time
+            self.observed_types.add(event.type)  # liveness harvest: this type was seen
             self._fire_due_deadlines(now, instances, deadlines, verdicts)
             self._reclaim_quiescent(now, instances, ttl_timers)
 

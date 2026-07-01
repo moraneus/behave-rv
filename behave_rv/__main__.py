@@ -52,13 +52,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"compile error: {exc}", file=sys.stderr)
         return 2
 
-    verdicts = Engine(policies).run(ReplaySource(args.trace), emit_pending=True)
+    engine = Engine(policies)
+    verdicts = engine.run(ReplaySource(args.trace), emit_pending=True)
     by_id = {p.policy_id: p for p in policies}
 
     print("# verdict log")
     sink = JsonSink(sys.stdout)
     for verdict in verdicts:
         sink.emit(verdict)
+
+    # liveness harvest: which catalog steps were never seen in this stream?
+    unobserved = default_registry.mark_observed(engine.observed_types)
+    if unobserved:
+        print("\n# liveness (steps never observed in this stream — possibly dead/wrong)")
+        for entry in unobserved:
+            print(f"  {entry.step_id}  (event {entry.signature.event_type!r})")
 
     violations = [v for v in verdicts if v.verdict == "violated"]
     if violations:
