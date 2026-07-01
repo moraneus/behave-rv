@@ -17,7 +17,9 @@ from behave_rv.verdict.record import Verdict
 # parse-style placeholders: {name} or {name:type}
 _PLACEHOLDER = re.compile(r"\{\s*(\w+)\s*(?::[^}]*)?\}")
 
-_FAIL_MARK = "✗"
+# The glyph on the marked step follows the verdict, so mark and comment agree.
+_MARKS = {"satisfied": "✓", "violated": "✗", "pending": "·"}
+_DEFAULT_MARK = "✗"  # for other reasons the step is highlighted (e.g. invalidated)
 _OK_INDENT = "  "  # aligns plain steps under the marked one
 
 
@@ -84,12 +86,13 @@ def render_explanation(
 
     ``scenario`` is a behave ``Scenario`` model (from :func:`parse_feature`).
     """
+    glyph = _MARKS.get(mark, _DEFAULT_MARK)
     lines = [f"Scenario: {scenario.name}"]
     for i, step in enumerate(scenario.steps):
         bound = bind_text(step.name, bindings)
         body = f"{step.keyword} {bound}"
         if i == failing_step_index:
-            lines.append(f"{_FAIL_MARK} {body}   # {mark}")
+            lines.append(f"{glyph} {body}   # {mark}")
         else:
             lines.append(f"{_OK_INDENT}  {body}")
     return "\n".join(lines)
