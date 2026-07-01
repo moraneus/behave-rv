@@ -18,6 +18,8 @@ from typing import Any, Iterable
 
 import parse
 
+from behave_rv.catalog.condition import condition_fingerprint
+from behave_rv.catalog.condition import payload_fields as extract_payload_fields
 from behave_rv.catalog.entry import CatalogEntry, StepSignature
 
 # parse-style placeholders: {name} or {name:type}
@@ -70,9 +72,10 @@ class StepRegistry:
         signature = StepSignature(
             event_type=event_type,
             trigger_condition=phrasing,
-            payload_fields={},
+            payload_fields=extract_payload_fields(func),
             referenced_fields=referenced_fields(phrasing),
             correlation_key=_normalize_key(correlation_key),
+            condition_fingerprint=condition_fingerprint(func),
         )
         entry = CatalogEntry(
             step_id=step_id,

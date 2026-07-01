@@ -28,12 +28,18 @@ REMOVED = "removed"
 
 
 def signatures_equivalent(a: StepSignature, b: StepSignature) -> bool:
-    """True when two signatures are behaviorally equivalent (phrasing excluded)."""
+    """True when two signatures are behaviorally equivalent (phrasing excluded).
+
+    Compares the event type, referenced fields, correlation key, exposed payload
+    fields, and the body-level condition fingerprint -- so a change to the
+    matching condition inside the step body is NOT silently absorbed.
+    """
     return (
         a.event_type == b.event_type
         and a.referenced_fields == b.referenced_fields
         and a.correlation_key == b.correlation_key
         and a.payload_fields == b.payload_fields
+        and a.condition_fingerprint == b.condition_fingerprint
     )
 
 
@@ -83,4 +89,6 @@ def describe_signature_change(old: StepSignature, new: StepSignature) -> str:
         )
     if old.payload_fields != new.payload_fields:
         parts.append(f"payload_fields {old.payload_fields} -> {new.payload_fields}")
+    if old.condition_fingerprint != new.condition_fingerprint:
+        parts.append("trigger condition changed (step body)")
     return "; ".join(parts) if parts else "no behavioral change"

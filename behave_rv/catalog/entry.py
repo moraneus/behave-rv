@@ -19,6 +19,7 @@ class StepSignature:
     payload_fields: dict[str, str]   # field name -> type, for fields exposed
     referenced_fields: set[str]      # the subset a specification can actually bind or read
     correlation_key: tuple[str, ...]  # one key, possibly a tuple for composite identity
+    condition_fingerprint: str = ""  # rename-invariant fingerprint of the body-level match condition
 
     def to_dict(self) -> dict[str, Any]:
         # referenced_fields sorted and correlation_key listed so the JSON form is
@@ -29,6 +30,7 @@ class StepSignature:
             "payload_fields": dict(self.payload_fields),
             "referenced_fields": sorted(self.referenced_fields),
             "correlation_key": list(self.correlation_key),
+            "condition_fingerprint": self.condition_fingerprint,
         }
 
     @classmethod
@@ -39,6 +41,7 @@ class StepSignature:
             payload_fields=dict(data["payload_fields"]),
             referenced_fields=set(data["referenced_fields"]),
             correlation_key=tuple(data["correlation_key"]),
+            condition_fingerprint=data.get("condition_fingerprint", ""),
         )
 
 
