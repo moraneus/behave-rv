@@ -94,6 +94,104 @@ def oracle_with_admission(arrival_events: list[Event], policy: dict, grace: floa
     return oracle_verdicts(admitted, policy), dropped
 
 
+POLICY_EVENT_TYPE = "order.status"
+
+
+def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
+    """Verdicts, dropped set, retired keys, and reclaimed keys, by direct
+    canonical simulation over the admitted trace (independent of the engine).
+
+    Mirrors the engine's per-event step order -- (1) within timeouts, (2)
+    quiescence reclaim, (3) dispatch, (4) terminal retire -- applied over the
+    ADMITTED events in canonical order (not arrival order). Reclamation is
+    timer-driven: an instance is reclaimable only once some dispatch to it emitted
+    no verdict (``ever_pending``), matching the engine's TTL scheduling.
+    """
+    admitted, dropped = admit(arrival_events, grace)
+    events = canonical_sorted(admitted)
+    ck = policy["correlation_key"]
+    op = policy["operator"]
+    terminal_types = set(terminal_types)
+
+    inst: dict = {}
+    verdicts: list = []
+    retired: set = set()
+    reclaimed: set = set()
+
+    def keyof(e):
+        try:
+            return tuple(e.bindings[f] for f in ck)
+        except KeyError:
+            return None
+
+    for e in events:
+        now = e.event_time
+
+        if op == "within":
+            for k, st in list(inst.items()):
+                if st["armed"] and not st["settled"] and now >= st["deadline"]:
+                    verdicts.append((k, "violated"))
+                    st["settled"] = True
+
+        if ttl is not None:
+            for k, st in list(inst.items()):
+                if st["ever_pending"] and now - st["last_activity"] >= ttl:
+                    del inst[k]
+                    reclaimed.add(k)
+
+        if e.type == POLICY_EVENT_TYPE:
+            k = keyof(e)
+            if k is not None:
+                st = inst.get(k)
+                if st is None:
+                    st = {"settled": False, "seen_prior": False, "armed": False,
+                          "deadline": None, "last_activity": now, "ever_pending": False}
+                    inst[k] = st
+                st["last_activity"] = now
+                produced = False
+                if not st["settled"]:
+                    s = _status(e)
+                    if op == "never":
+                        if s == policy["bad"]:
+                            verdicts.append((k, "violated"))
+                            st["settled"] = True
+                            produced = True
+                    elif op == "before":
+                        if s == policy["prior"]:
+                            st["seen_prior"] = True
+                        if s == policy["trigger"]:
+                            verdicts.append((k, "satisfied" if st["seen_prior"] else "violated"))
+                            st["settled"] = True
+                            produced = True
+                    elif op == "within":
+                        if not st["armed"] and s == policy["trigger"]:
+                            st["armed"] = True
+                            st["deadline"] = now + policy["seconds"]
+                        elif st["armed"] and s == policy["response"]:
+                            verdicts.append((k, "satisfied"))
+                            st["settled"] = True
+                            produced = True
+                if not produced:
+                    st["ever_pending"] = True  # a no-verdict dispatch schedules a TTL timer
+
+        if e.type in terminal_types:
+            k = keyof(e)
+            if k is not None and k in inst:
+                st = inst.pop(k)
+                retired.add(k)
+                if not st["settled"]:
+                    if op == "never":
+                        verdicts.append((k, "satisfied"))
+                    elif op == "within" and st["armed"]:
+                        verdicts.append((k, "violated"))
+
+    for k, st in inst.items():
+        if not st["settled"]:
+            verdicts.append((k, "pending"))
+
+    return verdicts, dropped, retired, reclaimed
+
+
 def _verdict(policy: dict, events: list[Event], horizon) -> str:
     op = policy["operator"]
 

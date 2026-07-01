@@ -68,6 +68,8 @@ class Engine:
         self.late_events = 0
         self.dropped_late: list[Event] = []
         self.observed_types: set[str] = set()
+        self.retired_keys: list[tuple[str, ...]] = []
+        self.reclaimed_keys: list[tuple[str, ...]] = []
 
     def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
         """Run the loop to exhaustion over ``source`` and collect verdicts.
@@ -83,6 +85,8 @@ class Engine:
         self.late_events = 0
         self.dropped_late = []
         self.observed_types = set()
+        self.retired_keys = []
+        self.reclaimed_keys = []
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
         stream = self._ordered(source, buffer) if buffer is not None else source.events()
@@ -202,6 +206,7 @@ class Engine:
             if now - instance.last_activity >= self._ttl:
                 del instances[instance_id]  # drops the witnessing trace
                 self.reclaimed += 1
+                self.reclaimed_keys.append(instance_id[1])
 
     def _retire_entity(
         self, event: Event, instances: dict[InstanceId, Instance], verdicts: list[Verdict]
@@ -213,6 +218,7 @@ class Engine:
             instance = instances.pop((policy.policy_id, key), None)  # drops the trace
             if instance is None:
                 continue
+            self.retired_keys.append(key)
             status = instance.monitor.on_terminal()
             if status is not None:
                 verdicts.append(

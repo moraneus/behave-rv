@@ -167,3 +167,72 @@ grace and widen it or treat the verdict as computed-with-drops.
 
 Drops are purely an out-of-order-arrival phenomenon: if events arrive in
 event-time (canonical) order, `engine.late_events == 0` for any grace ≥ 0.
+
+## Terminal retirement and quiescence reclamation (lifecycle × reordering)
+
+Terminal events retire an instance; a quiescence TTL reclaims an instance that has
+gone silent. Both must be decided on the **same basis as the verdict** — the
+admitted events in canonical order — so that lifecycle behaviour never changes a
+verdict away from the pure operator semantics over the admitted canonical trace.
+
+**Everything is processed in canonical order.** Retirement and reclamation are
+applied at the point the driving event is *released from the reordering buffer* in
+canonical order, not when it *arrives*. Concretely, per admitted event `e` in
+canonical order, with `now = e.event_time`, in this order: (1) fire `within`
+deadlines that have elapsed (`now ≥ deadline`); (2) reclaim instances quiescent for
+`ttl` (`now − last_activity ≥ ttl`); (3) dispatch `e` to its instance; (4) if `e`
+is a terminal event, retire the instance for its key.
+
+**Terminal retirement.** When a terminal event for key `k` is reached in canonical
+order, the instance for `k` is retired: it emits its terminal verdict and its trace
+is dropped. Because every canonically-earlier admitted event for `k` precedes the
+terminal, they have already been applied — retirement is consistent with the
+verdict. Terminal verdicts: `never` → `satisfied` if it had not already been
+violated; `within` → `violated` if armed and unresolved; `before` → no verdict.
+After retirement the key is **reusable**: a canonically-later admitted event for `k`
+starts a fresh instance (a new lifetime).
+
+**A canonically-earlier event arriving after retirement** is necessarily dropped as
+late and flagged, never applied to the retired instance and never silently changing
+the verdict. This is forced by the watermark: once the terminal for `k` is released,
+the watermark has passed the terminal's `event_time`, so any event with an
+`event_time ≤ it` arriving afterward is below the watermark and dropped (§ late
+regime). No admitted canonically-earlier event can arrive after retirement.
+
+**Quiescence reclamation (best-effort GC — spec decision).** Quiescence TTL is a
+**best-effort, timer-driven memory-reclamation** mechanism, not part of the verdict
+guarantee. It reclaims an instance that has gone silent for `ttl`, driven by the
+canonical clock (`last_activity` from admitted events in canonical order; a
+late-dropped event never refreshes it). Two properties are guaranteed and tested:
+reclamation is **arrival-invariant** and **deterministic** — two arrival orders that
+admit the same set reclaim the same keys and produce the same verdicts.
+
+What is **deliberately not** guaranteed (recorded here because this round surfaced
+it, rather than inferring correctness from the code):
+
+- **Exact reclaim timing is implementation-defined.** Reclamation is driven by a
+  lazy timer queue: a TTL timer is scheduled at `last_activity + ttl` on each
+  dispatch that produces no verdict, and consumed when due; if it fails
+  re-validation at that instant it is discarded. Consequently some instances that
+  are eligible under a naive "reclaim at `last_activity + ttl`" reading are not
+  reclaimed (a memory-efficiency limitation, tracked separately as timer-purge
+  robustness — out of scope for correctness). For `never`/`before` this is
+  verdict-neutral; the exact reclaimed set is therefore **not** asserted against
+  the intended-semantics oracle.
+- **TTL can suppress a `within` timeout.** If an entity goes quiescent before its
+  `within` deadline, its instance may be reclaimed (no verdict) instead of timing
+  out to `violated`. This is arrival-invariant and deterministic but depends on the
+  TTL-vs-deadline relationship. **Operational guidance:** set `ttl` larger than any
+  `within` deadline so obligations are not reclaimed out from under their deadline.
+
+The verdict guarantee — that the verdict equals the pure operator semantics over
+the admitted canonical trace — holds for **terminal retirement** and for the
+**no-TTL** case; TTL reclamation is a GC action layered on top, whose *only*
+guaranteed properties are arrival-invariance and determinism.
+
+**Consistency requirement (the property tested).** For every trace and arrival
+order, the per-key verdict, the set of keys retired, and the set reclaimed are all
+decided on the admitted-canonical basis. Adding terminal or TTL behaviour never
+changes a verdict from what the operator semantics over the admitted canonical
+trace give, and never silently discards a canonically-earlier admitted event —
+any excluded event is flagged as late.
