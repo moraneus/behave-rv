@@ -32,6 +32,16 @@ from behave_rv.verdict.record import Verdict
 
 InstanceId = tuple[str, tuple[str, ...]]
 
+# Correct event-time ordering is the DEFAULT. A verification tool's job is a
+# trustworthy verdict, so the safe behavior must be what a user gets for free;
+# the ordering-ignorant path (grace=0) is now an explicit opt-in. The window is
+# in the same units as Event.event_time (seconds): 5s comfortably exceeds the
+# sub-second-to-few-seconds reordering lag typical of distributed / telemetry /
+# log sources while staying a "short window", and for bounded replay the
+# end-of-stream flush corrects any residual ordering within the run. Raise it for
+# laggier sources; set grace=0 for the fast path.
+DEFAULT_GRACE = 5.0
+
 
 class _Source:
     def events(self) -> Iterable[Event]:  # pragma: no cover - structural typing aid
@@ -45,7 +55,7 @@ class Engine:
         *,
         terminal_event_types: Iterable[str] = (),
         quiescence_ttl: Optional[float] = None,
-        grace: float = 0.0,
+        grace: float = DEFAULT_GRACE,
     ) -> None:
         self._policies = {p.policy_id: p for p in policies}
         self._dispatcher = Dispatcher(self._policies.values())

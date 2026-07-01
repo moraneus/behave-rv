@@ -17,11 +17,15 @@ def ev(type, t, order_id, **payload):
 
 
 def test_replay_drives_never_and_within_verdicts(tmp_path):
+    # A recorded replay trace is written in event-time order (that is how a
+    # recorder emits it), so the events are listed by event_time. Verdicts:
+    # A -> satisfied (fulfilled in time), B -> never-cancel violated, and B's
+    # delivery times out at 32.0 when clock.tick@40 advances the clock.
     trace = [
         ev("delivery.requested", 1.0, "A"),
-        ev("delivery.fulfilled", 10.0, "A"),       # A responds in time -> satisfied
         ev("delivery.requested", 2.0, "B"),         # B never responds
         ev("order.status", 5.0, "B", status="cancelled"),  # B cancelled -> never violated
+        ev("delivery.fulfilled", 10.0, "A"),       # A responds in time -> satisfied
         ev("clock.tick", 40.0, "B"),                # advances event time past B's 32.0 deadline
     ]
     path = tmp_path / "trace.jsonl"

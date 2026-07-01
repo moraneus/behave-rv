@@ -134,29 +134,45 @@ def test_engine_stays_pending_when_stream_ends_before_deadline():
     assert Engine([policy]).run(src) == []
 
 
-def test_grace_window_reorders_out_of_order_arrival():
-    # Precedence: "paid only after authorized". Correct event times are
-    # authorized@1 then paid@2, but they ARRIVE in the wrong order.
+def _precedence_policy():
+    # "paid only after authorized"
     from behave_rv.compile.automaton import before
+    return before("paid-after-auth", correlation_key="order_id",
+                  prior=lambda e: e.payload.get("status") == "authorized",
+                  trigger=lambda e: e.payload.get("status") == "paid",
+                  event_types={"order.status"})
 
-    policy = before("paid-after-auth", correlation_key="order_id",
-                    prior=lambda e: e.payload.get("status") == "authorized",
-                    trigger=lambda e: e.payload.get("status") == "paid",
-                    event_types={"order.status"})
 
-    def oe(status, t):
-        return Event("order.status", t, {"order_id": "A"}, {"status": status}, "test")
+def _oe(status, t):
+    return Event("order.status", t, {"order_id": "A"}, {"status": status}, "test")
 
-    def fresh():
-        s = InProcessSource()
-        s.emit(oe("paid", 2.0))         # arrives first...
-        s.emit(oe("authorized", 1.0))   # ...but happened earlier
-        return s
 
-    # grace=0 (no reordering): processed in arrival order -> WRONG verdict
-    assert [v.verdict for v in Engine([policy]).run(fresh())] == ["violated"]
-    # a grace window reorders by event time -> CORRECT verdict
-    assert [v.verdict for v in Engine([policy], grace=5).run(fresh())] == ["satisfied"]
+def test_default_grace_corrects_out_of_order_arrival():
+    # Regression guard: correct event-time ordering must be the DEFAULT. Events
+    # ARRIVE reversed (paid@2 then authorized@1); the default engine must still
+    # produce the correct 'satisfied' with no caller opt-in. A future change that
+    # reintroduces the unsafe grace=0 default fails here.
+    s = InProcessSource()
+    s.emit(_oe("paid", 2.0))
+    s.emit(_oe("authorized", 1.0))
+    assert [v.verdict for v in Engine([_precedence_policy()]).run(s)] == ["satisfied"]
+
+
+def test_in_order_stream_is_unaffected_by_the_default():
+    # An already-ordered stream produces the same verdict as before the change.
+    s = InProcessSource()
+    s.emit(_oe("authorized", 1.0))
+    s.emit(_oe("paid", 2.0))
+    assert [v.verdict for v in Engine([_precedence_policy()]).run(s)] == ["satisfied"]
+
+
+def test_explicit_zero_grace_is_the_ordering_ignorant_fast_path():
+    # The opt-in fast path still exists and still behaves as before: reversed
+    # arrival is processed in arrival order -> the (wrong-for-reordered) verdict.
+    s = InProcessSource()
+    s.emit(_oe("paid", 2.0))
+    s.emit(_oe("authorized", 1.0))
+    assert [v.verdict for v in Engine([_precedence_policy()], grace=0).run(s)] == ["violated"]
 
 
 def test_emit_pending_surfaces_open_instances_at_stream_end():
