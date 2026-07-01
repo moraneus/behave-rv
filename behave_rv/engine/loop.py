@@ -66,6 +66,7 @@ class Engine:
         self.live_instances = 0
         self.reclaimed = 0
         self.late_events = 0
+        self.dropped_late: list[Event] = []
         self.observed_types: set[str] = set()
 
     def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
@@ -80,6 +81,7 @@ class Engine:
         verdicts: list[Verdict] = []
         self.reclaimed = 0
         self.late_events = 0
+        self.dropped_late = []
         self.observed_types = set()
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
@@ -107,6 +109,7 @@ class Engine:
                 self._retire_entity(event, instances, verdicts)
 
         if buffer is not None:
+            self.dropped_late = list(buffer.late)
             self.late_events = len(buffer.late)
 
         if emit_pending:

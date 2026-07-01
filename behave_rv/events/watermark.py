@@ -54,10 +54,18 @@ class ReorderBuffer:
         self._max_seen = max(self._max_seen, event.event_time)
 
     def releasable(self) -> list[Event]:
-        """Events now safe to emit, in event-time order. Advances the watermark."""
+        """Events now safe to emit, in canonical order. Advances the watermark.
+
+        The boundary is STRICT (`event_time < watermark`): an event *at* the
+        watermark is not yet safe, because a same-timestamp sibling can still
+        arrive and be admitted (admission is `time < watermark`). Releasing at the
+        watermark would emit such ties in arrival order across separate releases,
+        breaking canonical ordering. Holding them until the watermark strictly
+        passes keeps every same-timestamp event in one batch, popped canonically.
+        """
         self._watermark = self._max_seen - self.grace
         out: list[Event] = []
-        while self._heap and self._heap[0][0] <= self._watermark:
+        while self._heap and self._heap[0][0] < self._watermark:
             out.append(heapq.heappop(self._heap)[-1])
         return out
 

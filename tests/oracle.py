@@ -16,6 +16,8 @@ Predicates are "payload['status'] == s", matching the registered example step.
 
 from __future__ import annotations
 
+from math import inf
+
 from behave_rv.events.event import Event
 
 
@@ -58,6 +60,38 @@ def oracle_verdicts(trace: list[Event], policy: dict) -> dict:
         (k[0] if len(k) == 1 else k): _verdict(policy, canonical_sorted(evs), horizon)
         for k, evs in groups.items()
     }
+
+
+def admit(arrival_events: list[Event], grace: float):
+    """Model the engine's late-drop admission, by definition (SEMANTICS.md).
+
+    Single pass in ARRIVAL order with a global watermark = max_seen - grace. An
+    event whose event_time is below the watermark is dropped as late (and does not
+    advance max_seen); otherwise it is admitted. Returns (admitted, dropped).
+    """
+    admitted: list[Event] = []
+    dropped: list[Event] = []
+    max_seen = -inf
+    watermark = -inf
+    for e in arrival_events:
+        if e.event_time < watermark:
+            dropped.append(e)
+        else:
+            admitted.append(e)
+            if e.event_time > max_seen:
+                max_seen = e.event_time
+            watermark = max_seen - grace
+    return admitted, dropped
+
+
+def oracle_with_admission(arrival_events: list[Event], policy: dict, grace: float):
+    """Verdicts and dropped-late set for a given arrival order and grace.
+
+    Admission is modelled by definition (not by calling the engine); the verdict is
+    then computed over the admitted events in canonical order.
+    """
+    admitted, dropped = admit(arrival_events, grace)
+    return oracle_verdicts(admitted, policy), dropped
 
 
 def _verdict(policy: dict, events: list[Event], horizon) -> str:

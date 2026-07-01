@@ -112,3 +112,58 @@ property tests operate inside this regime.
 
 The first event in canonical order starts an instance. A key with no events yields
 no instance and no verdict. An empty trace yields no verdicts.
+
+## The late-event regime (admission)
+
+When the trace's event-time span exceeds the grace window, some events arrive
+after the watermark has already passed their time. Those events are **dropped as
+late**, and the verdict is then defined over the events that were **admitted**.
+
+**Admission** is a single pass in *arrival order*, with a global watermark (there
+is one clock; admission is not per key). Let `max_seen` be the greatest
+`event_time` among events admitted so far, and `watermark = max_seen − grace`.
+Both start at −∞. For each event `e` in arrival order:
+
+- if `e.event_time < watermark`: `e` is **dropped (late)**. It does not change
+  `max_seen` or the watermark, and it is recorded on `engine.dropped_late` /
+  counted in `engine.late_events`.
+- otherwise `e` is **admitted**: set `max_seen := max(max_seen, e.event_time)` and
+  `watermark := max_seen − grace`.
+
+Equivalently: `e` is dropped iff some already-admitted, earlier-arriving event has
+`event_time > e.event_time + grace`. The first event in arrival order is always
+admitted (watermark = −∞). Events sharing an `event_time` are admitted or dropped
+together (admission depends only on `event_time`), so drops occur at whole
+time-slices.
+
+**Verdict over admitted events.** The verdict is the pure function defined in the
+sections above, computed over the **admitted** events in canonical order. A dropped
+late event **does not participate** in the verdict at all — not in ordering, not in
+the clock horizon `H` (which is the maximum `event_time` among *admitted* events,
+since a dropped event's time is always `< watermark ≤ max_seen`). So a verdict in
+this regime is a pure function of the *admitted* set (via canonical order).
+
+**Boundary of the reordering guarantee.** Among admitted events, arrival order is
+irrelevant — the verdict depends only on their canonical order. But arrival order
+*does* decide which events are admitted versus dropped (event-time-ascending
+arrival admits everything and drops nothing; a more out-of-order arrival can drop
+more). Therefore, across the full regime, the verdict is a function of arrival
+order **only to the extent that arrival order changes the admitted set**. Precisely:
+
+- Two arrival orders that admit the **same** set of events produce the **same**
+  verdict (the in-span guarantee, restricted to admitted events).
+- Two arrival orders can produce **different** verdicts only if they admit
+  **different** sets — i.e. only if their dropped-late sets differ, and at least
+  one drop occurred.
+
+**Trustworthiness.** A verdict computed over a trace with drops is **degraded and
+explicitly flagged**, never silently wrong: any run that dropped events reports
+`engine.late_events > 0` and the dropped events on `engine.dropped_late`. A verdict
+that changes with arrival order while nothing was flagged as late would be a
+fault. The guarantee is therefore: *the verdict is trustworthy as a statement about
+the admitted events, and the presence of any excluded (late) event is always
+surfaced* — the caller can see that the stream was too out-of-order for the chosen
+grace and widen it or treat the verdict as computed-with-drops.
+
+Drops are purely an out-of-order-arrival phenomenon: if events arrive in
+event-time (canonical) order, `engine.late_events == 0` for any grace ≥ 0.
