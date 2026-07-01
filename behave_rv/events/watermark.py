@@ -28,12 +28,28 @@ class ReorderBuffer:
         self._watermark = -inf  # event time up to which the stream has been released
         self.late: list[Event] = []
 
+    @staticmethod
+    def _tiebreak(event: Event) -> tuple:
+        # Ties (equal event_time) are broken by a canonical, content-derived key,
+        # NOT by arrival order -- otherwise the verdict for same-timestamp events
+        # would depend on the order they arrived, breaking the reordering contract.
+        return (
+            event.type,
+            repr(sorted(event.bindings.items())),
+            repr(sorted(event.payload.items())),
+            event.source,
+        )
+
     def push(self, event: Event) -> None:
         if event.event_time < self._watermark:
             # the stream has already advanced past this event's time
             self.late.append(event)
             return
-        heapq.heappush(self._heap, (event.event_time, self._seq, event))
+        # heap key: (event_time, canonical content, seq, event). event_time drives
+        # the watermark; content breaks ties deterministically; seq is only a final
+        # fallback for byte-identical events (whose order cannot affect any verdict)
+        # and keeps Event objects from ever being compared.
+        heapq.heappush(self._heap, (event.event_time, self._tiebreak(event), self._seq, event))
         self._seq += 1
         self._max_seen = max(self._max_seen, event.event_time)
 
@@ -42,11 +58,11 @@ class ReorderBuffer:
         self._watermark = self._max_seen - self.grace
         out: list[Event] = []
         while self._heap and self._heap[0][0] <= self._watermark:
-            out.append(heapq.heappop(self._heap)[2])
+            out.append(heapq.heappop(self._heap)[-1])
         return out
 
     def flush(self) -> list[Event]:
         """Release everything still buffered, in event-time order (end of stream)."""
-        out = [heapq.heappop(self._heap)[2] for _ in range(len(self._heap))]
+        out = [heapq.heappop(self._heap)[-1] for _ in range(len(self._heap))]
         self._watermark = inf
         return out

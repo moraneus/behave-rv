@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 otel = ["opentelemetry-sdk"]
-dev = ["pytest>=8", "ruff", "mypy"]
+dev = ["pytest>=8", "ruff", "mypy", "hypothesis>=6"]
 
 [project.urls]
 Homepage = "https://github.com/moraneus/behave-rv"
