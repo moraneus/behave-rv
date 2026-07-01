@@ -63,9 +63,10 @@ policies = st.one_of(
 def _feature(policy: dict) -> str:
     op = policy["operator"]
     if op == "never":
-        then = "it must never happen"
-        when = policy["bad"]
-    elif op == "before":
+        # never is self-contained: predicate-first Then, no When.
+        return (f'Feature: p\n  Scenario: s\n'
+                f'    Then an order is "{policy["bad"]}" never happens\n')
+    if op == "before":
         then = f'an order is "{policy["prior"]}" before'
         when = policy["trigger"]
     else:

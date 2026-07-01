@@ -37,6 +37,12 @@ an obligation that has neither passed nor failed is `pending`.
 `never(bad)` — a status must never occur. `bad` is a predicate on an event
 (here: `payload["status"] == b`).
 
+Authorable form: a self-contained, predicate-first `Then` with no `When`, e.g.
+`Then an order is "cancelled" never happens`. The `Then` predicate is `bad`, and the
+correlation key comes from it. (A scoped `when X, then Y never happens` form is a
+different, more expressive operator and is out of the current fragment; it is
+refused at compile time.) The verdict below is unchanged by this surface syntax.
+
 For key `k`, over its events in canonical order:
 
 - **violated** iff some event satisfies `bad`. (Decided at the first such event.)

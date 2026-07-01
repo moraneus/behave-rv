@@ -5,25 +5,25 @@ the engine runs it, with no Python policy construction in the path. The compiler
 reuses behave's parser (Phase 0) and emits the same Policy/automaton objects the
 engine already runs (Phase 3).
 
-v1 policy grammar (one scenario = one policy):
+v1 policy grammar (one scenario = one policy). Every operator is predicate-first
+with a temporal suffix:
 
-    [no Given]
-    When  <registered step>            -- the triggering event
-    Then  <temporal obligation>        -- the property
+    never  (self-contained, no When -- the Then predicate is the forbidden event):
+        Then <registered step> never happens
 
-The temporal obligation is one of:
+    before / within  (a triggering When plus the obligation):
+        When <registered step>
+        Then <registered step> before
+        Then <registered step> within "<n>" seconds
 
-    Then it must never happen                       -> never (the When event is bad)
-    Then <registered step> within "<n>" seconds     -> within (bounded response)
-    Then <registered step> before                    -> before (precedence)
-
-Each non-temporal step is resolved against the catalog by stable step_id (so a
-rephrasing that maps to the same step_id still compiles). The correlation key is
-taken from the resolved steps; a scenario that needs more than one independent
-entity key is refused -- the v1 single-key fragment boundary.
+Each step is resolved against the catalog by stable step_id (so a rephrasing that
+maps to the same step_id still compiles). The correlation key is taken from the
+resolved steps; a scenario that needs more than one independent entity key is
+refused -- the v1 single-key fragment boundary.
 
 Honestly unfinished in v1 (refused with a clear message rather than faked):
-Given/scope steps are recognized but not yet wired into the operators.
+Given/scope steps, and the scoped "when X, then Y never happens" form, are
+recognized but not wired.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ Predicate = Callable[[Event], bool]
 
 _WITHIN = re.compile(r'^(?P<resp>.*?)\s+within\s+"?(?P<secs>\d+(?:\.\d+)?)"?\s+seconds?\s*$')
 _BEFORE = re.compile(r"^(?P<prior>.*?)\s+before\s*$")
-_NEVER = re.compile(r"\bnever\b")
+_NEVER = re.compile(r"^(?P<pred>.*?)\s+never\s+happens\s*$")
 
 
 class CompileError(Exception):
@@ -84,26 +84,35 @@ def compile_scenario(
     *,
     observed_event_types: Optional[set[str]] = None,
 ) -> Policy:
-    when_steps, then_steps = _split_steps(scenario)
+    when, then = _split_steps(scenario)
+    operator, operand_res, seconds = _parse_obligation(then[0].name, registry)
 
-    when = when_steps[0]
-    then = then_steps[0]
-    trigger_res = _resolve_one(registry, when.name, "When")
-    trigger_pred = _predicate(trigger_res)
+    if operator == "never":
+        # never is self-contained: the Then predicate itself is the forbidden event.
+        if when:
+            raise CompileError(
+                f"a 'never' policy is self-contained and must not have a When step "
+                f"({when[0].name!r}). 'when X, then Y never happens' is a scoped form "
+                "outside the current fragment; write 'Then <predicate> never happens'."
+            )
+        used = [operand_res]
+        factory = _never_factory(_predicate(operand_res))
+    else:
+        if len(when) != 1:
+            raise CompileError(
+                f"a v1 '{operator}' policy needs exactly one When step, found {len(when)}"
+            )
+        trigger_res = _resolve_one(registry, when[0].name, "When")
+        trigger_pred = _predicate(trigger_res)
+        used = [trigger_res, operand_res]
+        if operator == "within":
+            factory = _within_factory(trigger_pred, _predicate(operand_res), seconds)
+        else:  # before
+            factory = _before_factory(_predicate(operand_res), trigger_pred)
 
-    operator, operand_res, seconds = _parse_obligation(then.name, registry)
-
-    used = [trigger_res] + ([operand_res] if operand_res is not None else [])
     correlation_key = _single_key(used, scenario)
     event_types = frozenset(r.signature.event_type for r in used)
     _warn_if_uncheckable(scenario, used, observed_event_types)
-
-    if operator == "never":
-        factory = _never_factory(trigger_pred)
-    elif operator == "within":
-        factory = _within_factory(trigger_pred, _predicate(operand_res), seconds)
-    else:  # before
-        factory = _before_factory(_predicate(operand_res), trigger_pred)
 
     return Policy(
         policy_id=scenario.name,
@@ -111,7 +120,7 @@ def compile_scenario(
         event_types=event_types,
         monitor_factory=factory,
         authored_scenario=scenario,
-        failing_step_index=scenario.steps.index(then),
+        failing_step_index=scenario.steps.index(then[0]),
     )
 
 
@@ -128,10 +137,9 @@ def _split_steps(scenario):
             "Given/scope steps are recognized but not yet wired into the v1 "
             f"operators: {given[0].name!r}. Express the property with When/Then for now."
         )
-    if len(when) != 1:
-        raise CompileError(f"a v1 policy needs exactly one When step, found {len(when)}")
     if len(then) != 1:
         raise CompileError(f"a v1 policy needs exactly one Then step, found {len(then)}")
+    # the When count is checked per operator in compile_scenario (never takes none).
     return when, then
 
 
@@ -139,9 +147,12 @@ def _split_steps(scenario):
 
 
 def _parse_obligation(text, registry):
-    """Return (operator, operand_resolution_or_None, seconds_or_None)."""
-    if _NEVER.search(text):
-        return "never", None, None
+    """Return (operator, operand_resolution, seconds_or_None). The operand is the
+    registered predicate the operator refers to (the forbidden event for never)."""
+    m = _NEVER.match(text)
+    if m:
+        operand = _resolve_one(registry, m.group("pred").strip(), "never-predicate")
+        return "never", operand, None
 
     m = _WITHIN.match(text)
     if m:
@@ -155,7 +166,7 @@ def _parse_obligation(text, registry):
 
     raise CompileError(
         f"unrecognized temporal obligation: {text!r}. Supported forms: "
-        "'it must never happen', '<step> within \"<n>\" seconds', '<step> before'."
+        "'<step> never happens', '<step> within \"<n>\" seconds', '<step> before'."
     )
 
 

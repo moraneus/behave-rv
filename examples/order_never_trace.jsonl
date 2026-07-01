@@ -1,0 +1,3 @@
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "X"}, "payload": {"status": "placed"}, "source": "recorded"}
+{"type": "order.status", "event_time": 2.0, "bindings": {"order_id": "X"}, "payload": {"status": "cancelled"}, "source": "recorded"}
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "Y"}, "payload": {"status": "placed"}, "source": "recorded"}

@@ -96,11 +96,21 @@ def test_compile_never(reg):
     feature = '''
 Feature: no cancellation
   Scenario: an order is never cancelled
-    When an order is "cancelled"
-    Then it must never happen
+    Then an order is "cancelled" never happens
 '''
     (policy,) = compile_feature(feature, reg)
     assert [v.verdict for v in run(policy, [order_ev("cancelled", 1.0)])] == ["violated"]
+
+
+def test_never_with_a_when_is_refused(reg):
+    feature = '''
+Feature: no cancellation
+  Scenario: scoped never is out of fragment
+    When an order is "placed"
+    Then an order is "cancelled" never happens
+'''
+    with pytest.raises(CompileError, match="self-contained|must not have a When"):
+        compile_feature(feature, reg)
 
 
 # --- within ----------------------------------------------------------------
@@ -138,8 +148,7 @@ def test_unresolved_step_is_refused(reg):
     feature = '''
 Feature: unknown
   Scenario: uses an unregistered step
-    When the moon is "blue"
-    Then it must never happen
+    Then the moon is "blue" never happens
 '''
     with pytest.raises(CompileError, match="no registered step"):
         compile_feature(feature, reg)
