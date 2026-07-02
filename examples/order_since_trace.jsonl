@@ -1,0 +1,5 @@
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "D"}, "payload": {"status": "authorized"}, "source": "recorded"}
+{"type": "order.status", "event_time": 2.0, "bindings": {"order_id": "D"}, "payload": {"status": "paid"}, "source": "recorded"}
+{"type": "order.status", "event_time": 3.0, "bindings": {"order_id": "D"}, "payload": {"status": "cancelled"}, "source": "recorded"}
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "E"}, "payload": {"status": "authorized"}, "source": "recorded"}
+{"type": "order.status", "event_time": 2.0, "bindings": {"order_id": "E"}, "payload": {"status": "paid"}, "source": "recorded"}

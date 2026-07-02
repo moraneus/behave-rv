@@ -1,0 +1,5 @@
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "A"}, "payload": {"status": "authorized"}, "source": "recorded"}
+{"type": "order.status", "event_time": 2.0, "bindings": {"order_id": "A"}, "payload": {"status": "paid"}, "source": "recorded"}
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "B"}, "payload": {"status": "placed"}, "source": "recorded"}
+{"type": "order.status", "event_time": 2.0, "bindings": {"order_id": "B"}, "payload": {"status": "paid"}, "source": "recorded"}
+{"type": "order.status", "event_time": 1.0, "bindings": {"order_id": "C"}, "payload": {"status": "authorized"}, "source": "recorded"}

@@ -51,6 +51,17 @@ triples = st.lists(
 policies = st.one_of(
     st.builds(lambda b: {"operator": "never", "correlation_key": ("order_id",), "bad": b},
               st.sampled_from(STATUSES)),
+    st.builds(lambda g: {"operator": "once", "correlation_key": ("order_id",), "good": g},
+              st.sampled_from(STATUSES)),
+    st.builds(lambda ph: {"operator": "historically", "correlation_key": ("order_id",),
+                          "phi": ph},
+              st.sampled_from(STATUSES)),
+    st.builds(lambda pr, t: {"operator": "previously", "correlation_key": ("order_id",),
+                             "prior": pr, "trigger": t},
+              st.sampled_from(STATUSES), st.sampled_from(STATUSES)),
+    st.builds(lambda ph, ps: {"operator": "since", "correlation_key": ("order_id",),
+                              "phi": ph, "psi": ps},
+              st.sampled_from(STATUSES), st.sampled_from(STATUSES)),
     st.builds(lambda p, t: {"operator": "before", "correlation_key": ("order_id",),
                             "prior": p, "trigger": t},
               st.sampled_from(STATUSES), st.sampled_from(STATUSES)),
@@ -66,6 +77,18 @@ def _feature(policy: dict) -> str:
         # never is self-contained: predicate-first Then, no When.
         return (f'Feature: p\n  Scenario: s\n'
                 f'    Then an order is "{policy["bad"]}" never happens\n')
+    if op == "once":
+        return (f'Feature: p\n  Scenario: s\n'
+                f'    Then an order is "{policy["good"]}" has happened\n')
+    if op == "historically":
+        return (f'Feature: p\n  Scenario: s\n'
+                f'    Then an order is "{policy["phi"]}" always holds\n')
+    if op == "since":
+        return (f'Feature: p\n  Scenario: s\n'
+                f'    Then an order is "{policy["phi"]}" since an order is "{policy["psi"]}"\n')
+    if op == "previously":
+        return (f'Feature: p\n  Scenario: s\n    When an order is "{policy["trigger"]}"\n'
+                f'    Then an order is "{policy["prior"]}" previously\n')
     if op == "before":
         then = f'an order is "{policy["prior"]}" before'
         when = policy["trigger"]

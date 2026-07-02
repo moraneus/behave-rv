@@ -107,6 +107,10 @@ self-contained and takes no `When` (its own predicate is the forbidden event).
 | Operator | Authorable phrasing | Meaning (see `SEMANTICS.md`) |
 | --- | --- | --- |
 | `never` | `Then <predicate> never happens` (no `When`) | The named event must never occur for this entity. Violated the first time it does; otherwise pending. |
+| `once` | `Then <predicate> has happened` (no `When`) | The named event must occur at some point (existential). Satisfied the first time it does; pending until then; violated at a terminal event if it never did. |
+| `historically` | `Then <predicate> always holds` (no `When`) | Every event for this entity must be a `<predicate>` event (universal, the dual of `never`). Violated the first event that is not; pending until then; satisfied at a terminal event if none. |
+| `previously` | `Then <predicate> previously` | The event immediately before the `When` trigger must have been a `<predicate>` event (immediate predecessor, companion to `before`). Satisfied or violated at the trigger; pending until it occurs. |
+| `since` | `Then <phi> since <psi>` (no `When`) | After `<psi>` occurs, `<phi>` must hold at every event thereafter (safety). Violated the first event where `<phi>` fails after `<psi>`; pending until then; satisfied at a terminal event if never broken. |
 | `before` | `Then <predicate> before` | The `When` event must have been preceded by the named condition for this entity. Satisfied if it was, violated at the trigger if it was not, pending until the trigger occurs. |
 | `within` | `Then <predicate> within "<n>" seconds` | After the `When` event, the named response must occur strictly before the deadline `trigger_time + n`. Satisfied if it does, violated when the deadline elapses with no response, pending before either. |
 
@@ -114,11 +118,17 @@ Small examples:
 
 ```gherkin
     Then an order is "cancelled" never happens
+    Then an order is "audited" has happened
+    Then an order is "valid" always holds
+    Then an order is "paid" since an order is "authorized"
 ```
 
 ```gherkin
     When an order is "paid"
     Then an order is "authorized" before
+
+    When an order is "paid"
+    Then an order is "authorized" previously
 ```
 
 ```gherkin
@@ -144,8 +154,8 @@ that will not run.
 | --- | --- |
 | `Given` scope steps | Refused: `Given/scope steps are recognized but not yet wired into the v1 operators: ... Express the property with When/Then for now.` |
 | `And` / `But` multi step scenarios | Refused: `a v1 policy needs exactly one Then step, found N`, or `a v1 '<operator>' policy needs exactly one When step, found N`. |
-| A scoped `never` with a `When` | Refused: `a 'never' policy is self-contained and must not have a When step (...). 'when X, then Y never happens' is a scoped form outside the current fragment; write 'Then <predicate> never happens'.` |
-| Operators `always`, `since`, `previously` | Refused: `unrecognized temporal obligation: ... Supported forms: '<step> never happens', '<step> within "<n>" seconds', '<step> before'.` |
+| A scoped self-contained operator with a `When` (for example `never`, `once`, `historically`, `since`) | Refused: `a '<operator>' policy is self-contained and must not have a When step (...); write the property as a single Then.` |
+| Any unrecognized `Then` obligation | Refused: `unrecognized temporal obligation: ... Supported forms: '<step> never happens', '<step> has happened', '<step> always holds', '<step> previously', '<step> since <step>', '<step> within "<n>" seconds', '<step> before'.` |
 | Cross entity policies (two independent keys) | Refused: `scenario '...' references more than one entity key [...]; the v1 fragment is one correlation key per scenario.` |
 
 ## Installation
@@ -379,9 +389,10 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
 - **Single key fragment.** One correlation key per scenario (a composite tuple is
   allowed). Policies that quantify over two independent entities are refused at
   compile time.
-- **Operator subset.** Only `never`, `before`, and `within` are implemented.
-  `always`, `since`, and `previously` are named in the design but not yet
-  supported, and are refused.
+- **Operator set.** `never`, `before`, `within`, and the past-time LTL fragment
+  `once`, `historically`, `previously`, and `since` are implemented. Future-time
+  liveness beyond the bounded `within` is deliberately out of the monitorable
+  fragment (an unbounded future property has no defined verdict on a finite prefix).
 - **Grammar subset.** Exactly one `Then` per scenario, plus one `When` for `before`
   and `within` (`never` is self-contained and takes no `When`). `Given` scope steps,
   `And` / `But` multi step scenarios, and a scoped `never` with a `When` are

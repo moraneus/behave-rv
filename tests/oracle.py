@@ -37,6 +37,45 @@ def decisive_for_key(policy: dict, events: list[Event], horizon):
                 return "violated", [e]
         return "pending", []
 
+    if op == "once":
+        for e in events:
+            if e.payload.get("status") == policy["good"]:
+                return "satisfied", [e]
+        return "pending", []
+
+    if op == "historically":
+        for e in events:
+            if e.payload.get("status") != policy["phi"]:
+                return "violated", [e]
+        return "pending", []
+
+    if op == "previously":
+        prev_phi = False
+        prev_ev = None
+        for e in events:
+            if e.payload.get("status") == policy["trigger"]:
+                return ("satisfied", [prev_ev, e]) if prev_phi else ("violated", [e])
+            prev_ev = e
+            prev_phi = e.payload.get("status") == policy["prior"]
+        return "pending", []
+
+    if op == "since":
+        s = False
+        started = False
+        anchor = None
+        for e in events:
+            psi = e.payload.get("status") == policy["psi"]
+            phi = e.payload.get("status") == policy["phi"]
+            new_s = psi or (phi and s)
+            if psi:
+                anchor = e
+            if new_s and not started:
+                started = True
+            if started and s and not new_s:
+                return "violated", [anchor, e]
+            s = new_s
+        return "pending", []
+
     if op == "before":
         prior_ev = None
         for e in events:
@@ -188,7 +227,8 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                 st = inst.get(k)
                 if st is None:
                     st = {"settled": False, "seen_prior": False, "armed": False,
-                          "deadline": None, "last_activity": now, "ever_pending": False}
+                          "deadline": None, "last_activity": now, "ever_pending": False,
+                          "prev_phi": False, "since_s": False, "since_started": False}
                     inst[k] = st
                 st["last_activity"] = now
                 produced = False
@@ -199,6 +239,32 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                             verdicts.append((k, "violated"))
                             st["settled"] = True
                             produced = True
+                    elif op == "once":
+                        if s == policy["good"]:
+                            verdicts.append((k, "satisfied"))
+                            st["settled"] = True
+                            produced = True
+                    elif op == "historically":
+                        if s != policy["phi"]:
+                            verdicts.append((k, "violated"))
+                            st["settled"] = True
+                            produced = True
+                    elif op == "previously":
+                        if s == policy["trigger"]:
+                            verdicts.append((k, "satisfied" if st["prev_phi"] else "violated"))
+                            st["settled"] = True
+                            produced = True
+                        else:
+                            st["prev_phi"] = s == policy["prior"]
+                    elif op == "since":
+                        new_s = (s == policy["psi"]) or (s == policy["phi"] and st["since_s"])
+                        if new_s and not st["since_started"]:
+                            st["since_started"] = True
+                        if st["since_started"] and st["since_s"] and not new_s:
+                            verdicts.append((k, "violated"))
+                            st["settled"] = True
+                            produced = True
+                        st["since_s"] = new_s
                     elif op == "before":
                         if s == policy["prior"]:
                             st["seen_prior"] = True
@@ -223,10 +289,13 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                 st = inst.pop(k)
                 retired.add(k)
                 if not st["settled"]:
-                    if op == "never":
-                        verdicts.append((k, "satisfied"))
+                    if op in ("never", "historically", "since"):
+                        verdicts.append((k, "satisfied"))  # safety held to end of life
+                    elif op == "once":
+                        verdicts.append((k, "violated"))    # existential never occurred
                     elif op == "within" and st["armed"]:
                         verdicts.append((k, "violated"))
+                    # before, previously (triggered but untriggered): no terminal verdict
 
     for k, st in inst.items():
         if not st["settled"]:
@@ -241,6 +310,36 @@ def _verdict(policy: dict, events: list[Event], horizon) -> str:
     if op == "never":
         bad = policy["bad"]
         return "violated" if any(_status(e) == bad for e in events) else "pending"
+
+    if op == "once":
+        good = policy["good"]
+        return "satisfied" if any(_status(e) == good for e in events) else "pending"
+
+    if op == "historically":
+        phi = policy["phi"]
+        return "violated" if any(_status(e) != phi for e in events) else "pending"
+
+    if op == "previously":
+        prior, trigger = policy["prior"], policy["trigger"]
+        prev_phi = False
+        for e in events:
+            if _status(e) == trigger:
+                return "satisfied" if prev_phi else "violated"
+            prev_phi = _status(e) == prior
+        return "pending"
+
+    if op == "since":
+        phi, psi = policy["phi"], policy["psi"]
+        s = False
+        started = False
+        for e in events:
+            new_s = (_status(e) == psi) or (_status(e) == phi and s)
+            if new_s and not started:
+                started = True
+            if started and s and not new_s:
+                return "violated"
+            s = new_s
+        return "pending"
 
     if op == "before":
         prior, trigger = policy["prior"], policy["trigger"]

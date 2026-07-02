@@ -96,6 +96,84 @@ is event time and event time is a single clock advanced by every event, so a
 clock past it. This is intentional — a real-time deadline in event time is a
 statement about how far time has advanced, which is global.
 
+## Past-time LTL fragment: once, historically, previously, since
+
+These four operators extend the fragment with the standard past-time LTL truth
+values. Each carries a constant-size recurrence (one or two booleans) and no
+lookback, so it fits the bounded-state monitor model. Predicates are
+event-occurrence predicates (`phi(e)` holds iff event `e` matches). For key `k`,
+over its admitted events in canonical order, each formula's past-time truth value
+updates by the recurrence below; the three-valued settle-once verdict is then
+mapped as stated.
+
+### once (existential)
+
+Authorable form: `Then <predicate> has happened` (self-contained, no `When`).
+
+Recurrence: one boolean `o`, init false; on each event `o := o or phi(e)`.
+
+Verdict: **pending** while `o` is false; **satisfied** the moment `o` first becomes
+true (settle); **violated** at a terminal event if it never became true.
+
+### historically (universal)
+
+Authorable form: `Then <predicate> always holds` (self-contained, no `When`).
+
+Recurrence: one boolean `h`, init true; on each event `h := h and phi(e)`.
+
+Verdict: **pending** while `h` is true; **violated** the moment `h` first becomes
+false (settle); **satisfied** at a terminal event if it never became false.
+
+**Decision 1 — the `historically` reading.** Over event-occurrence predicates,
+`historically(phi)` literally means *every event so far has been a phi event*. This
+is the exact logical dual of `never`: `historically(phi) = never(not phi)`, and it
+settles `violated` on the first event that is not a phi event. It is offered mainly
+for authoring symmetry (a universal companion to `never`'s safety and `once`'s
+existence). It is kept, not dropped, because its meaning is stated cleanly and its
+oracle is the dual of `never`'s; authors should read it as "every event for this
+entity is a phi event," which is narrow but coherent.
+
+### previously (triggered)
+
+Authorable form: `When <trigger> / Then <predicate> previously`. The
+immediate-predecessor companion to `before` (any-predecessor).
+
+Recurrence: one boolean `p_prev`, init false; the value *at* event `e` is `p_prev`
+as it stood before `e` (i.e. `phi` of the immediately preceding event), then
+`p_prev := phi(e)`.
+
+Verdict: **pending** until the trigger occurs; at the trigger event, **satisfied**
+if the immediately preceding event held `phi`, else **violated**. (If the trigger
+is the first event, there is no preceding event, so it is violated.) Like `before`,
+an untriggered instance yields no terminal verdict.
+
+### since (safety)
+
+Authorable form: `Then <phi> since <psi>` (self-contained, no `When`); binding is
+`phi since psi` — `phi` has held since `psi`.
+
+Recurrence: one boolean `s`, init false; on each event `s := psi(e) or (phi(e) and
+s)`. (`psi` held at some past point and `phi` has held at every point since.)
+
+**Decision 2 — the `since` verdict mapping.** Two readings exist:
+(a) *existential-established*: satisfied the moment `s` first becomes true; but `s`
+becomes true exactly when `psi` first occurs (regardless of `phi`), so this
+degenerates to "psi has occurred" and ignores `phi`. (b) *safety-maintained*: once
+`psi` occurs, `phi` must continue to hold at every subsequent event; a violation is
+the concrete point where `phi` fails after `psi` with no re-anchor. **We choose (b),
+safety-maintained**, because it is the useful runtime reading and reports a concrete
+safety breach the way `never`, `before`, and `within` do; (a) is degenerate.
+
+Verdict under (b): **pending** until settled; **violated** the first event where the
+since-chain breaks — `s` was true and becomes false, i.e. `phi` failed after `psi`
+without `psi` re-occurring (settle); **satisfied** at a terminal event if it never
+broke, including the vacuous case where `psi` never occurred (no obligation was ever
+activated, so nothing was violated).
+
+All four are decided over the admitted events in canonical order, exactly like the
+existing operators, so reordering invariance, late admission, and the terminal/GC
+interaction carry over unchanged.
+
 ## The reordering contract (the correctness property)
 
 The verdict for a set of events depends only on their **canonical order**, never

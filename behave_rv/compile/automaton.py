@@ -4,12 +4,10 @@ A :class:`Policy` is the compiled, shardable unit the engine runs: a correlation
 key, the event types it cares about (for dispatch indexing), and a factory that
 mints a fresh :class:`Monitor` per distinct key value.
 
-Two operators are implemented for v1:
-
-* ``never`` -- a safety property. Violated the moment a "bad" event matches;
-  otherwise silent. No deadline.
-* ``within`` -- a bounded-response property. A trigger arms a deadline; a
-  response before it satisfies, the deadline passing without one violates.
+Operators implemented: the safety/response set (``never``, ``before``, ``within``)
+and the past-time LTL fragment (``once``, ``historically``, ``previously``,
+``since``). Each is a fixed-size-state :class:`Monitor` subclass; the engine drives
+them all through the same interface.
 
 Monitors are pure: they read the event and bounded instance state and return a
 verdict status or ``None``. They never mutate the outside world.
@@ -169,6 +167,148 @@ class BeforeMonitor(Monitor):
         return [e for e in (self._prior_event, self.trigger_event) if e is not None]
 
 
+class OnceMonitor(Monitor):
+    """once(phi): phi has held at some past-or-present point. Existential.
+
+    State: implicit in `settled`. Satisfied the moment phi first holds; pending
+    until then; violated at a terminal event if it never held.
+    """
+
+    def __init__(self, good: Predicate) -> None:
+        self.good = good
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if self.good(event):
+            self.settled = True
+            self.trigger_event = event
+            return "satisfied"
+        return None
+
+    def on_terminal(self) -> Optional[str]:
+        if self.settled:
+            return None
+        self.settled = True
+        return "violated"
+
+    def deciding_events(self) -> list[Event]:
+        return [self.trigger_event] if self.trigger_event is not None else []
+
+
+class HistoricallyMonitor(Monitor):
+    """historically(phi): phi has held at every point so far. Universal; the dual
+    of never (over occurrence predicates, every event has been a phi event).
+
+    State: implicit in `settled`. Pending while it holds; violated the first event
+    where phi fails; satisfied at a terminal event if it never failed.
+    """
+
+    def __init__(self, phi: Predicate) -> None:
+        self.phi = phi
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if not self.phi(event):
+            self.settled = True
+            self.trigger_event = event
+            return "violated"
+        return None
+
+    def on_terminal(self) -> Optional[str]:
+        if self.settled:
+            return None
+        self.settled = True
+        return "satisfied"
+
+    def deciding_events(self) -> list[Event]:
+        return [self.trigger_event] if self.trigger_event is not None else []
+
+
+class PreviouslyMonitor(Monitor):
+    """previously(phi) at a trigger: phi held at the event immediately before the
+    trigger for this entity. Triggered (When + Then), the immediate-predecessor
+    companion to before (any-predecessor).
+
+    State: `_prev_phi` (did phi hold at the last event) and `_prev_event`. Pending
+    until the trigger; then satisfied if the immediately preceding event held phi,
+    else violated.
+    """
+
+    def __init__(self, prior: Predicate, trigger: Predicate) -> None:
+        self.prior = prior
+        self.trigger = trigger
+        self._prev_phi = False
+        self._prev_event: Optional[Event] = None
+        self._deciding_prior: Optional[Event] = None
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if self.trigger(event):
+            self.settled = True
+            self.trigger_event = event
+            if self._prev_phi:
+                self._deciding_prior = self._prev_event
+                return "satisfied"
+            self._deciding_prior = None
+            return "violated"
+        # not the trigger: remember whether phi held here, for the next event's "previous"
+        self._prev_phi = self.prior(event)
+        self._prev_event = event
+        return None
+
+    def deciding_events(self) -> list[Event]:
+        return [e for e in (self._deciding_prior, self.trigger_event) if e is not None]
+
+
+class SinceMonitor(Monitor):
+    """since(phi, psi) [safety reading]: after psi occurs, phi must hold at every
+    event thereafter (until psi re-occurs). Self-contained.
+
+    State: `_s` (the since-recurrence bool) and `_started`, plus `_anchor` (the
+    last psi, for the explanation). Pending until settled; violated the first event
+    where the chain breaks (phi fails after psi with no re-anchor); satisfied at a
+    terminal event if never broken (including the vacuous case psi never occurred).
+    """
+
+    def __init__(self, phi: Predicate, psi: Predicate) -> None:
+        self.phi = phi
+        self.psi = psi
+        self._s = False
+        self._started = False
+        self._anchor: Optional[Event] = None
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        psi_now = self.psi(event)
+        phi_now = self.phi(event)
+        new_s = psi_now or (phi_now and self._s)
+        if psi_now:
+            self._anchor = event
+        if new_s and not self._started:
+            self._started = True
+        if self._started and self._s and not new_s:
+            # phi failed after psi with no re-anchor: the since-chain broke
+            self.settled = True
+            self.trigger_event = event
+            self._s = new_s
+            return "violated"
+        self._s = new_s
+        return None
+
+    def on_terminal(self) -> Optional[str]:
+        if self.settled:
+            return None
+        self.settled = True
+        return "satisfied"
+
+    def deciding_events(self) -> list[Event]:
+        return [e for e in (self._anchor, self.trigger_event) if e is not None]
+
+
 @dataclass(frozen=True)
 class Policy:
     policy_id: str
@@ -227,3 +367,23 @@ def before(
         event_types=frozenset(event_types),
         monitor_factory=lambda: BeforeMonitor(prior, trigger),
     )
+
+
+def once(policy_id, *, correlation_key, event_types, good) -> Policy:
+    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
+                  lambda: OnceMonitor(good))
+
+
+def historically(policy_id, *, correlation_key, event_types, phi) -> Policy:
+    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
+                  lambda: HistoricallyMonitor(phi))
+
+
+def previously(policy_id, *, correlation_key, event_types, prior, trigger) -> Policy:
+    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
+                  lambda: PreviouslyMonitor(prior, trigger))
+
+
+def since(policy_id, *, correlation_key, event_types, phi, psi) -> Policy:
+    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
+                  lambda: SinceMonitor(phi, psi))

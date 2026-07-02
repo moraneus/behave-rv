@@ -36,9 +36,13 @@ from typing import Optional
 from behave_rv.catalog.registry import Resolution, StepRegistry
 from behave_rv.compile.automaton import (
     BeforeMonitor,
+    HistoricallyMonitor,
     Monitor,
     NeverMonitor,
+    OnceMonitor,
     Policy,
+    PreviouslyMonitor,
+    SinceMonitor,
     WithinMonitor,
 )
 from behave_rv.compile.parser_bridge import parse_feature
@@ -50,6 +54,13 @@ Predicate = Callable[[Event], bool]
 _WITHIN = re.compile(r'^(?P<resp>.*?)\s+within\s+"?(?P<secs>\d+(?:\.\d+)?)"?\s+seconds?\s*$')
 _BEFORE = re.compile(r"^(?P<prior>.*?)\s+before\s*$")
 _NEVER = re.compile(r"^(?P<pred>.*?)\s+never\s+happens\s*$")
+_ONCE = re.compile(r"^(?P<pred>.*?)\s+has\s+happened\s*$")
+_HISTORICALLY = re.compile(r"^(?P<pred>.*?)\s+always\s+holds\s*$")
+_PREVIOUSLY = re.compile(r"^(?P<pred>.*?)\s+previously\s*$")
+_SINCE = re.compile(r"^(?P<phi>.*?)\s+since\s+(?P<psi>.*)$")
+
+# operators whose Then predicate(s) need no When trigger
+_SELF_CONTAINED = {"never", "once", "historically", "since"}
 
 
 class CompileError(Exception):
@@ -85,34 +96,30 @@ def compile_scenario(
     observed_event_types: Optional[set[str]] = None,
 ) -> Policy:
     when, then = _split_steps(scenario)
-    operator, operand_res, seconds = _parse_obligation(then[0].name, registry)
+    operator, operands, seconds = _parse_obligation(then[0].name, registry)
 
-    if operator == "never":
-        # never is self-contained: the Then predicate itself is the forbidden event.
+    if operator in _SELF_CONTAINED:
+        # never/once/historically/since are self-contained: the Then predicate(s)
+        # are the whole property, no When trigger.
         if when:
             raise CompileError(
-                f"a 'never' policy is self-contained and must not have a When step "
-                f"({when[0].name!r}). 'when X, then Y never happens' is a scoped form "
-                "outside the current fragment; write 'Then <predicate> never happens'."
+                f"a '{operator}' policy is self-contained and must not have a When "
+                f"step ({when[0].name!r}); write the property as a single Then."
             )
-        used = [operand_res]
-        factory = _never_factory(_predicate(operand_res))
+        trigger_res = None
+        used = list(operands)
     else:
         if len(when) != 1:
             raise CompileError(
                 f"a v1 '{operator}' policy needs exactly one When step, found {len(when)}"
             )
         trigger_res = _resolve_one(registry, when[0].name, "When")
-        trigger_pred = _predicate(trigger_res)
-        used = [trigger_res, operand_res]
-        if operator == "within":
-            factory = _within_factory(trigger_pred, _predicate(operand_res), seconds)
-        else:  # before
-            factory = _before_factory(_predicate(operand_res), trigger_pred)
+        used = [trigger_res, *operands]
 
     correlation_key = _single_key(used, scenario)
     event_types = frozenset(r.signature.event_type for r in used)
     _warn_if_uncheckable(scenario, used, observed_event_types)
+    factory = _build_factory(operator, trigger_res, operands, seconds)
 
     return Policy(
         policy_id=scenario.name,
@@ -147,26 +154,43 @@ def _split_steps(scenario):
 
 
 def _parse_obligation(text, registry):
-    """Return (operator, operand_resolution, seconds_or_None). The operand is the
-    registered predicate the operator refers to (the forbidden event for never)."""
+    """Return (operator, operands_tuple, seconds_or_None).
+
+    operands is the tuple of registered predicates the operator refers to (one for
+    most, two for since: (phi, psi)). Checked longest/most-specific suffix first.
+    """
+    def one(pred_text, where):
+        return (_resolve_one(registry, pred_text.strip(), where),)
+
     m = _NEVER.match(text)
     if m:
-        operand = _resolve_one(registry, m.group("pred").strip(), "never-predicate")
-        return "never", operand, None
-
+        return "never", one(m.group("pred"), "never-predicate"), None
+    m = _ONCE.match(text)
+    if m:
+        return "once", one(m.group("pred"), "once-predicate"), None
+    m = _HISTORICALLY.match(text)
+    if m:
+        return "historically", one(m.group("pred"), "historically-predicate"), None
+    m = _SINCE.match(text)
+    if m:
+        phi = _resolve_one(registry, m.group("phi").strip(), "since-phi")
+        psi = _resolve_one(registry, m.group("psi").strip(), "since-psi")
+        return "since", (phi, psi), None
+    m = _PREVIOUSLY.match(text)
+    if m:
+        return "previously", one(m.group("pred"), "previously-condition"), None
     m = _WITHIN.match(text)
     if m:
-        operand = _resolve_one(registry, m.group("resp").strip(), "within-response")
-        return "within", operand, float(m.group("secs"))
-
+        return "within", one(m.group("resp"), "within-response"), float(m.group("secs"))
     m = _BEFORE.match(text)
     if m:
-        operand = _resolve_one(registry, m.group("prior").strip(), "before-condition")
-        return "before", operand, None
+        return "before", one(m.group("prior"), "before-condition"), None
 
     raise CompileError(
         f"unrecognized temporal obligation: {text!r}. Supported forms: "
-        "'<step> never happens', '<step> within \"<n>\" seconds', '<step> before'."
+        "'<step> never happens', '<step> has happened', '<step> always holds', "
+        "'<step> previously', '<step> since <step>', "
+        "'<step> within \"<n>\" seconds', '<step> before'."
     )
 
 
@@ -217,13 +241,19 @@ def _single_key(resolutions: list[Resolution], scenario) -> tuple[str, ...]:
 # -- monitor factories (kept tiny so closures don't capture loop vars) -------
 
 
-def _never_factory(bad: Predicate) -> Callable[[], Monitor]:
-    return lambda: NeverMonitor(bad)
-
-
-def _within_factory(trigger: Predicate, response: Predicate, seconds: float):
-    return lambda: WithinMonitor(trigger, response, seconds)
-
-
-def _before_factory(prior: Predicate, trigger: Predicate):
-    return lambda: BeforeMonitor(prior, trigger)
+def _build_factory(operator, trigger_res, operands, seconds) -> Callable[[], Monitor]:
+    """Map (operator, resolved predicates) to a fresh-monitor factory. This is the
+    only per-operator wiring the engine needs; the loop drives every monitor
+    through the same Monitor interface."""
+    p = [_predicate(r) for r in operands]
+    t = _predicate(trigger_res) if trigger_res is not None else None
+    factories = {
+        "never": lambda: NeverMonitor(p[0]),
+        "once": lambda: OnceMonitor(p[0]),
+        "historically": lambda: HistoricallyMonitor(p[0]),
+        "since": lambda: SinceMonitor(p[0], p[1]),      # phi since psi
+        "within": lambda: WithinMonitor(t, p[0], seconds),
+        "before": lambda: BeforeMonitor(p[0], t),        # <prior> before, When=trigger
+        "previously": lambda: PreviouslyMonitor(p[0], t),  # <prior> previously, When=trigger
+    }
+    return factories[operator]
