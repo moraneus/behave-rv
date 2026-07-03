@@ -70,12 +70,29 @@ class Engine:
         self.observed_types: set[str] = set()
         self.retired_keys: list[tuple[str, ...]] = []
         self.reclaimed_keys: list[tuple[str, ...]] = []
+        self.verdicts_delivered = 0
+        self.sink_errors = 0
+        self.first_sink_error: Optional[Exception] = None
 
-    def run(self, source: _Source, *, emit_pending: bool = False) -> list[Verdict]:
+    def run(
+        self,
+        source: _Source,
+        *,
+        emit_pending: bool = False,
+        sink=None,
+    ) -> list[Verdict]:
         """Run the loop to exhaustion over ``source`` and collect verdicts.
 
         With ``emit_pending`` (useful for replay), every instance still open when
         the recorded stream ends is reported as a three-valued ``pending`` verdict.
+
+        With ``sink`` (a callable, or an object with ``emit``), every verdict is
+        delivered the moment it is decided, before the next event is processed,
+        in the same deterministic order the batch list would have. A sink-supplied
+        run does NOT also accumulate the list (the memory point of a sink) and
+        returns []; ``engine.verdicts_delivered`` counts deliveries. A sink that
+        raises is recorded (``sink_errors`` / ``first_sink_error``) and evaluation
+        continues -- a broken alert channel must not kill the monitor.
         """
         instances: dict[InstanceId, Instance] = {}
         deadlines = TimerQueue()
@@ -87,6 +104,23 @@ class Engine:
         self.observed_types = set()
         self.retired_keys = []
         self.reclaimed_keys = []
+        self.verdicts_delivered = 0
+        self.sink_errors = 0
+        self.first_sink_error = None
+
+        if sink is None:
+            deliver = verdicts.append
+        else:
+            emitfn = sink.emit if hasattr(sink, "emit") else sink
+
+            def deliver(verdict: Verdict) -> None:
+                self.verdicts_delivered += 1
+                try:
+                    emitfn(verdict)
+                except Exception as exc:  # a failing sink must not stop evaluation
+                    self.sink_errors += 1
+                    if self.first_sink_error is None:
+                        self.first_sink_error = exc
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
         stream = self._ordered(source, buffer) if buffer is not None else source.events()
@@ -94,7 +128,7 @@ class Engine:
         for event in stream:
             now = event.event_time
             self.observed_types.add(event.type)  # liveness harvest: this type was seen
-            self._fire_due_deadlines(now, instances, deadlines, verdicts)
+            self._fire_due_deadlines(now, instances, deadlines, deliver)
             self._reclaim_quiescent(now, instances, ttl_timers)
 
             for policy in self._dispatcher.candidates(event):
@@ -105,12 +139,12 @@ class Engine:
                 instance.witness(event)
                 status = instance.monitor.on_event(event)
                 if status is not None:
-                    verdicts.append(self._verdict(instance, status, event, now))
+                    deliver(self._verdict(instance, status, event, now))
                 else:
                     self._reschedule(instance, instances, deadlines, ttl_timers)
 
             if event.type in self._terminal:
-                self._retire_entity(event, instances, verdicts)
+                self._retire_entity(event, instances, deliver)
 
         if buffer is not None:
             self.dropped_late = list(buffer.late)
@@ -119,7 +153,7 @@ class Engine:
         if emit_pending:
             for instance in instances.values():
                 if not instance.monitor.settled:
-                    verdicts.append(
+                    deliver(
                         self._verdict(
                             instance,
                             "pending",
@@ -181,7 +215,7 @@ class Engine:
         now: float,
         instances: dict[InstanceId, Instance],
         deadlines: TimerQueue,
-        verdicts: list[Verdict],
+        deliver,
     ) -> None:
         for when, instance_id in deadlines.due(now):
             instance = instances.get(instance_id)
@@ -189,7 +223,7 @@ class Engine:
                 continue
             status = instance.monitor.on_timeout(when)
             if status is not None:
-                verdicts.append(
+                deliver(
                     self._verdict(instance, status, instance.monitor.trigger_event, when)
                 )
 
@@ -209,7 +243,7 @@ class Engine:
                 self.reclaimed_keys.append(instance_id[1])
 
     def _retire_entity(
-        self, event: Event, instances: dict[InstanceId, Instance], verdicts: list[Verdict]
+        self, event: Event, instances: dict[InstanceId, Instance], deliver
     ) -> None:
         for policy in self._policies.values():
             key = Dispatcher.key_of(policy, event)
@@ -221,7 +255,7 @@ class Engine:
             self.retired_keys.append(key)
             status = instance.monitor.on_terminal()
             if status is not None:
-                verdicts.append(
+                deliver(
                     self._verdict(instance, status, instance.monitor.trigger_event, event.event_time)
                 )
 

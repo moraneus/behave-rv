@@ -337,6 +337,29 @@ compile error: scenario 'an order may only be paid after the customer is gold' r
 
 The process exits with a non zero status in this case.
 
+## Live monitoring
+
+For a running service, use the subscription source and a sink. The service
+pushes events from its own thread; the engine blocks while the stream is quiet
+and delivers each verdict the moment it is decided. `close()` ends the stream,
+flushing the reorder buffer so armed deadlines the horizon has passed resolve
+instead of being lost.
+
+```python
+from behave_rv.engine.loop import Engine
+from behave_rv.events.sources.subscription import QueueSource
+from behave_rv.verdict.sinks import PrintSink
+
+source = QueueSource()            # service calls source.push(event) as it runs
+engine = Engine(policies, terminal_event_types={"order.done"})
+engine.run(source, sink=PrintSink(policies))   # violations print as they happen
+```
+
+With a sink supplied, `run()` does not also accumulate the verdict list (it
+returns an empty list; `engine.verdicts_delivered` counts deliveries), so a long
+run's verdicts live on disk or in your handler rather than in memory. A sink
+that raises is recorded on `engine.sink_errors` and evaluation continues.
+
 ## How stability across code change works
 
 This is the distinctive feature. When the code that exposes predicates changes,
@@ -403,11 +426,12 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
 - **Liveness granularity.** The `observed` flag and the liveness report track event
   types, not specific field values. A policy that depends on a value which never
   appears while its event type does appear is not flagged.
-- **Robustness items not yet built.** Verdicts are collected and returned rather
-  than streamed to a sink, timer heaps are not purged, and the engine loop is single
-  threaded rather than sharded per key. These are known and deferred.
-- **Event sources.** In process and replay sources are implemented. The
-  OpenTelemetry and structured log sources are stubs.
+- **Robustness items not yet built.** Timer heaps are not purged, and the engine
+  loop is single threaded rather than sharded per key. `within` deadlines fire on
+  event time only: with no further events, a deadline waits for the next event or
+  for the source to close. These are known and deferred.
+- **Event sources.** In process, replay, and subscription (queue) sources are
+  implemented. The OpenTelemetry and structured log sources are stubs.
 
 ## License
 
