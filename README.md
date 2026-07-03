@@ -107,6 +107,7 @@ self-contained and takes no `When` (its own predicate is the forbidden event).
 | Operator | Authorable phrasing | Meaning (see `SEMANTICS.md`) |
 | --- | --- | --- |
 | `never` | `Then <predicate> never happens` (no `When`) | The named event must never occur for this entity. Violated the first time it does; otherwise pending. |
+| scoped `never` | `Given <predicate>` (latching) or `Given <predicate> until <predicate>` (interval), then `Then <predicate> never happens` | The obligation is active only while the `Given` scope is open. The two-line form latches (once open, open forever); the `until` form closes the scope at the named event and may reopen. Violated at the first forbidden event inside an open scope; satisfied at a terminal event otherwise, including when the scope never opened. |
 | `once` | `Then <predicate> has happened` (no `When`) | The named event must occur at some point (existential). Satisfied the first time it does; pending until then; violated at a terminal event if it never did. |
 | `historically` | `Then <predicate> always holds` (no `When`) | Every event for this entity must be a `<predicate>` event (universal, the dual of `never`). Violated the first event that is not; pending until then; satisfied at a terminal event if none. |
 | `previously` | `Then <predicate> previously` | The event immediately before the `When` trigger must have been a `<predicate>` event (immediate predecessor, companion to `before`). Satisfied or violated at the trigger; pending until it occurs. |
@@ -121,6 +122,11 @@ Small examples:
     Then an order is "audited" has happened
     Then an order is "valid" always holds
     Then an order is "paid" since an order is "authorized"
+```
+
+```gherkin
+    Given a user is "locked" until a user is "unlocked"
+    Then a user is "action" never happens
 ```
 
 ```gherkin
@@ -152,7 +158,8 @@ that will not run.
 
 | Construct | What happens |
 | --- | --- |
-| `Given` scope steps | Refused: `Given/scope steps are recognized but not yet wired into the v1 operators: ... Express the property with When/Then for now.` |
+| `Given` on operators other than `never` | Refused: `Given/scope steps are only wired for 'never' so far; other operators do not take a scope yet: ... Express the property with When/Then for now.` |
+| `When` with `never` | Refused: `a 'never' policy takes a Given scope, not a When trigger (...). To restrict the obligation to a scope, write 'Given <predicate>' (or 'Given <predicate> until <predicate>') before 'Then <predicate> never happens'.` |
 | `And` / `But` multi step scenarios | Refused: `a v1 policy needs exactly one Then step, found N`, or `a v1 '<operator>' policy needs exactly one When step, found N`. |
 | A scoped self-contained operator with a `When` (for example `never`, `once`, `historically`, `since`) | Refused: `a '<operator>' policy is self-contained and must not have a When step (...); write the property as a single Then.` |
 | Any unrecognized `Then` obligation | Refused: `unrecognized temporal obligation: ... Supported forms: '<step> never happens', '<step> has happened', '<step> always holds', '<step> previously', '<step> since <step>', '<step> within "<n>" seconds', '<step> before'.` |
@@ -412,14 +419,15 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
 - **Single key fragment.** One correlation key per scenario (a composite tuple is
   allowed). Policies that quantify over two independent entities are refused at
   compile time.
-- **Operator set.** `never`, `before`, `within`, and the past-time LTL fragment
-  `once`, `historically`, `previously`, and `since` are implemented. Future-time
-  liveness beyond the bounded `within` is deliberately out of the monitorable
-  fragment (an unbounded future property has no defined verdict on a finite prefix).
-- **Grammar subset.** Exactly one `Then` per scenario, plus one `When` for `before`
-  and `within` (`never` is self-contained and takes no `When`). `Given` scope steps,
-  `And` / `But` multi step scenarios, and a scoped `never` with a `When` are
-  recognized but refused.
+- **Operator set.** `never` (plain and `Given`-scoped, latching or `until`),
+  `before`, `within`, and the past-time LTL fragment `once`, `historically`,
+  `previously`, and `since` are implemented. Future-time liveness beyond the
+  bounded `within` is deliberately out of the monitorable fragment (an unbounded
+  future property has no defined verdict on a finite prefix).
+- **Grammar subset.** Exactly one `Then` per scenario, plus one `When` for
+  `before`, `within`, and `previously`, and at most one `Given` (wired for
+  `never` only). `Given` on the other operators, `When` with `never`, and
+  `And` / `But` multi step scenarios are recognized but refused.
 - **Exposure API is a stub.** The design envisions a dedicated `@emits`, `@entity`,
   and `@terminal` exposure API. That module is currently a stub. The real
   monitorable taps today are the step decorators (`trigger`, `scope`, `obligation`).

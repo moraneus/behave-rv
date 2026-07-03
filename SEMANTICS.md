@@ -96,6 +96,55 @@ is event time and event time is a single clock advanced by every event, so a
 clock past it. This is intentional — a real-time deadline in event time is a
 statement about how far time has advanced, which is global.
 
+## Scoped never (the Given scope)
+
+`never(bad)` restricted to a scope opened by a `Given` predicate. Authorable
+forms:
+
+```gherkin
+    Given a user is "locked"
+    Then a user is "action" never happens
+
+    Given a user is "locked" until a user is "unlocked"
+    Then a user is "action" never happens
+```
+
+**The scope-lifetime decision.** Two coherent readings exist: (a) a *latching*
+scope — once the scope predicate holds it stays open forever for this entity —
+and (b) an *interval* scope that closes on some condition. We implement **both,
+explicitly**: the two-line form is latching, because a closing rule the author
+did not write must not be guessed; the `until` form names the closing predicate
+and gives the interval reading. The scope may open and close repeatedly; the
+obligation is active exactly inside open intervals. The motivating trial bug (a
+locked user acting on a stale token, in a program with no unlock event) is
+caught by the latching form alone; real lock/unlock cycles need `until`.
+
+**Verdict, in trace terms.** Per key, over its admitted events in canonical
+order, with scope state `open` (initially false):
+
+- On each event `e`, the scope **state update happens before the forbidden
+  check** (consistent with `before`'s same-event rule, where the prior is set
+  before the trigger is tested): if not `open` and `scope(e)` then `open :=
+  true` (recording `e` as the opening event); else if `open` and a closing
+  predicate exists and `close(e)` then `open := false`.
+- Then: **violated** iff `open` and `bad(e)` (settle; the deciding events are
+  the opening event of the current interval and `e`, deduped when one event is
+  both). Otherwise **pending** while the trace continues and **satisfied** at a
+  terminal event — including the vacuous case where the scope never opened.
+
+**Edge cases (defined and tested).** An event satisfying both the scope and the
+forbidden predicate opens the scope first and therefore violates. An event
+satisfying both the closing and the forbidden predicate closes the scope first
+and therefore does not violate. A forbidden event before the scope has ever
+opened does not violate. Closing and forbidden events at the same timestamp are
+distinct events ordered by the canonical tie-break and processed fully in that
+order, so the outcome is arrival-independent like everything else.
+
+State is two booleans plus one retained event (the current opening event, for
+the explanation) — within the bounded-monitor model. `Given` on the other
+operators remains unwired and is refused; `When` with `never` is refused
+(never takes a scope, not a trigger).
+
 ## Past-time LTL fragment: once, historically, previously, since
 
 These four operators extend the fragment with the standard past-time LTL truth

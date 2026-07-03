@@ -51,6 +51,11 @@ triples = st.lists(
 policies = st.one_of(
     st.builds(lambda b: {"operator": "never", "correlation_key": ("order_id",), "bad": b},
               st.sampled_from(STATUSES)),
+    st.builds(lambda sc, b, cl: {"operator": "scoped_never",
+                                 "correlation_key": ("order_id",),
+                                 "scope": sc, "bad": b, "close": cl},
+              st.sampled_from(STATUSES), st.sampled_from(STATUSES),
+              st.one_of(st.none(), st.sampled_from(STATUSES))),
     st.builds(lambda g: {"operator": "once", "correlation_key": ("order_id",), "good": g},
               st.sampled_from(STATUSES)),
     st.builds(lambda ph: {"operator": "historically", "correlation_key": ("order_id",),
@@ -76,6 +81,12 @@ def _feature(policy: dict) -> str:
     if op == "never":
         # never is self-contained: predicate-first Then, no When.
         return (f'Feature: p\n  Scenario: s\n'
+                f'    Then an order is "{policy["bad"]}" never happens\n')
+    if op == "scoped_never":
+        scope = f'an order is "{policy["scope"]}"'
+        if policy["close"] is not None:
+            scope += f' until an order is "{policy["close"]}"'
+        return (f'Feature: p\n  Scenario: s\n    Given {scope}\n'
                 f'    Then an order is "{policy["bad"]}" never happens\n')
     if op == "once":
         return (f'Feature: p\n  Scenario: s\n'

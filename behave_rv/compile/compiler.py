@@ -8,22 +8,25 @@ engine already runs (Phase 3).
 v1 policy grammar (one scenario = one policy). Every operator is predicate-first
 with a temporal suffix:
 
-    never  (self-contained, no When -- the Then predicate is the forbidden event):
+    never  (self-contained, no When -- the Then predicate is the forbidden event;
+    optionally scoped by a Given, latching or interval):
+        [Given <registered step> [until <registered step>]]
         Then <registered step> never happens
 
-    before / within  (a triggering When plus the obligation):
+    before / within / previously  (a triggering When plus the obligation):
         When <registered step>
         Then <registered step> before
         Then <registered step> within "<n>" seconds
+        Then <registered step> previously
 
 Each step is resolved against the catalog by stable step_id (so a rephrasing that
 maps to the same step_id still compiles). The correlation key is taken from the
-resolved steps; a scenario that needs more than one independent entity key is
-refused -- the v1 single-key fragment boundary.
+resolved steps (a Given scope must share the Then's key); a scenario that needs
+more than one independent entity key is refused -- the single-key fragment.
 
-Honestly unfinished in v1 (refused with a clear message rather than faked):
-Given/scope steps, and the scoped "when X, then Y never happens" form, are
-recognized but not wired.
+Honestly unfinished (refused with a clear message rather than faked): Given on
+operators other than never, and combining Given with a When (scoped triggered
+obligations).
 """
 
 from __future__ import annotations
@@ -42,6 +45,7 @@ from behave_rv.compile.automaton import (
     OnceMonitor,
     Policy,
     PreviouslyMonitor,
+    ScopedNeverMonitor,
     SinceMonitor,
     WithinMonitor,
 )
@@ -95,11 +99,31 @@ def compile_scenario(
     *,
     observed_event_types: Optional[set[str]] = None,
 ) -> Policy:
-    when, then = _split_steps(scenario)
+    given, when, then = _split_steps(scenario)
     operator, operands, seconds = _parse_obligation(then[0].name, registry)
 
-    if operator in _SELF_CONTAINED:
-        # never/once/historically/since are self-contained: the Then predicate(s)
+    if given and operator != "never":
+        raise CompileError(
+            "Given/scope steps are only wired for 'never' so far; other operators "
+            f"do not take a scope yet: {given[0].name!r}. Express the property "
+            "with When/Then for now."
+        )
+
+    scope_res = close_res = None
+    if operator == "never":
+        if when:
+            raise CompileError(
+                "a 'never' policy takes a Given scope, not a When trigger "
+                f"({when[0].name!r}). To restrict the obligation to a scope, write "
+                "'Given <predicate>' (or 'Given <predicate> until <predicate>') "
+                "before 'Then <predicate> never happens'."
+            )
+        if given:
+            scope_res, close_res = _parse_scope(given[0].name, registry)
+        trigger_res = None
+        used = list(operands) + [r for r in (scope_res, close_res) if r is not None]
+    elif operator in _SELF_CONTAINED:
+        # once/historically/since are self-contained: the Then predicate(s)
         # are the whole property, no When trigger.
         if when:
             raise CompileError(
@@ -119,7 +143,8 @@ def compile_scenario(
     correlation_key = _single_key(used, scenario)
     event_types = frozenset(r.signature.event_type for r in used)
     _warn_if_uncheckable(scenario, used, observed_event_types)
-    factory = _build_factory(operator, trigger_res, operands, seconds)
+    factory = _build_factory(operator, trigger_res, operands, seconds,
+                             scope_res=scope_res, close_res=close_res)
 
     return Policy(
         policy_id=scenario.name,
@@ -139,15 +164,25 @@ def _split_steps(scenario):
     when = [s for s in scenario.steps if s.step_type == "when"]
     then = [s for s in scenario.steps if s.step_type == "then"]
 
-    if given:
-        raise CompileError(
-            "Given/scope steps are recognized but not yet wired into the v1 "
-            f"operators: {given[0].name!r}. Express the property with When/Then for now."
-        )
+    if len(given) > 1:
+        raise CompileError(f"a policy takes at most one Given scope, found {len(given)}")
     if len(then) != 1:
         raise CompileError(f"a v1 policy needs exactly one Then step, found {len(then)}")
-    # the When count is checked per operator in compile_scenario (never takes none).
-    return when, then
+    # Given wiring and the When count are checked per operator in compile_scenario.
+    return given, when, then
+
+
+_UNTIL = re.compile(r"^(?P<scope>.*?)\s+until\s+(?P<close>.*)$")
+
+
+def _parse_scope(text, registry):
+    """Parse a Given line: '<predicate>' (latching) or '<predicate> until
+    <predicate>' (interval). Returns (scope_res, close_res_or_None)."""
+    m = _UNTIL.match(text)
+    if m:
+        return (_resolve_one(registry, m.group("scope").strip(), "Given-scope"),
+                _resolve_one(registry, m.group("close").strip(), "Given-until"))
+    return _resolve_one(registry, text.strip(), "Given-scope"), None
 
 
 # -- obligation parsing -----------------------------------------------------
@@ -188,7 +223,8 @@ def _parse_obligation(text, registry):
 
     raise CompileError(
         f"unrecognized temporal obligation: {text!r}. Supported forms: "
-        "'<step> never happens', '<step> has happened', '<step> always holds', "
+        "'<step> never happens' (optionally scoped by 'Given <step>' or "
+        "'Given <step> until <step>'), '<step> has happened', '<step> always holds', "
         "'<step> previously', '<step> since <step>', "
         "'<step> within \"<n>\" seconds', '<step> before'."
     )
@@ -241,12 +277,17 @@ def _single_key(resolutions: list[Resolution], scenario) -> tuple[str, ...]:
 # -- monitor factories (kept tiny so closures don't capture loop vars) -------
 
 
-def _build_factory(operator, trigger_res, operands, seconds) -> Callable[[], Monitor]:
+def _build_factory(operator, trigger_res, operands, seconds,
+                   scope_res=None, close_res=None) -> Callable[[], Monitor]:
     """Map (operator, resolved predicates) to a fresh-monitor factory. This is the
     only per-operator wiring the engine needs; the loop drives every monitor
     through the same Monitor interface."""
     p = [_predicate(r) for r in operands]
     t = _predicate(trigger_res) if trigger_res is not None else None
+    if operator == "never" and scope_res is not None:
+        sp = _predicate(scope_res)
+        cp = _predicate(close_res) if close_res is not None else None
+        return lambda: ScopedNeverMonitor(sp, p[0], cp)
     factories = {
         "never": lambda: NeverMonitor(p[0]),
         "once": lambda: OnceMonitor(p[0]),

@@ -37,6 +37,21 @@ def decisive_for_key(policy: dict, events: list[Event], horizon):
                 return "violated", [e]
         return "pending", []
 
+    if op == "scoped_never":
+        open_ = False
+        opening = None
+        for e in events:
+            s = e.payload.get("status")
+            if not open_ and s == policy["scope"]:
+                open_ = True
+                opening = e
+            elif open_ and policy.get("close") is not None and s == policy["close"]:
+                open_ = False
+                opening = None
+            if open_ and s == policy["bad"]:
+                return "violated", ([e] if opening is e else [opening, e])
+        return "pending", []
+
     if op == "once":
         for e in events:
             if e.payload.get("status") == policy["good"]:
@@ -228,7 +243,8 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                 if st is None:
                     st = {"settled": False, "seen_prior": False, "armed": False,
                           "deadline": None, "last_activity": now, "ever_pending": False,
-                          "prev_phi": False, "since_s": False, "since_started": False}
+                          "prev_phi": False, "since_s": False, "since_started": False,
+                          "sc_open": False}
                     inst[k] = st
                 st["last_activity"] = now
                 produced = False
@@ -236,6 +252,16 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                     s = _status(e)
                     if op == "never":
                         if s == policy["bad"]:
+                            verdicts.append((k, "violated"))
+                            st["settled"] = True
+                            produced = True
+                    elif op == "scoped_never":
+                        if not st["sc_open"] and s == policy["scope"]:
+                            st["sc_open"] = True
+                        elif st["sc_open"] and policy.get("close") is not None \
+                                and s == policy["close"]:
+                            st["sc_open"] = False
+                        if st["sc_open"] and s == policy["bad"]:
                             verdicts.append((k, "violated"))
                             st["settled"] = True
                             produced = True
@@ -289,7 +315,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                 st = inst.pop(k)
                 retired.add(k)
                 if not st["settled"]:
-                    if op in ("never", "historically", "since"):
+                    if op in ("never", "scoped_never", "historically", "since"):
                         verdicts.append((k, "satisfied"))  # safety held to end of life
                     elif op == "once":
                         verdicts.append((k, "violated"))    # existential never occurred
@@ -310,6 +336,19 @@ def _verdict(policy: dict, events: list[Event], horizon) -> str:
     if op == "never":
         bad = policy["bad"]
         return "violated" if any(_status(e) == bad for e in events) else "pending"
+
+    if op == "scoped_never":
+        # scope state updates BEFORE the forbidden check on the same event
+        open_ = False
+        for e in events:
+            s = _status(e)
+            if not open_ and s == policy["scope"]:
+                open_ = True
+            elif open_ and policy.get("close") is not None and s == policy["close"]:
+                open_ = False
+            if open_ and s == policy["bad"]:
+                return "violated"
+        return "pending"
 
     if op == "once":
         good = policy["good"]

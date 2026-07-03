@@ -102,14 +102,15 @@ Feature: no cancellation
     assert [v.verdict for v in run(policy, [order_ev("cancelled", 1.0)])] == ["violated"]
 
 
-def test_never_with_a_when_is_refused(reg):
+def test_never_with_a_when_is_refused_pointing_to_given(reg):
     feature = '''
 Feature: no cancellation
-  Scenario: scoped never is out of fragment
+  Scenario: scoped never wants a Given, not a When
     When an order is "placed"
     Then an order is "cancelled" never happens
 '''
-    with pytest.raises(CompileError, match="self-contained|must not have a When"):
+    # the refusal must point the user to the Given scope form
+    with pytest.raises(CompileError, match="Given <predicate>"):
         compile_feature(feature, reg)
 
 

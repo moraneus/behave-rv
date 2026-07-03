@@ -167,6 +167,64 @@ class BeforeMonitor(Monitor):
         return [e for e in (self._prior_event, self.trigger_event) if e is not None]
 
 
+class ScopedNeverMonitor(Monitor):
+    """never(bad) restricted to a Given scope.
+
+    The scope is closed initially, opens at an event satisfying ``scope_open``,
+    and -- when a ``scope_close`` predicate is given (the ``until`` form) --
+    closes at an event satisfying it, possibly reopening later. Without
+    ``scope_close`` the scope latches: once open, open forever.
+
+    On every event the scope STATE UPDATE happens before the forbidden check
+    (consistent with before's same-event rule: state precedes the test). So an
+    event that opens the scope and is itself forbidden violates; an event that
+    closes the scope and is itself forbidden does not.
+
+    State: two scalars (`_open`, `settled`) plus the opening event of the
+    current interval, kept for the explanation.
+    """
+
+    def __init__(self, scope_open: Predicate, bad: Predicate,
+                 scope_close: Optional[Predicate] = None) -> None:
+        self.scope_open = scope_open
+        self.bad = bad
+        self.scope_close = scope_close
+        self._open = False
+        self._opening_event: Optional[Event] = None
+
+    def on_event(self, event: Event) -> Optional[str]:
+        if self.settled:
+            return None
+        if not self._open and self.scope_open(event):
+            self._open = True
+            self._opening_event = event
+        elif self._open and self.scope_close is not None and self.scope_close(event):
+            self._open = False
+            self._opening_event = None
+        if self._open and self.bad(event):
+            self.settled = True
+            self.trigger_event = event
+            return "violated"
+        return None
+
+    def on_terminal(self) -> Optional[str]:
+        # Held for the entity's whole life -- including the vacuous case where
+        # the scope never opened.
+        if self.settled:
+            return None
+        self.settled = True
+        return "satisfied"
+
+    def deciding_events(self) -> list[Event]:
+        # The scope-opening event of the violated interval, then the forbidden
+        # event (deduped when one event did both).
+        if self.trigger_event is None:
+            return []
+        if self._opening_event is None or self._opening_event is self.trigger_event:
+            return [self.trigger_event]
+        return [self._opening_event, self.trigger_event]
+
+
 class OnceMonitor(Monitor):
     """once(phi): phi has held at some past-or-present point. Existential.
 
