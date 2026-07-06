@@ -24,6 +24,19 @@ from behave_rv.events.event import Event
 Predicate = Callable[[Event], bool]
 
 
+class PredicateError(Exception):
+    """A registered step's predicate raised while evaluating an event.
+
+    Carries the step_id so the engine can record which step is broken. The
+    engine treats the failed evaluation as "did not match" and continues.
+    """
+
+    def __init__(self, step_id: str, original: BaseException) -> None:
+        super().__init__(f"step {step_id!r} raised {original!r}")
+        self.step_id = step_id
+        self.original = original
+
+
 def _normalize_key(correlation_key: str | Iterable[str]) -> tuple[str, ...]:
     if isinstance(correlation_key, str):
         return (correlation_key,)

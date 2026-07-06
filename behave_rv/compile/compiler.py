@@ -44,6 +44,7 @@ from behave_rv.compile.automaton import (
     NeverMonitor,
     OnceMonitor,
     Policy,
+    PredicateError,
     PreviouslyMonitor,
     ScopedNeverMonitor,
     SinceMonitor,
@@ -271,8 +272,15 @@ def _resolve_one(registry: StepRegistry, text: str, where: str) -> Resolution:
 
 
 def _predicate(resolution: Resolution) -> Predicate:
-    func, params = resolution.func, resolution.params
-    return lambda event: bool(func(MatchContext(), event, **params))
+    func, params, step_id = resolution.func, resolution.params, resolution.step_id
+
+    def pred(event: Event) -> bool:
+        try:
+            return bool(func(MatchContext(), event, **params))
+        except Exception as exc:  # step author's bug: name the step, let the engine contain it
+            raise PredicateError(step_id, exc) from exc
+
+    return pred
 
 
 def _single_key(resolutions: list[Resolution], scenario) -> tuple[str, ...]:

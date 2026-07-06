@@ -246,6 +246,18 @@ property tests operate inside this regime.
 The first event in canonical order starts an instance. A key with no events yields
 no instance and no verdict. An empty trace yields no verdicts.
 
+## A raising predicate (spec decision)
+
+A step predicate that raises while evaluating an event **matches nothing for that
+event**: the evaluation is treated as false, the error is recorded on the engine
+(`predicate_errors`, `first_predicate_error`, and `predicate_error_sources` naming
+the policy and step_id), and evaluation continues. One broken predicate affects
+only its own policy's view of that event -- never another policy, another
+instance, or the engine's continuation. This mirrors the sink-failure policy:
+contain, record, continue. Caveat, stated rather than hidden: monitor state
+updates that happened before the raise within the same `on_event` call are kept
+(e.g. a scope that opened before a later predicate raised stays open).
+
 ## The late-event regime (admission)
 
 When the trace's event-time span exceeds the grace window, some events arrive

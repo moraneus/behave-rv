@@ -81,6 +81,9 @@ class Engine:
         self.verdicts_delivered = 0
         self.sink_errors = 0
         self.first_sink_error: Optional[Exception] = None
+        self.predicate_errors = 0
+        self.first_predicate_error: Optional[Exception] = None
+        self.predicate_error_sources: list[tuple[str, Optional[str]]] = []  # (policy_id, step_id)
 
     def run(
         self,
@@ -115,6 +118,9 @@ class Engine:
         self.verdicts_delivered = 0
         self.sink_errors = 0
         self.first_sink_error = None
+        self.predicate_errors = 0
+        self.first_predicate_error = None
+        self.predicate_error_sources = []
 
         if sink is None:
             deliver = verdicts.append
@@ -145,7 +151,18 @@ class Engine:
                     continue
                 instance = self._instance_for(policy, key, instances)
                 instance.witness(event)
-                status = instance.monitor.on_event(event)
+                try:
+                    status = instance.monitor.on_event(event)
+                except Exception as exc:
+                    # a broken predicate matches nothing; contain, record, continue
+                    # (mirrors the sink-failure policy: a step author's bug must not
+                    # kill the monitor or disturb any other policy or instance)
+                    self.predicate_errors += 1
+                    if self.first_predicate_error is None:
+                        self.first_predicate_error = exc
+                    self.predicate_error_sources.append(
+                        (policy.policy_id, getattr(exc, "step_id", None)))
+                    status = None
                 if status is not None:
                     deliver(self._verdict(instance, status, event, now))
                 else:
