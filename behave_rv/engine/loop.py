@@ -57,6 +57,14 @@ class Engine:
         quiescence_ttl: Optional[float] = None,
         grace: float = DEFAULT_GRACE,
     ) -> None:
+        policies = list(policies)
+        ids = [p.policy_id for p in policies]
+        duplicates = {i for i in ids if ids.count(i) > 1}
+        if duplicates:
+            raise ValueError(
+                f"duplicate policy_id(s) {sorted(duplicates)!r}: every policy needs a "
+                "unique id, or one policy would silently replace the other"
+            )
         self._policies = {p.policy_id: p for p in policies}
         self._dispatcher = Dispatcher(self._policies.values())
         self._terminal = frozenset(terminal_event_types)

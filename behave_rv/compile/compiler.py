@@ -87,10 +87,21 @@ def compile_feature(
     depends on a step whose event type has never been observed in that stream.
     """
     feature = parse_feature(text_or_feature) if isinstance(text_or_feature, str) else text_or_feature
-    return [
+    policies = [
         compile_scenario(scenario, registry, observed_event_types=observed_event_types)
         for scenario in feature.scenarios
     ]
+    seen: set[str] = set()
+    for policy in policies:
+        if policy.policy_id in seen:
+            raise CompileError(
+                f"duplicate scenario name {policy.policy_id!r} in feature "
+                f"{feature.name!r} ({feature.filename or '<string>'}): scenario names "
+                "are policy ids and must be unique, or one policy silently replaces "
+                "the other"
+            )
+        seen.add(policy.policy_id)
+    return policies
 
 
 def compile_scenario(
