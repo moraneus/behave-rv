@@ -43,10 +43,21 @@ def bindings_from_verdict(verdict: Verdict) -> dict[str, str]:
     return bindings
 
 
+def safe_value(value: Any) -> str:
+    """Render a monitored-system-controlled string safely: clean values pass
+    through unchanged; a value containing control characters (newlines, ANSI
+    escapes, ...) renders as its repr so it cannot spoof or mangle the output
+    an operator reads."""
+    text = str(value)
+    if any(ord(c) < 32 or ord(c) == 127 for c in text):
+        return repr(text)
+    return text
+
+
 def explain_verdict(verdict: Verdict, scenario: Any, failing_step_index: int) -> str:
     """The full counterexample: a header, the authored scenario with the failing
     step marked and values bound, and the witnessing trace with event times."""
-    entity = ", ".join(f"{k}={v}" for k, v in verdict.entity_key.items())
+    entity = ", ".join(f"{k}={safe_value(v)}" for k, v in verdict.entity_key.items())
     header = (
         f"POLICY {verdict.policy_id!r}  ENTITY {entity}  "
         f"VERDICT {verdict.verdict} @ t={verdict.at}"

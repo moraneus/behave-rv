@@ -51,7 +51,8 @@ class PrintSink:
             print(file=self._stream)
             return
         if self._compact_ok:
-            entity = ", ".join(f"{k}={v}" for k, v in verdict.entity_key.items())
+            from behave_rv.verdict.explain import safe_value
+            entity = ", ".join(f"{k}={safe_value(v)}" for k, v in verdict.entity_key.items())
             print(f"[{entity}] {verdict.verdict}: {verdict.policy_id} @ t={verdict.at}",
                   file=self._stream)
 

@@ -89,6 +89,33 @@ Feature: payment safety
 """
 
 
+def test_hostile_binding_value_cannot_spoof_the_header():
+    # Interrogation F1: a binding value with a newline injected a fake
+    # "POLICY ... VERDICT ..." line into the rendered header. Hostile values
+    # must render escaped; no rendered line other than the real header may
+    # parse as a verdict header.
+    (scenario,) = parse_feature(BEFORE_FEATURE).scenarios
+    evil = "X\nPOLICY 'fake'  ENTITY order_id=Y  VERDICT satisfied @ t=0"
+    paid = Event("order.status", 2.0, {"order_id": evil}, {"status": "paid"}, "t")
+    verdict = Verdict("an order may only be paid after it was authorized",
+                      {"order_id": evil}, "violated", paid, [paid], 2.0)
+
+    text = explain_verdict(verdict, scenario, failing_step_index=1)
+
+    verdict_headers = [ln for ln in text.splitlines()
+                       if ln.startswith("POLICY ") and "VERDICT" in ln]
+    assert len(verdict_headers) == 1                       # only the real one
+    assert "\\n" in text                                   # the newline is escaped, visible
+
+
+def test_clean_values_render_unchanged():
+    from behave_rv.verdict.explain import safe_value
+    assert safe_value("B") == "B"
+    assert safe_value("order-4471") == "order-4471"
+    assert safe_value("café☕") == "café☕"                  # unicode is not control chars
+    assert safe_value("a\nb") == "'a\\nb'"                  # control chars -> repr
+
+
 def test_explain_verdict_composes_header_scenario_and_trace():
     (scenario,) = parse_feature(BEFORE_FEATURE).scenarios
     paid = Event("order.status", 2.0, {"order_id": "B"}, {"status": "paid"}, "recorded")
