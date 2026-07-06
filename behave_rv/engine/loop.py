@@ -20,6 +20,7 @@ produces the same verdicts every time.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from math import isfinite
 from typing import Optional
 
 from behave_rv.compile.automaton import Policy
@@ -75,6 +76,8 @@ class Engine:
         self.reclaimed = 0
         self.late_events = 0
         self.dropped_late: list[Event] = []
+        self.invalid_events = 0
+        self.dropped_invalid: list[Event] = []
         self.observed_types: set[str] = set()
         self.retired_keys: list[tuple[str, ...]] = []
         self.reclaimed_keys: list[tuple[str, ...]] = []
@@ -112,6 +115,8 @@ class Engine:
         self.reclaimed = 0
         self.late_events = 0
         self.dropped_late = []
+        self.invalid_events = 0
+        self.dropped_invalid = []
         self.observed_types = set()
         self.retired_keys = []
         self.reclaimed_keys = []
@@ -141,6 +146,12 @@ class Engine:
 
         for event in stream:
             now = event.event_time
+            if not isfinite(now):
+                # non-finite event_time (grace=0 path; the buffer rejects these
+                # before they reach here on the default path)
+                self.invalid_events += 1
+                self.dropped_invalid.append(event)
+                continue
             self.observed_types.add(event.type)  # liveness harvest: this type was seen
             self._fire_due_deadlines(now, instances, deadlines, deliver)
             self._reclaim_quiescent(now, instances, ttl_timers)
@@ -174,6 +185,8 @@ class Engine:
         if buffer is not None:
             self.dropped_late = list(buffer.late)
             self.late_events = len(buffer.late)
+            self.dropped_invalid = list(buffer.invalid)
+            self.invalid_events = len(buffer.invalid)
 
         if emit_pending:
             for instance in instances.values():

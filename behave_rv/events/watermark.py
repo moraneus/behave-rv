@@ -14,7 +14,7 @@ rather than silently slotted in at the wrong point (bias toward surfacing).
 from __future__ import annotations
 
 import heapq
-from math import inf
+from math import inf, isfinite
 
 from behave_rv.events.event import Event
 
@@ -27,6 +27,11 @@ class ReorderBuffer:
         self._max_seen = -inf
         self._watermark = -inf  # event time up to which the stream has been released
         self.late: list[Event] = []
+        # events with a non-finite event_time (inf/-inf/NaN): rejected at admission
+        # so they can never poison the watermark or corrupt the heap ordering, and
+        # recorded separately from `late` because malformed input is a different
+        # signal than lateness.
+        self.invalid: list[Event] = []
 
     @staticmethod
     def _tiebreak(event: Event) -> tuple:
@@ -41,6 +46,9 @@ class ReorderBuffer:
         )
 
     def push(self, event: Event) -> None:
+        if not isfinite(event.event_time):
+            self.invalid.append(event)
+            return
         if event.event_time < self._watermark:
             # the stream has already advanced past this event's time
             self.late.append(event)

@@ -44,6 +44,23 @@ def test_releases_once_the_watermark_advances():
     assert _times(buf.releasable()) == [1.0]
 
 
+def test_non_finite_times_are_rejected_at_admission():
+    # Interrogation D1: inf poisoned the watermark (everything after it was
+    # late forever) and NaN entered the heap with undefined ordering. Both are
+    # now rejected at push, recorded on `invalid`, distinct from `late`.
+    buf = ReorderBuffer(grace=5)
+    buf.push(ev(float("inf")))
+    buf.push(ev(float("-inf")))
+    buf.push(ev(float("nan")))
+    assert len(buf.invalid) == 3
+    assert buf.late == []
+    assert buf._heap == []                       # nothing non-finite reaches the heap
+    # the watermark is unpoisoned: normal events still flow
+    buf.push(ev(1.0))
+    buf.push(ev(2.0))
+    assert _times(buf.flush()) == [1.0, 2.0]
+
+
 def test_event_arriving_after_the_watermark_is_flagged_late():
     buf = ReorderBuffer(grace=1)
     buf.push(ev(1.0))
