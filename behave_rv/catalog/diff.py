@@ -2,9 +2,9 @@
 
 Two versions of a step are equivalent when, over every execution, they would emit
 the same events with the same bindings at the same points. The signature is a
-computable approximation: in v1, the behavioral fields are the event type, the
+computable approximation: the behavioral fields are the event type, the
 referenced fields, the correlation key, and the exposed payload fields. The
-phrasing (and the v1 ``trigger_condition`` that mirrors it) is representational
+phrasing (and the ``trigger_condition`` field that mirrors it) is representational
 and excluded from equivalence, so a rename flows through silently.
 
 When a behavioral field changes, the step is a candidate break. When the change

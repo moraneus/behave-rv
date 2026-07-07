@@ -44,6 +44,23 @@ InstanceId = tuple[str, tuple[str, ...]]
 DEFAULT_GRACE = 5.0
 
 
+class ErrorLog:
+    """The one convention for contain-record-continue errors: a count, the
+    first exception, and per-occurrence sources. Used identically by the sink
+    and predicate families so the two surfaces cannot drift apart."""
+
+    def __init__(self) -> None:
+        self.count = 0
+        self.first: Optional[Exception] = None
+        self.sources: list = []
+
+    def record(self, exc: Exception, source) -> None:
+        self.count += 1
+        if self.first is None:
+            self.first = exc
+        self.sources.append(source)
+
+
 class _Source:
     def events(self) -> Iterable[Event]:  # pragma: no cover - structural typing aid
         ...
@@ -82,11 +99,8 @@ class Engine:
         self.retired_keys: list[tuple[str, ...]] = []
         self.reclaimed_keys: list[tuple[str, ...]] = []
         self.verdicts_delivered = 0
-        self.sink_errors = 0
-        self.first_sink_error: Optional[Exception] = None
-        self.predicate_errors = 0
-        self.first_predicate_error: Optional[Exception] = None
-        self.predicate_error_sources: list[tuple[str, Optional[str]]] = []  # (policy_id, step_id)
+        self._sink_log = ErrorLog()
+        self._predicate_log = ErrorLog()
 
     def run(
         self,
@@ -121,11 +135,8 @@ class Engine:
         self.retired_keys = []
         self.reclaimed_keys = []
         self.verdicts_delivered = 0
-        self.sink_errors = 0
-        self.first_sink_error = None
-        self.predicate_errors = 0
-        self.first_predicate_error = None
-        self.predicate_error_sources = []
+        self._sink_log = ErrorLog()
+        self._predicate_log = ErrorLog()
 
         pred_errors: list = []
         previous_collector = set_predicate_error_collector(pred_errors)
@@ -140,9 +151,7 @@ class Engine:
                 try:
                     emitfn(verdict)
                 except Exception as exc:  # a failing sink must not stop evaluation
-                    self.sink_errors += 1
-                    if self.first_sink_error is None:
-                        self.first_sink_error = exc
+                    self._sink_log.record(exc, verdict.policy_id)
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
         stream = self._ordered(source, buffer) if buffer is not None else source.events()
@@ -308,10 +317,33 @@ class Engine:
     # -- error recording ------------------------------------------------------
 
     def _record_predicate_error(self, policy_id: str, exc: Exception) -> None:
-        self.predicate_errors += 1
-        if self.first_predicate_error is None:
-            self.first_predicate_error = exc
-        self.predicate_error_sources.append((policy_id, getattr(exc, "step_id", None)))
+        self._predicate_log.record(exc, (policy_id, getattr(exc, "step_id", None)))
+
+    # stable public names, one shape per family: <family>_errors / first_<family>_error
+    # / <family>_error_sources
+    @property
+    def sink_errors(self) -> int:
+        return self._sink_log.count
+
+    @property
+    def first_sink_error(self) -> Optional[Exception]:
+        return self._sink_log.first
+
+    @property
+    def sink_error_sources(self) -> list:
+        return self._sink_log.sources
+
+    @property
+    def predicate_errors(self) -> int:
+        return self._predicate_log.count
+
+    @property
+    def first_predicate_error(self) -> Optional[Exception]:
+        return self._predicate_log.first
+
+    @property
+    def predicate_error_sources(self) -> list:
+        return self._predicate_log.sources
 
     # -- verdict construction ----------------------------------------------
 

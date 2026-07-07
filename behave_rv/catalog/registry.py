@@ -1,7 +1,7 @@
 """The RV step registry: maps registered trigger/scope/obligation steps to catalog entries.
 
 A registry holds the registered step functions and the :class:`CatalogEntry`
-each one produces. The signature is computed simply for v1: the declared event
+each one produces. The signature captures the declared event
 type and correlation key, plus the referenced fields derived from the phrasing
 placeholders (the subset a policy can actually bind or read).
 
@@ -175,9 +175,6 @@ class StepRegistry:
 
     def get(self, step_id: str) -> CatalogEntry:
         return self._entries[step_id]
-
-    def func_for(self, step_id: str) -> Step:
-        return self._funcs[step_id]
 
     def entries(self) -> list[CatalogEntry]:
         return list(self._entries.values())

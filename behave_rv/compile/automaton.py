@@ -467,22 +467,3 @@ def before(
         monitor_factory=lambda: BeforeMonitor(prior, trigger),
     )
 
-
-def once(policy_id, *, correlation_key, event_types, good) -> Policy:
-    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
-                  lambda: OnceMonitor(good))
-
-
-def historically(policy_id, *, correlation_key, event_types, phi) -> Policy:
-    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
-                  lambda: HistoricallyMonitor(phi))
-
-
-def previously(policy_id, *, correlation_key, event_types, prior, trigger) -> Policy:
-    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
-                  lambda: PreviouslyMonitor(prior, trigger))
-
-
-def since(policy_id, *, correlation_key, event_types, phi, psi) -> Policy:
-    return Policy(policy_id, _normalize_key(correlation_key), frozenset(event_types),
-                  lambda: SinceMonitor(phi, psi))

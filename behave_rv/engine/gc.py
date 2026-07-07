@@ -1,7 +1,4 @@
-"""Instance reclamation: primary terminal events plus a fallback quiescence TTL.
-
-Retire an instance when it can no longer affect any verdict or explanation. Drop
-the witnessing trace when the instance retires.
-
-Stub: to be implemented per the build sequence in the project design.
-"""
+"""Instance reclamation is implemented inline in :mod:`behave_rv.engine.loop`
+(`_retire_entity` for terminal events, `_reclaim_quiescent` for the quiescence
+TTL). This module is kept only so the package layout matches the project
+design; it intentionally contains no code."""

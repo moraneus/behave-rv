@@ -160,10 +160,10 @@ that will not run.
 | --- | --- |
 | `Given` on operators other than `never` | Refused: `Given/scope steps are only wired for 'never' so far; other operators do not take a scope yet: ... Express the property with When/Then for now.` |
 | `When` with `never` | Refused: `a 'never' policy takes a Given scope, not a When trigger (...). To restrict the obligation to a scope, write 'Given <predicate>' (or 'Given <predicate> until <predicate>') before 'Then <predicate> never happens'.` |
-| `And` / `But` multi step scenarios | Refused: `a v1 policy needs exactly one Then step, found N`, or `a v1 '<operator>' policy needs exactly one When step, found N`. |
+| `And` / `But` multi step scenarios | Refused: `a policy needs exactly one Then step, found N`, or `a '<operator>' policy needs exactly one When step, found N`. |
 | A scoped self-contained operator with a `When` (for example `never`, `once`, `historically`, `since`) | Refused: `a '<operator>' policy is self-contained and must not have a When step (...); write the property as a single Then.` |
 | Any unrecognized `Then` obligation | Refused: `unrecognized temporal obligation: ... Supported forms: '<step> never happens', '<step> has happened', '<step> always holds', '<step> previously', '<step> since <step>', '<step> within "<n>" seconds', '<step> before'.` |
-| Cross entity policies (two independent keys) | Refused: `scenario '...' references more than one entity key [...]; the v1 fragment is one correlation key per scenario.` |
+| Cross entity policies (two independent keys) | Refused: `scenario '...' references more than one entity key [...]; the fragment is one correlation key per scenario.` |
 
 ## Installation
 
@@ -339,7 +339,7 @@ python -m behave_rv \
 ```
 
 ```text
-compile error: scenario 'an order may only be paid after the customer is gold' references more than one entity key [('customer_id',), ('order_id',)]; the v1 fragment is one correlation key per scenario
+compile error: scenario 'an order may only be paid after the customer is gold' references more than one entity key [('customer_id',), ('order_id',)]; the fragment is one correlation key per scenario
 ```
 
 The process exits with a non zero status in this case.

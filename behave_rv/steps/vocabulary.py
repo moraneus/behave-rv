@@ -1,7 +1,5 @@
-"""Built-in temporal steps: never, always, within, since, before, previously.
-
-This is the monitorable fragment: past-time operators plus bounded `within`.
-Every authorable sentence must have a defined three-valued verdict.
-
-Stub: to be implemented per the build sequence in the project design.
-"""
+"""The temporal vocabulary is implemented in :mod:`behave_rv.compile.compiler`
+(the authorable phrasings) and :mod:`behave_rv.compile.automaton` (the monitor
+state machines): never (plain and Given-scoped), once, historically, previously,
+since, before, and within. This module is kept only so the package layout
+matches the project design; it intentionally contains no code."""

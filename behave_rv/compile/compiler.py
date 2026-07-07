@@ -5,7 +5,7 @@ the engine runs it, with no Python policy construction in the path. The compiler
 reuses behave's parser (Phase 0) and emits the same Policy/automaton objects the
 engine already runs (Phase 3).
 
-v1 policy grammar (one scenario = one policy). Every operator is predicate-first
+Policy grammar (one scenario = one policy). Every operator is predicate-first
 with a temporal suffix:
 
     never  (self-contained, no When -- the Then predicate is the forbidden event;
@@ -149,7 +149,7 @@ def compile_scenario(
     else:
         if len(when) != 1:
             raise CompileError(
-                f"a v1 '{operator}' policy needs exactly one When step, found {len(when)}"
+                f"a '{operator}' policy needs exactly one When step, found {len(when)}"
             )
         trigger_res = _resolve_one(registry, when[0].name, "When")
         used = [trigger_res, *operands]
@@ -181,7 +181,7 @@ def _split_steps(scenario):
     if len(given) > 1:
         raise CompileError(f"a policy takes at most one Given scope, found {len(given)}")
     if len(then) != 1:
-        raise CompileError(f"a v1 policy needs exactly one Then step, found {len(then)}")
+        raise CompileError(f"a policy needs exactly one Then step, found {len(then)}")
     # Given wiring and the When count are checked per operator in compile_scenario.
     return given, when, then
 
@@ -301,7 +301,7 @@ def _single_key(resolutions: list[Resolution], scenario) -> tuple[str, ...]:
     if len(keys) > 1:
         raise CompileError(
             f"scenario {scenario.name!r} references more than one entity key "
-            f"{sorted(keys)}; the v1 fragment is one correlation key per scenario"
+            f"{sorted(keys)}; the fragment is one correlation key per scenario"
         )
     return next(iter(keys))
 
