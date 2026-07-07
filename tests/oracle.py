@@ -208,6 +208,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
     events = canonical_sorted(admitted)
     ck = policy["correlation_key"]
     op = policy["operator"]
+    ptype = policy.get("event_type", POLICY_EVENT_TYPE)
     terminal_types = set(terminal_types)
 
     inst: dict = {}
@@ -227,7 +228,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
         if op == "within":
             for k, st in list(inst.items()):
                 if st["armed"] and not st["settled"] and now >= st["deadline"]:
-                    verdicts.append((k, "violated"))
+                    verdicts.append((k, "violated", st["deadline"]))
                     st["settled"] = True
 
         if ttl is not None:
@@ -236,7 +237,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                     del inst[k]
                     reclaimed.add(k)
 
-        if e.type == POLICY_EVENT_TYPE:
+        if e.type == ptype:
             k = keyof(e)
             if k is not None:
                 st = inst.get(k)
@@ -252,7 +253,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                     s = _status(e)
                     if op == "never":
                         if s == policy["bad"]:
-                            verdicts.append((k, "violated"))
+                            verdicts.append((k, "violated", now))
                             st["settled"] = True
                             produced = True
                     elif op == "scoped_never":
@@ -262,22 +263,22 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                                 and s == policy["close"]:
                             st["sc_open"] = False
                         if st["sc_open"] and s == policy["bad"]:
-                            verdicts.append((k, "violated"))
+                            verdicts.append((k, "violated", now))
                             st["settled"] = True
                             produced = True
                     elif op == "once":
                         if s == policy["good"]:
-                            verdicts.append((k, "satisfied"))
+                            verdicts.append((k, "satisfied", now))
                             st["settled"] = True
                             produced = True
                     elif op == "historically":
                         if s != policy["phi"]:
-                            verdicts.append((k, "violated"))
+                            verdicts.append((k, "violated", now))
                             st["settled"] = True
                             produced = True
                     elif op == "previously":
                         if s == policy["trigger"]:
-                            verdicts.append((k, "satisfied" if st["prev_phi"] else "violated"))
+                            verdicts.append((k, "satisfied" if st["prev_phi"] else "violated", now))
                             st["settled"] = True
                             produced = True
                         else:
@@ -287,7 +288,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                         if new_s and not st["since_started"]:
                             st["since_started"] = True
                         if st["since_started"] and st["since_s"] and not new_s:
-                            verdicts.append((k, "violated"))
+                            verdicts.append((k, "violated", now))
                             st["settled"] = True
                             produced = True
                         st["since_s"] = new_s
@@ -295,7 +296,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                         if s == policy["prior"]:
                             st["seen_prior"] = True
                         if s == policy["trigger"]:
-                            verdicts.append((k, "satisfied" if st["seen_prior"] else "violated"))
+                            verdicts.append((k, "satisfied" if st["seen_prior"] else "violated", now))
                             st["settled"] = True
                             produced = True
                     elif op == "within":
@@ -303,7 +304,7 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                             st["armed"] = True
                             st["deadline"] = now + policy["seconds"]
                         elif st["armed"] and s == policy["response"]:
-                            verdicts.append((k, "satisfied"))
+                            verdicts.append((k, "satisfied", now))
                             st["settled"] = True
                             produced = True
                 if not produced:
@@ -316,16 +317,16 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                 retired.add(k)
                 if not st["settled"]:
                     if op in ("never", "scoped_never", "historically", "since"):
-                        verdicts.append((k, "satisfied"))  # safety held to end of life
+                        verdicts.append((k, "satisfied", now))  # safety held to end of life
                     elif op == "once":
-                        verdicts.append((k, "violated"))    # existential never occurred
+                        verdicts.append((k, "violated", now))    # existential never occurred
                     elif op == "within" and st["armed"]:
-                        verdicts.append((k, "violated"))
+                        verdicts.append((k, "violated", now))
                     # before, previously (triggered but untriggered): no terminal verdict
 
     for k, st in inst.items():
         if not st["settled"]:
-            verdicts.append((k, "pending"))
+            verdicts.append((k, "pending", st["last_activity"]))
 
     return verdicts, dropped, retired, reclaimed
 

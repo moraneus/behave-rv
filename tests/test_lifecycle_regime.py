@@ -41,12 +41,19 @@ lc_triples = st.lists(
 grace_strat = st.sampled_from([1, 2, 3])
 ttl_strat = st.sampled_from([None, 3, 5, 8])
 
+# includes a policy watching the terminal event type itself (closes the M8
+# blind spot: retirement racing dispatch is only observable to such a policy)
+terminal_watcher = st.just({"operator": "never", "correlation_key": ("order_id",),
+                            "bad": "closed", "event_type": "order.terminal"})
+lc_policies = st.one_of(policies, terminal_watcher)
+
 
 def _events_lc(triples):
     out = []
     for (k, s, t) in triples:
         if s is None:
-            out.append(Event(TERMINAL, float(t), {"order_id": k}, {}, "gen"))
+            out.append(Event(TERMINAL, float(t), {"order_id": k},
+                             {"status": "closed"}, "gen"))
         else:
             out.append(Event("order.status", float(t), {"order_id": k}, {"status": s}, "gen"))
     return out
@@ -78,7 +85,7 @@ def _engine_run(arrival, policy, grace, ttl) -> _Run:
                     terminal_event_types={TERMINAL}, quiescence_ttl=ttl)
     verdicts = engine.run(src, emit_pending=True)
     ck = policy["correlation_key"]
-    vs = sorted((tuple(v.entity_key[f] for f in ck), v.verdict) for v in verdicts)
+    vs = sorted((tuple(v.entity_key[f] for f in ck), v.verdict, v.at) for v in verdicts)
     return _Run(vs, engine.dropped_late, set(engine.retired_keys),
                 set(engine.reclaimed_keys), engine.late_events)
 
@@ -87,14 +94,14 @@ def _engine_run(arrival, policy, grace, ttl) -> _Run:
 def lc_case(draw):
     """Full lifecycle: terminal + optional TTL, one adversarial arrival."""
     events = _events_lc(draw(lc_triples))
-    return draw(st.permutations(events)), draw(grace_strat), draw(ttl_strat), draw(policies)
+    return draw(st.permutations(events)), draw(grace_strat), draw(ttl_strat), draw(lc_policies)
 
 
 @st.composite
 def lc_two_arrivals(draw):
     events = _events_lc(draw(lc_triples))
     return (draw(st.permutations(events)), draw(st.permutations(events)),
-            draw(grace_strat), draw(ttl_strat), draw(policies))
+            draw(grace_strat), draw(ttl_strat), draw(lc_policies))
 
 
 # --- Property 1 (centerpiece): terminal retirement, verdict+dropped == oracle -

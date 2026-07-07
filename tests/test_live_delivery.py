@@ -13,6 +13,7 @@ from __future__ import annotations
 import threading
 import time
 
+import hypothesis.strategies as st
 from hypothesis import given, settings
 
 from behave_rv.compile.automaton import within
@@ -43,14 +44,19 @@ def _oe(status, t, oid="A"):
 
 
 @settings(max_examples=300, deadline=None)
-@given(triples, policies)
-def test_sink_sequence_equals_batch_list(tr, policy):
+@given(triples, st.lists(policies, min_size=1, max_size=3))
+def test_sink_sequence_equals_batch_list(tr, policy_dicts):
     # THE pinning property: sink delivery is a transport, not a semantic change.
+    # Multiple policies over three keys make 3+ verdicts per run routine, so a
+    # delivery fault conditioned on any verdict ordinal is visible (mutation M6
+    # was missed when generated runs never exceeded 2 verdicts).
     events = _events(tr)
-    batch = Engine([_build(policy)]).run(_src(events), emit_pending=True)
+    built = [_build(p, name=f"p{i}") for i, p in enumerate(policy_dicts)]
+    rebuilt = [_build(p, name=f"p{i}") for i, p in enumerate(policy_dicts)]
+    batch = Engine(built).run(_src(events), emit_pending=True)
 
     delivered = []
-    engine = Engine([_build(policy)])
+    engine = Engine(rebuilt)
     returned = engine.run(_src(events), emit_pending=True, sink=delivered.append)
 
     assert [_sig(v) for v in delivered] == [_sig(v) for v in batch]

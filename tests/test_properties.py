@@ -26,9 +26,9 @@ from behave_rv.events.sources.inprocess import InProcessSource
 from tests.oracle import canonical_sorted, oracle_verdicts
 
 STATUSES = ["authorized", "paid", "cancelled", "delivered", "shipped"]
-KEYS = ["A", "B"]
+KEYS = ["A", "B", "C"]
 
-# One real registered step; every generated policy binds to it.
+# The registered steps every generated policy binds to.
 _REG = StepRegistry()
 
 
@@ -36,6 +36,12 @@ _REG = StepRegistry()
               event_type="order.status", correlation_key="order_id")
 def _order_status_is(ctx, event, status):
     return event.type == "order.status" and event.payload.get("status") == status
+
+
+@_REG.trigger('a closing note is "{status}"', step_id="closing.note.is",
+              event_type="order.terminal", correlation_key="order_id")
+def _closing_note_is(ctx, event, status):
+    return event.type == "order.terminal" and event.payload.get("status") == status
 
 
 def _events(triples):
@@ -76,29 +82,33 @@ policies = st.one_of(
 )
 
 
-def _feature(policy: dict) -> str:
+def _feature(policy: dict, name: str = "s") -> str:
     op = policy["operator"]
+    if op == "never" and policy.get("event_type") == "order.terminal":
+        # a policy watching the terminal event type itself (closes the M8 blind spot)
+        return (f'Feature: p\n  Scenario: {name}\n'
+                f'    Then a closing note is "{policy["bad"]}" never happens\n')
     if op == "never":
         # never is self-contained: predicate-first Then, no When.
-        return (f'Feature: p\n  Scenario: s\n'
+        return (f'Feature: p\n  Scenario: {name}\n'
                 f'    Then an order is "{policy["bad"]}" never happens\n')
     if op == "scoped_never":
         scope = f'an order is "{policy["scope"]}"'
         if policy["close"] is not None:
             scope += f' until an order is "{policy["close"]}"'
-        return (f'Feature: p\n  Scenario: s\n    Given {scope}\n'
+        return (f'Feature: p\n  Scenario: {name}\n    Given {scope}\n'
                 f'    Then an order is "{policy["bad"]}" never happens\n')
     if op == "once":
-        return (f'Feature: p\n  Scenario: s\n'
+        return (f'Feature: p\n  Scenario: {name}\n'
                 f'    Then an order is "{policy["good"]}" has happened\n')
     if op == "historically":
-        return (f'Feature: p\n  Scenario: s\n'
+        return (f'Feature: p\n  Scenario: {name}\n'
                 f'    Then an order is "{policy["phi"]}" always holds\n')
     if op == "since":
-        return (f'Feature: p\n  Scenario: s\n'
+        return (f'Feature: p\n  Scenario: {name}\n'
                 f'    Then an order is "{policy["phi"]}" since an order is "{policy["psi"]}"\n')
     if op == "previously":
-        return (f'Feature: p\n  Scenario: s\n    When an order is "{policy["trigger"]}"\n'
+        return (f'Feature: p\n  Scenario: {name}\n    When an order is "{policy["trigger"]}"\n'
                 f'    Then an order is "{policy["prior"]}" previously\n')
     if op == "before":
         then = f'an order is "{policy["prior"]}" before'
@@ -106,12 +116,12 @@ def _feature(policy: dict) -> str:
     else:
         then = f'an order is "{policy["response"]}" within "{policy["seconds"]}" seconds'
         when = policy["trigger"]
-    return (f'Feature: p\n  Scenario: s\n    When an order is "{when}"\n'
+    return (f'Feature: p\n  Scenario: {name}\n    When an order is "{when}"\n'
             f'    Then {then}\n')
 
 
-def _build(policy: dict):
-    (p,) = compile_feature(_feature(policy), _REG)
+def _build(policy: dict, name: str = "s"):
+    (p,) = compile_feature(_feature(policy, name), _REG)
     return p
 
 
