@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Todo board · behave_rv live monitor</title>
+<style>
+  :root { --accent:#0d9488; --ok:#16a34a; --bad:#dc2626; --pend:#9ca3af; }
+  * { box-sizing:border-box; margin:0; }
+  body { font:14px/1.45 -apple-system, "Segoe UI", sans-serif; background:#f6f7f9; color:#1f2430; }
+  header { background:var(--accent); color:#fff; padding:14px 22px; display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size:18px; } header span { opacity:.75; font-size:13px; }
+  header a { margin-left:auto; color:#fff; font-size:13px; }
+  main { display:grid; grid-template-columns: 400px 1fr; gap:14px; padding:14px 22px; align-items:start; }
+
+  /* left: the monitor console */
+  #console { background:#14171e; color:#c9ced8; border-radius:10px; padding:12px 14px;
+             display:flex; flex-direction:column; gap:12px; max-height:calc(100vh - 110px); overflow:auto; }
+  #console h2 { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#8a93a3; }
+  .violation { border:1px solid #7f1d1d; border-left:4px solid var(--bad); border-radius:8px;
+               padding:8px 10px; background:#1d1114; }
+  .violation .head { color:#fca5a5; font-weight:600; font-size:13px; margin-bottom:4px; }
+  .violation pre { font:11.5px/1.5 ui-monospace, monospace; white-space:pre-wrap; color:#e6e8ee; }
+  .satline { color:#6ee7b7; font:12px ui-monospace, monospace; padding:1px 2px; }
+  #violations:empty::after { content:"no violations — the monitor is quiet"; color:#556; font-size:12px; }
+  #feed { font:12px/1.6 ui-monospace, monospace; }
+  #feed div { border-bottom:1px solid #1e222b; padding:1px 2px; white-space:nowrap; }
+  #feed .ent { color:#5eead4; font-weight:600; }
+  #feed .tm { color:#8a93a3; }
+
+  /* right: the todo board */
+  #newtask { display:flex; gap:8px; margin-bottom:14px; }
+  #newtask input { flex:1; padding:9px 12px; border:1px solid #d6dae0; border-radius:8px; font:inherit; }
+  #newtask button { padding:9px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff;
+                    font:inherit; font-weight:600; cursor:pointer; }
+  #cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:12px; }
+  .task { background:#fff; border:1px solid #e3e6ea; border-radius:10px; padding:12px 14px; }
+  .task.flagged { border-color:var(--bad); box-shadow:0 0 0 2px #fecaca; }
+  .task.gone { opacity:.55; }
+  .task .top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:8px; }
+  .task .title { font-weight:600; }
+  .task .tid { color:#9ca3af; font-size:11.5px; font-family:ui-monospace, monospace; }
+  .chip { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:600;
+          background:#e5e7eb; color:#374151; margin-bottom:8px; }
+  .chip.completed { background:#dcfce7; color:#166534; } .chip.started, .chip.checkpoint { background:#dbeafe; color:#1e40af; }
+  .chip.blocked { background:#fef3c7; color:#92400e; } .chip.deleted, .chip.archived { background:#f3f4f6; color:#6b7280; }
+  .chip.reopened, .chip.edited { background:#ede9fe; color:#5b21b6; }
+  .acts { display:flex; flex-wrap:wrap; gap:6px; }
+  .acts button { padding:4px 10px; border:1px solid #d6dae0; border-radius:7px; background:#fff;
+                 font:12px inherit; cursor:pointer; }
+  .acts button:hover { border-color:var(--accent); color:var(--accent); }
+  .hint { color:#6b7280; font-size:12px; margin-top:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Todo board</h1>
+  <span>every click emits an event; behave_rv judges it live</span>
+  <a href="/">scripted demo console →</a>
+</header>
+<main>
+  <aside id="console">
+    <div>
+      <h2>Violations</h2>
+      <div id="violations"></div>
+    </div>
+    <div>
+      <h2>Event stream</h2>
+      <div id="feed"></div>
+    </div>
+  </aside>
+  <section>
+    <form id="newtask">
+      <input id="title" placeholder="What needs doing?" autocomplete="off">
+      <button type="submit">Create task</button>
+    </form>
+    <div id="cards">
+      {% for t in tasks %}
+      <div class="task" id="card-{{ t.id }}">
+        <div class="top"><span class="title">{{ t.title }}</span><span class="tid">{{ t.id }}</span></div>
+        <span class="chip {{ t.status }}">{{ t.status }}</span>
+        <div class="acts"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="hint">The board never stops you: complete an unstarted task, edit an archived one,
+      or start a task and just walk away (the checkpoint window fires at 3s, the due window at 5s).
+      The console on the left is the monitor's verdict, not the app's.</p>
+  </section>
+</main>
+<script>
+const ACTIONS = ["start", "checkpoint", "complete", "reopen", "edit", "block", "unblock", "archive", "delete"];
+const cards = document.getElementById('cards');
+const feed = document.getElementById('feed');
+const violations = document.getElementById('violations');
+
+function post(url, body) {
+  return fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                     body: JSON.stringify(body || {})});
+}
+
+function buildActs(holder, tid) {
+  holder.textContent = '';
+  for (const a of ACTIONS) {
+    const b = document.createElement('button');
+    b.textContent = a;
+    b.onclick = () => {
+      if (a === 'edit') {
+        const title = prompt('New title (this emits an "edited" event):');
+        if (title === null) return;
+        post(`/task/${tid}/edit`, {title});
+      } else {
+        post(`/task/${tid}/${a}`);
+      }
+    };
+    holder.appendChild(b);
+  }
+}
+
+function upsertTask(d) {
+  let card = document.getElementById('card-' + d.id);
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'task'; card.id = 'card-' + d.id;
+    card.innerHTML = '<div class="top"><span class="title"></span><span class="tid"></span></div>' +
+                     '<span class="chip"></span><div class="acts"></div>';
+    card.querySelector('.tid').textContent = d.id;
+    buildActs(card.querySelector('.acts'), d.id);
+    cards.prepend(card);
+  }
+  card.querySelector('.title').textContent = d.title;
+  const chip = card.querySelector('.chip');
+  chip.textContent = d.status; chip.className = 'chip ' + d.status;
+  card.classList.toggle('gone', d.status === 'archived' || d.status === 'deleted');
+}
+
+document.querySelectorAll('.task').forEach(c =>
+  buildActs(c.querySelector('.acts'), c.id.slice(5)));
+
+document.getElementById('newtask').onsubmit = (e) => {
+  e.preventDefault();
+  const input = document.getElementById('title');
+  post('/task', {title: input.value});
+  input.value = '';
+};
+
+new EventSource('/stream').onmessage = (m) => {
+  const d = JSON.parse(m.data);
+  if (d.kind === 'task') {
+    upsertTask(d);
+  } else if (d.kind === 'event') {
+    const row = document.createElement('div');
+    row.innerHTML = '<span class="tm"></span> <span class="ent"></span> <span class="st"></span>';
+    row.querySelector('.tm').textContent = 't=' + d.t;
+    row.querySelector('.ent').textContent = d.entity;
+    row.querySelector('.st').textContent = d.status;
+    feed.prepend(row);
+    while (feed.childElementCount > 120) feed.lastChild.remove();
+  } else if (d.kind === 'verdict') {
+    const card = document.getElementById('card-' + d.entity);
+    if (d.verdict === 'violated') {
+      if (card) card.classList.add('flagged');
+      const v = document.createElement('div');
+      v.className = 'violation';
+      v.innerHTML = '<div class="head"></div><pre></pre>';
+      v.querySelector('.head').textContent = `✗ ${d.entity} — ${d.policy}`;
+      v.querySelector('pre').textContent = d.explanation || '';
+      violations.prepend(v);
+      while (violations.childElementCount > 20) violations.lastChild.remove();
+    } else if (d.verdict === 'satisfied') {
+      const s = document.createElement('div');
+      s.className = 'satline';
+      s.textContent = `✓ ${d.entity} — ${d.policy}`;
+      violations.prepend(s);
+      while (violations.childElementCount > 20) violations.lastChild.remove();
+    }
+  }
+};
+</script>
+</body>
+</html>

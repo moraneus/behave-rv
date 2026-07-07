@@ -19,7 +19,7 @@ import queue
 import threading
 import time
 
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, request
 
 from behave_rv.engine.loop import Engine
 from behave_rv.events.sources.subscription import QueueSource
@@ -108,6 +108,57 @@ def index():
                            policies=sorted(by_id))
 
 
+# -- the interactive board: the user IS the mock ---------------------------
+# The board deliberately never enforces the lifecycle. Any button works at any
+# time; the policies decide what was legal. Task state here is display-only.
+
+BOARD_ACTIONS = {"start": "started", "checkpoint": "checkpoint",
+                 "complete": "completed", "reopen": "reopened", "edit": "edited",
+                 "block": "blocked", "unblock": "unblocked",
+                 "archive": "archived", "delete": "deleted"}
+
+tasks: dict[str, dict] = {}
+tasks_lock = threading.Lock()
+
+
+@app.route("/board")
+def board():
+    with tasks_lock:
+        current = sorted(tasks.values(), key=lambda t: t["id"])
+    return render_template("board.html", tasks=current, actions=BOARD_ACTIONS)
+
+
+@app.route("/task", methods=["POST"])
+def create_task():
+    title = ((request.get_json(silent=True) or {}).get("title") or "").strip()
+    tid = f"TSK-{next(counter)}"
+    with tasks_lock:
+        tasks[tid] = {"id": tid, "title": title or "Untitled", "status": "created"}
+        snapshot = dict(tasks[tid])
+    service.act(tid, "created")
+    broadcast.publish({"kind": "task", **snapshot})
+    return {"ok": True, "id": tid}
+
+
+@app.route("/task/<tid>/<action>", methods=["POST"])
+def task_action(tid, action):
+    status = BOARD_ACTIONS.get(action)
+    if status is None:
+        return {"ok": False, "error": "unknown action"}, 400
+    body = request.get_json(silent=True) or {}
+    with tasks_lock:
+        task = tasks.get(tid)
+        if task is None:
+            return {"ok": False, "error": "unknown task"}, 404
+        if action == "edit" and body.get("title"):
+            task["title"] = str(body["title"])[:80]
+        task["status"] = status
+        snapshot = dict(task)
+    service.act(tid, status)
+    broadcast.publish({"kind": "task", **snapshot})
+    return {"ok": True}
+
+
 @app.route("/action/<name>", methods=["POST"])
 def action(name):
     label, kind, flow = FLOWS[name]
@@ -123,5 +174,6 @@ def stream():
 
 
 if __name__ == "__main__":
-    print("Todo App demo -> http://127.0.0.1:5003")
+    print("Todo App demo  -> http://127.0.0.1:5003        (scripted flows)")
+    print("Todo board     -> http://127.0.0.1:5003/board  (interactive app)")
     app.run(port=5003, threaded=True)

@@ -138,6 +138,43 @@ def test_bug_sync_fail_breaks_historically():
     assert v.deciding_events[-1].payload["status"] == "sync_fail"
 
 
+def run_manual(actions, advance_past_timers=False):
+    """Replay board clicks: one service.act per (task_id, status) click, with
+    the clock advancing between clicks the way real clicks are spaced."""
+    clock = FakeClock()
+    events = []
+    service = TodoService(events.append, clock=clock, sleep=clock.sleep)
+    for tid, status in actions:
+        service.act(tid, status)
+        clock.sleep(0.5)
+    if advance_past_timers:
+        events.append(Event("clock.tick", clock.now + 60.0, {}, {}, "test"))
+    src = InProcessSource()
+    for e in events:
+        src.emit(e)
+    verdicts = Engine(load_policies(build_registry())).run(src, emit_pending=True)
+    return {(v.policy_id, next(iter(v.entity_key.values()))): v for v in verdicts}
+
+
+def test_manual_board_clicks_clean_lifecycle():
+    vmap = run_manual([("A", "created"), ("A", "started"), ("A", "checkpoint"),
+                       ("A", "completed"), ("A", "archived")],
+                      advance_past_timers=True)
+    assert violated(vmap) == set()
+    assert vmap[(EVENTUALLY_ARCHIVED, "A")].verdict == "satisfied"
+
+
+def test_manual_board_clicks_illegal_actions_are_caught_per_task():
+    # three tasks driven by hand in one interleaved session: one clean, one
+    # completed unstarted, one edited after deletion
+    vmap = run_manual([("A", "created"), ("B", "created"), ("C", "created"),
+                       ("A", "started"), ("B", "completed"), ("C", "deleted"),
+                       ("A", "checkpoint"), ("C", "edited"), ("A", "completed")],
+                      advance_past_timers=True)
+    assert violated(vmap) == {(COMPLETE_AFTER_START, "B"),
+                              (DELETED_NEVER_EDITED, "C")}
+
+
 def test_quiet_policies_never_violate_across_all_flows():
     from demo.todo_app.service import FLOWS
     for action, (_, _, flow_name) in FLOWS.items():

@@ -33,6 +33,14 @@ class TodoService:
                          {"status": status}, "todo-app"))
         self._sleep(self._pace)
 
+    # -- manual actions (driven by the board UI, one event per user click) ----
+
+    def act(self, tid: str, status: str) -> None:
+        """Emit a single user-caused task event, no pacing. The board never
+        blocks an action; whether it was legal is the monitor's call."""
+        self._emit(Event(TASK_TYPE, self._clock(), {"task_id": tid},
+                         {"status": status}, "todo-app"))
+
     # -- normal flows ---------------------------------------------------------
 
     def flow_quick_task(self, tid: str) -> None:

@@ -27,6 +27,12 @@ bug each. Watch the chain: action -> event in the live log -> verdict badge
 flips -> the authored scenario renders as a counterexample in the explanation
 panel.
 
+The todo demo additionally has an interactive board at
+`http://127.0.0.1:5003/board`: a real-looking todo app where you drive the
+events yourself (create, start, complete, edit, archive, delete, ...) and a
+left-side monitor console shows each event you cause and every violation the
+engine decides, live.
+
 ## Verify without the UI
 
 ```
