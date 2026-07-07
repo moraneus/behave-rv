@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }} · behave_rv live monitor</title>
+<style>
+  :root { --accent: {{ accent }}; --ok:#16a34a; --bad:#dc2626; --pend:#9ca3af; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 14px/1.45 -apple-system, "Segoe UI", sans-serif; background:#f6f7f9; color:#1f2430; }
+  header { background: var(--accent); color:#fff; padding: 14px 22px; display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size: 18px; } header span { opacity:.75; font-size:13px; }
+  main { display:grid; grid-template-columns: 230px 1fr 1.2fr; gap:14px; padding:14px 22px; align-items:start; }
+  .card { background:#fff; border:1px solid #e3e6ea; border-radius:10px; padding:12px 14px; }
+  .card h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:#6b7280; margin-bottom:10px; }
+  button { display:block; width:100%; margin:0 0 8px; padding:8px 10px; border-radius:8px; border:1px solid #d6dae0;
+           background:#fff; cursor:pointer; text-align:left; font:inherit; }
+  button:hover { border-color: var(--accent); }
+  button.bug { border-left: 4px solid var(--bad); }
+  button.normal { border-left: 4px solid var(--ok); }
+  #events { max-height: 74vh; overflow:auto; font-family: ui-monospace, monospace; font-size:12px; }
+  #events div { padding:3px 6px; border-bottom:1px solid #f0f1f3; white-space:nowrap; }
+  #events .ent { color: var(--accent); font-weight:600; }
+  .policy { margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #f0f1f3; }
+  .policy .name { font-weight:600; font-size:13px; margin-bottom:4px; }
+  .badge { display:inline-block; margin:2px 4px 2px 0; padding:2px 9px; border-radius:999px;
+           font-size:11.5px; font-weight:600; color:#fff; background:var(--pend); }
+  .badge.satisfied { background: var(--ok); } .badge.violated { background: var(--bad); }
+  #explain { font-family: ui-monospace, monospace; font-size:12.5px; white-space:pre-wrap;
+             background:#1b1f27; color:#e6e8ee; border-radius:8px; padding:12px; min-height:120px; }
+  #explain.flash { animation: flash .8s; }
+  @keyframes flash { 0% { outline: 3px solid var(--bad); } 100% { outline: 0 solid transparent; } }
+  .hint { color:#6b7280; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header><h1>{{ title }}</h1><span>monitored live by behave_rv — watch action → event → verdict</span></header>
+<main>
+  <div class="card">
+    <h2>Controls</h2>
+    {% for b in buttons %}<button class="{{ b.kind }}" onclick="act('{{ b.id }}')">{{ b.label }}</button>{% endfor %}
+    <p class="hint">Green buttons run correct flows; red ones plant one specific bug each.</p>
+  </div>
+  <div>
+    <div class="card"><h2>Live events</h2><div id="events"></div></div>
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:14px"><h2>Policies · per-entity verdicts</h2><div id="policies">
+      {% for p in policies %}<div class="policy" id="p-{{ loop.index }}" data-name="{{ p }}">
+        <div class="name">{{ p }}</div><div class="badges"></div>
+      </div>{% endfor %}
+    </div></div>
+    <div class="card"><h2>Latest violation, explained</h2><div id="explain">— no violation yet —</div></div>
+  </div>
+</main>
+<script>
+const policyDivs = {};
+document.querySelectorAll('.policy').forEach(d => policyDivs[d.dataset.name] = d.querySelector('.badges'));
+const events = document.getElementById('events');
+const explain = document.getElementById('explain');
+
+function act(name) { fetch('/action/' + name, {method: 'POST'}); }
+
+new EventSource('/stream').onmessage = (m) => {
+  const d = JSON.parse(m.data);
+  if (d.kind === 'event') {
+    const row = document.createElement('div');
+    row.innerHTML = `<span class="ent">${d.entity}</span> ${d.status} <span style="color:#9ca3af">t=${d.t}</span>`;
+    events.prepend(row);
+    while (events.childElementCount > 200) events.lastChild.remove();
+  } else if (d.kind === 'verdict') {
+    const holder = policyDivs[d.policy];
+    if (!holder) return;
+    let badge = holder.querySelector(`[data-ent="${d.entity}"]`);
+    if (!badge) { badge = document.createElement('span'); badge.className = 'badge';
+                  badge.dataset.ent = d.entity; holder.appendChild(badge); }
+    badge.className = 'badge ' + d.verdict;
+    badge.textContent = `${d.entity} · ${d.verdict}`;
+    if (d.explanation) { explain.textContent = d.explanation;
+                         explain.classList.remove('flash'); void explain.offsetWidth;
+                         explain.classList.add('flash'); }
+  }
+};
+</script>
+</body>
+</html>

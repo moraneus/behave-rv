@@ -1,0 +1,2 @@
+# demo-only dependencies -- the core behave_rv package does not depend on these
+flask>=3.0
