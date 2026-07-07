@@ -288,8 +288,20 @@ covers monitor-internal calls the engine makes outside `on_event`
 (`deciding_events`): a raise there leaves the verdict standing with its deciding
 evidence absent and the error visible. This mirrors the sink-failure policy:
 contain, record, continue. `KeyboardInterrupt` and other non-`Exception`
-`BaseException`s are never swallowed. Caveat, stated rather than hidden: monitor
-state updates that happened before a raising predicate call are kept.
+`BaseException`s are never swallowed.
+
+**Atomic per-event state.** A monitor's state after an event is either the full
+correct result of applying that event or exactly the state it had before --
+never a partial update. Compiled predicates that raise are individually
+contained as no-match and the event's handling completes fully, so no partial
+state arises on that path. A raise that *propagates* through `on_event` (a
+monitor-internal bug, or a raw programmatic predicate outside the compiler's
+containment) restores the monitor byte-for-byte to its pre-event state: the
+event is not-applied for that monitor, the error is recorded, and a later clean
+event evaluates from the correct pre-raise state. Consequently, monitor state
+is always the full result of the events cleanly applied to it. (The event
+itself remains in the instance's recent-context window -- it did occur; only
+the monitor's decision state is rolled back.)
 
 ## The late-event regime (admission)
 

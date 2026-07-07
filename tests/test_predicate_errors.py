@@ -108,6 +108,88 @@ def test_raising_deciding_events_does_not_crash_the_engine():
     assert engine.predicate_errors == 1            # and the raise is visible
 
 
+def test_raise_through_on_event_leaves_monitor_state_atomic():
+    # Soundness pass: a raise propagating through on_event must leave the
+    # monitor EXACTLY as it was (no partial scope flag), with the error
+    # recorded, and a later clean event must evaluate from the pre-raise state.
+    from behave_rv.compile.automaton import Policy, ScopedNeverMonitor
+
+    def scope_pred(e):
+        # the glitch event OPENS the scope (a state update)...
+        return e.payload.get("status") in ("locked", "glitch")
+
+    def bad_pred(e):
+        # ...and then the forbidden predicate raises on it: without atomic
+        # restore, the half-applied open scope (anchored at the glitch event)
+        # would be kept.
+        if e.payload.get("status") == "glitch":
+            raise RuntimeError("raw predicate broken")
+        return e.payload.get("status") == "action"
+
+    captured = {}
+
+    def factory():
+        m = ScopedNeverMonitor(scope_pred, bad_pred)
+        captured["m"] = m
+        return m
+
+    pol = Policy("p", ("user_id",), frozenset({"session.status"}), factory)
+
+    def ue(status, t):
+        return Event("session.status", float(t), {"user_id": "u1"},
+                     {"status": status}, "t")
+
+    src = InProcessSource()
+    src.emit(ue("glitch", 1.0))     # scope pred would OPEN, then bad raises:
+    src.emit(ue("locked", 2.0))     # ...state must have been restored (closed)
+    src.emit(ue("action", 3.0))     # violation from the correct post-lock state
+    engine = Engine([pol])
+    verdicts = engine.run(src, emit_pending=True)
+
+    assert engine.predicate_errors == 1
+    m = captured["m"]
+    assert m.settled is True                               # the clean events applied
+    assert [v.verdict for v in verdicts] == ["violated"]
+    # deciding events show the CLEAN opening lock at t=2, not the rolled-back glitch
+    assert [e.event_time for e in verdicts[0].deciding_events] == [2.0, 3.0]
+
+
+def test_raise_equals_skip_equivalence():
+    # The strongest atomicity check: a trace with raising events must produce
+    # exactly the verdicts of the same trace with those events removed.
+    from behave_rv.compile.automaton import Policy, BeforeMonitor
+
+    def make_policy():
+        def prior(e):
+            if e.payload.get("status") == "glitch":
+                raise RuntimeError("boom")     # raw predicate: propagates
+            return e.payload.get("status") == "authorized"
+
+        def trigger(e):
+            if e.payload.get("status") == "glitch":
+                raise RuntimeError("boom")
+            return e.payload.get("status") == "paid"
+
+        return Policy("p", ("order_id",), frozenset({"order.status"}),
+                      lambda: BeforeMonitor(prior, trigger))
+
+    def oe(status, t):
+        return Event("order.status", float(t), {"order_id": "A"},
+                     {"status": status}, "t")
+
+    full = [oe("authorized", 1.0), oe("glitch", 2.0), oe("paid", 3.0)]
+    clean = [e for e in full if e.payload["status"] != "glitch"]
+
+    def run(events):
+        src = InProcessSource()
+        for e in events:
+            src.emit(e)
+        return [(v.entity_key["order_id"], v.verdict, v.at)
+                for v in Engine([make_policy()]).run(src, emit_pending=True)]
+
+    assert run(full) == run(clean) == [("A", "satisfied", 3.0)]
+
+
 def test_keyboard_interrupt_is_never_swallowed():
     import pytest
 

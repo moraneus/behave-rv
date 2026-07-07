@@ -181,11 +181,18 @@ class Engine:
                     continue
                 instance = self._instance_for(policy, key, instances)
                 instance.witness(event)
+                monitor = instance.monitor
+                snapshot = dict(monitor.__dict__)  # small fixed-size scalar state
                 try:
-                    status = instance.monitor.on_event(event)
+                    status = monitor.on_event(event)
                 except Exception as exc:
-                    # a monitor-internal bug (not a predicate: those are contained
-                    # per-call via the collector); contain, record, continue
+                    # atomic per-event state: a raise that propagates through
+                    # on_event (a monitor-internal bug, or a raw programmatic
+                    # predicate outside the compiler's per-call containment)
+                    # leaves the monitor EXACTLY as it was -- the event is
+                    # not-applied for this monitor, never partially applied.
+                    monitor.__dict__.clear()
+                    monitor.__dict__.update(snapshot)
                     self._record_predicate_error(policy.policy_id, exc)
                     status = None
                 for err in pred_errors:
