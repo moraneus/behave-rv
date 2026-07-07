@@ -249,14 +249,19 @@ no instance and no verdict. An empty trace yields no verdicts.
 ## A raising predicate (spec decision)
 
 A step predicate that raises while evaluating an event **matches nothing for that
-event**: the evaluation is treated as false, the error is recorded on the engine
-(`predicate_errors`, `first_predicate_error`, and `predicate_error_sources` naming
-the policy and step_id), and evaluation continues. One broken predicate affects
-only its own policy's view of that event -- never another policy, another
-instance, or the engine's continuation. This mirrors the sink-failure policy:
-contain, record, continue. Caveat, stated rather than hidden: monitor state
-updates that happened before the raise within the same `on_event` call are kept
-(e.g. a scope that opened before a later predicate raised stays open).
+predicate call alone**: containment is per predicate, so the other predicates in
+the same event handling still evaluate (a raising `until` closing predicate does
+not blind the forbidden check that follows it). Each error is recorded on the
+engine (`predicate_errors`, `first_predicate_error`, and
+`predicate_error_sources` naming the policy and step_id), and evaluation
+continues. One broken predicate affects only its own evaluation -- never another
+predicate, policy, instance, or the engine's continuation. The same containment
+covers monitor-internal calls the engine makes outside `on_event`
+(`deciding_events`): a raise there leaves the verdict standing with its deciding
+evidence absent and the error visible. This mirrors the sink-failure policy:
+contain, record, continue. `KeyboardInterrupt` and other non-`Exception`
+`BaseException`s are never swallowed. Caveat, stated rather than hidden: monitor
+state updates that happened before a raising predicate call are kept.
 
 ## The late-event regime (admission)
 

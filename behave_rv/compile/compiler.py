@@ -47,6 +47,7 @@ from behave_rv.compile.automaton import (
     Policy,
     PredicateError,
     PreviouslyMonitor,
+    report_predicate_error,
     ScopedNeverMonitor,
     SinceMonitor,
     WithinMonitor,
@@ -286,8 +287,11 @@ def _predicate(resolution: Resolution) -> Predicate:
     def pred(event: Event) -> bool:
         try:
             return bool(func(MatchContext(), event, **params))
-        except Exception as exc:  # step author's bug: name the step, let the engine contain it
-            raise PredicateError(step_id, exc) from exc
+        except Exception as exc:  # step author's bug: no-match for THIS predicate only
+            error = PredicateError(step_id, exc)
+            if report_predicate_error(error):
+                return False
+            raise error from exc
 
     return pred
 

@@ -23,7 +23,7 @@ from collections.abc import Iterable
 from math import isfinite
 from typing import Optional
 
-from behave_rv.compile.automaton import Policy
+from behave_rv.compile.automaton import Policy, set_predicate_error_collector
 from behave_rv.engine.dispatch import Dispatcher
 from behave_rv.engine.instance import Instance
 from behave_rv.engine.timers import TimerQueue
@@ -127,6 +127,9 @@ class Engine:
         self.first_predicate_error = None
         self.predicate_error_sources = []
 
+        pred_errors: list = []
+        previous_collector = set_predicate_error_collector(pred_errors)
+
         if sink is None:
             deliver = verdicts.append
         else:
@@ -165,15 +168,17 @@ class Engine:
                 try:
                     status = instance.monitor.on_event(event)
                 except Exception as exc:
-                    # a broken predicate matches nothing; contain, record, continue
-                    # (mirrors the sink-failure policy: a step author's bug must not
-                    # kill the monitor or disturb any other policy or instance)
-                    self.predicate_errors += 1
-                    if self.first_predicate_error is None:
-                        self.first_predicate_error = exc
-                    self.predicate_error_sources.append(
-                        (policy.policy_id, getattr(exc, "step_id", None)))
+                    # a monitor-internal bug (not a predicate: those are contained
+                    # per-call via the collector); contain, record, continue
+                    self._record_predicate_error(policy.policy_id, exc)
                     status = None
+                for err in pred_errors:
+                    # per-predicate containment: each raised predicate was
+                    # no-match for that call alone; record it here with the
+                    # policy context, and let the rest of the event's handling
+                    # stand as evaluated
+                    self._record_predicate_error(policy.policy_id, err)
+                pred_errors.clear()
                 if status is not None:
                     deliver(self._verdict(instance, status, event, now))
                 else:
@@ -201,6 +206,7 @@ class Engine:
                     )
 
         self.live_instances = len(instances)
+        set_predicate_error_collector(previous_collector)
         return verdicts
 
     @staticmethod
@@ -299,12 +305,26 @@ class Engine:
                     self._verdict(instance, status, instance.monitor.trigger_event, event.event_time)
                 )
 
+    # -- error recording ------------------------------------------------------
+
+    def _record_predicate_error(self, policy_id: str, exc: Exception) -> None:
+        self.predicate_errors += 1
+        if self.first_predicate_error is None:
+            self.first_predicate_error = exc
+        self.predicate_error_sources.append((policy_id, getattr(exc, "step_id", None)))
+
     # -- verdict construction ----------------------------------------------
 
-    @staticmethod
     def _verdict(
-        instance: Instance, status: str, trigger: Optional[Event], at: float
+        self, instance: Instance, status: str, trigger: Optional[Event], at: float
     ) -> Verdict:
+        try:
+            deciding = instance.monitor.deciding_events()
+        except Exception as exc:
+            # a monitor-internal raise here must not kill the run; the verdict
+            # stands, its deciding evidence is just absent and the error visible
+            self._record_predicate_error(instance.policy_id, exc)
+            deciding = []
         return Verdict(
             policy_id=instance.policy_id,
             entity_key=dict(instance.entity_key),
@@ -312,5 +332,5 @@ class Engine:
             trigger_event=trigger,
             witnessing_trace=instance.witnessing_trace(),
             at=at,
-            deciding_events=instance.monitor.deciding_events(),
+            deciding_events=deciding,
         )

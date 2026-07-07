@@ -28,13 +28,41 @@ class PredicateError(Exception):
     """A registered step's predicate raised while evaluating an event.
 
     Carries the step_id so the engine can record which step is broken. The
-    engine treats the failed evaluation as "did not match" and continues.
+    engine treats the failed evaluation as "did not match" for THAT predicate
+    only -- the other predicates in the same event handling still evaluate.
     """
 
     def __init__(self, step_id: str, original: BaseException) -> None:
         super().__init__(f"step {step_id!r} raised {original!r}")
         self.step_id = step_id
         self.original = original
+
+
+# The predicate-error collector. Compiled predicates report a PredicateError
+# here instead of raising, so containment is per predicate call: a raise in one
+# predicate is no-match for that predicate alone, and the rest of on_event
+# still runs. The engine installs a list for the duration of run() and drains
+# it after each dispatch. A module-level slot is safe because engine
+# consumption is single-threaded by contract (see QueueSource). When no
+# collector is installed (a predicate called outside an engine run), the error
+# raises so direct callers still see it.
+_error_collector: Optional[list] = None
+
+
+def set_predicate_error_collector(collector: Optional[list]) -> Optional[list]:
+    """Install (or clear, with None) the collector; returns the previous one."""
+    global _error_collector
+    previous = _error_collector
+    _error_collector = collector
+    return previous
+
+
+def report_predicate_error(error: PredicateError) -> bool:
+    """Collect the error if a collector is installed; False means raise it."""
+    if _error_collector is None:
+        return False
+    _error_collector.append(error)
+    return True
 
 
 def _normalize_key(correlation_key: str | Iterable[str]) -> tuple[str, ...]:
