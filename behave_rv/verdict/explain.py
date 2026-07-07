@@ -28,7 +28,8 @@ def bind_text(text: str, bindings: dict[str, str]) -> str:
 
     def replace(match: re.Match[str]) -> str:
         name = match.group(1)
-        return bindings[name] if name in bindings else match.group(0)
+        # bound values are monitored-system-controlled: neutralize on render
+        return safe_value(bindings[name]) if name in bindings else match.group(0)
 
     return _PLACEHOLDER.sub(replace, text)
 
@@ -70,7 +71,9 @@ def explain_verdict(verdict: Verdict, scenario: Any, failing_step_index: int) ->
     )
 
     def _fmt(e):
-        return f"  t={e.event_time}  {e.type}  {e.payload}"
+        # every monitored-system-controlled string on this line goes through
+        # safe_value; payload renders as its repr (already escape-safe)
+        return f"  t={e.event_time}  {safe_value(e.type)}  {e.payload}"
 
     lines = [header, body]
     # The deciding events are always shown, whatever their age, so the explanation

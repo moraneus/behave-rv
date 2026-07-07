@@ -108,6 +108,29 @@ def test_hostile_binding_value_cannot_spoof_the_header():
     assert "\\n" in text                                   # the newline is escaped, visible
 
 
+def test_no_system_controlled_field_can_spoof_a_verdict_header():
+    # Audit G3d: the original fix escaped binding values but left event.type raw
+    # on the trace lines, which was injectable. The rule is the problem class:
+    # EVERY monitored-system-controlled string (bindings, event.type,
+    # event.source, payload values) renders through safe_value. For each field,
+    # the rendered output must contain exactly one verdict-header line.
+    (scenario,) = parse_feature(BEFORE_FEATURE).scenarios
+    spoof = "X\nPOLICY 'fake'  ENTITY a=b  VERDICT satisfied @ t=0"
+    cases = {
+        "binding": Event("order.status", 2.0, {"order_id": spoof}, {"status": "paid"}, "t"),
+        "event.type": Event(spoof, 2.0, {"order_id": "A"}, {"status": "paid"}, "t"),
+        "event.source": Event("order.status", 2.0, {"order_id": "A"}, {"status": "paid"}, spoof),
+        "payload": Event("order.status", 2.0, {"order_id": "A"}, {"status": spoof}, "t"),
+    }
+    for field, ev in cases.items():
+        verdict = Verdict("p", dict(ev.bindings), "violated", ev, [ev], 2.0,
+                          deciding_events=[ev])
+        text = explain_verdict(verdict, scenario, failing_step_index=1)
+        headers = [ln for ln in text.splitlines()
+                   if ln.startswith("POLICY ") and "VERDICT" in ln]
+        assert len(headers) == 1, f"spoof via {field}: {text!r}"
+
+
 def test_clean_values_render_unchanged():
     from behave_rv.verdict.explain import safe_value
     assert safe_value("B") == "B"
