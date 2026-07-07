@@ -431,9 +431,13 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
 - **Exposure API is a stub.** The design envisions a dedicated `@emits`, `@entity`,
   and `@terminal` exposure API. That module is currently a stub. The real
   monitorable taps today are the step decorators (`trigger`, `scope`, `obligation`).
-- **Liveness granularity.** The `observed` flag and the liveness report track event
-  types, not specific field values. A policy that depends on a value which never
-  appears while its event type does appear is not flagged.
+- **Liveness boundary.** Liveness is two level: a compile time warning fires when
+  a policy's event type never appeared in the observed stream, and also when the
+  type appeared but a concrete value the policy binds (for example
+  `status="locked"`) never did, so a renamed status value no longer disconnects a
+  policy silently. The honest boundary: liveness warns against a representative
+  stream (a replay or a live sample); it cannot predict that a value which has
+  never yet appeared never will.
 - **Robustness items not yet built.** Timer heaps are not purged, and the engine
   loop is single threaded rather than sharded per key. `within` deadlines fire on
   event time only: with no further events, a deadline waits for the next event or

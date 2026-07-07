@@ -246,6 +246,34 @@ property tests operate inside this regime.
 The first event in canonical order starts an instance. A key with no events yields
 no instance and no verdict. An empty trace yields no verdicts.
 
+## Liveness: type-level and value-level
+
+Liveness is the defense against silently disconnected policies. The engine
+harvests, over the admitted events of a run (live or replay), the set of event
+types seen (`observed_types`) and the set of `(event_type, field, value)`
+triples seen (`observed_values`), where a value is any scalar payload field
+(str/int/float/bool, compared as strings). At compile time, given those
+harvests, a policy is warned uncheckable (never refused) when:
+
+- **type-level**: a step it uses observes an event type that never appeared; or
+- **value-level**: the type appeared, but a concrete value the step's phrasing
+  binds (e.g. `status="locked"`) never appeared on that field for that type. A
+  missing type subsumes its values (one warning, not two).
+
+**Value granularity (scope decision).** The unit is string equality of scalar
+payload values, matching the standard step convention where a phrasing
+placeholder names the payload field it compares against. A predicate comparing
+a field its placeholder does not name, or using non-equality logic, is outside
+value-level liveness's sight; the type-level check still covers it.
+
+**The honest boundary.** Liveness flags what has not appeared in the observed
+stream; it cannot know a value will never appear in the future, only that it
+has not yet. Its strength is exactly the representativeness of the stream it is
+given (a replay of production, or a live sample). Within that boundary it
+catches the renamed-value chain: a service that starts emitting `"LOCKED"`
+where a policy expects `"locked"` now draws a compile-time warning naming the
+field and value, where previously nothing warned.
+
 ## A raising predicate (spec decision)
 
 A step predicate that raises while evaluating an event **matches nothing for that

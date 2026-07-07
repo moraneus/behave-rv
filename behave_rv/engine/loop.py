@@ -96,6 +96,7 @@ class Engine:
         self.invalid_events = 0
         self.dropped_invalid: list[Event] = []
         self.observed_types: set[str] = set()
+        self.observed_values: set[tuple[str, str, str]] = set()  # (event_type, field, value)
         self.retired_keys: list[tuple[str, ...]] = []
         self.reclaimed_keys: list[tuple[str, ...]] = []
         self.verdicts_delivered = 0
@@ -132,6 +133,7 @@ class Engine:
         self.invalid_events = 0
         self.dropped_invalid = []
         self.observed_types = set()
+        self.observed_values = set()
         self.retired_keys = []
         self.reclaimed_keys = []
         self.verdicts_delivered = 0
@@ -165,6 +167,11 @@ class Engine:
                 self.dropped_invalid.append(event)
                 continue
             self.observed_types.add(event.type)  # liveness harvest: this type was seen
+            for field, value in event.payload.items():
+                # value-level liveness: scalar payload values only (str/int/float/
+                # bool, compared as strings, matching how phrasing params arrive)
+                if isinstance(value, (str, int, float, bool)):
+                    self.observed_values.add((event.type, field, str(value)))
             self._fire_due_deadlines(now, instances, deadlines, deliver)
             self._reclaim_quiescent(now, instances, ttl_timers)
 

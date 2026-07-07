@@ -83,15 +83,21 @@ def compile_feature(
     registry: StepRegistry,
     *,
     observed_event_types: Optional[set[str]] = None,
+    observed_values: Optional[set[tuple[str, str, str]]] = None,
 ) -> list[Policy]:
     """Compile every scenario in a feature into a Policy.
 
     If ``observed_event_types`` is given, warn (do not refuse) when a policy
     depends on a step whose event type has never been observed in that stream.
+    If ``observed_values`` (the engine's (event_type, field, value) harvest) is
+    given, also warn when a policy depends on a concrete value that has never
+    appeared on that field -- the value-level liveness that catches a renamed
+    status silently disconnecting a policy.
     """
     feature = parse_feature(text_or_feature) if isinstance(text_or_feature, str) else text_or_feature
     policies = [
-        compile_scenario(scenario, registry, observed_event_types=observed_event_types)
+        compile_scenario(scenario, registry, observed_event_types=observed_event_types,
+                         observed_values=observed_values)
         for scenario in feature.scenarios
     ]
     seen: set[str] = set()
@@ -112,6 +118,7 @@ def compile_scenario(
     registry: StepRegistry,
     *,
     observed_event_types: Optional[set[str]] = None,
+    observed_values: Optional[set[tuple[str, str, str]]] = None,
 ) -> Policy:
     given, when, then = _split_steps(scenario)
     operator, operands, seconds = _parse_obligation(then[0].name, registry)
@@ -156,7 +163,7 @@ def compile_scenario(
 
     correlation_key = _single_key(used, scenario)
     event_types = frozenset(r.signature.event_type for r in used)
-    _warn_if_uncheckable(scenario, used, observed_event_types)
+    _warn_if_uncheckable(scenario, used, observed_event_types, observed_values)
     factory = _build_factory(operator, trigger_res, operands, seconds,
                              scope_res=scope_res, close_res=close_res)
 
@@ -255,18 +262,37 @@ def _parse_obligation(text, registry):
 # -- resolution + predicates ------------------------------------------------
 
 
-def _warn_if_uncheckable(scenario, used, observed_event_types) -> None:
-    if observed_event_types is None:
+def _warn_if_uncheckable(scenario, used, observed_event_types,
+                         observed_values=None) -> None:
+    if observed_event_types is None and observed_values is None:
         return
     for res in used:
-        if res.signature.event_type not in observed_event_types:
+        event_type = res.signature.event_type
+        if observed_event_types is not None and event_type not in observed_event_types:
             warnings.warn(
                 f"policy {scenario.name!r} depends on step {res.step_id!r} whose event "
-                f"{res.signature.event_type!r} has never been observed in the available "
+                f"{event_type!r} has never been observed in the available "
                 "stream; the policy may be uncheckable.",
                 UncheckablePolicyWarning,
                 stacklevel=3,
             )
+            continue  # a missing type subsumes its values
+        if observed_values is None:
+            continue
+        # value-level liveness: each concrete value the step's phrasing binds
+        # must have appeared on that field for that event type. The placeholder
+        # name is taken to name the payload field it compares against (the
+        # standard step convention).
+        for field, value in res.params.items():
+            if (event_type, field, str(value)) not in observed_values:
+                warnings.warn(
+                    f"policy {scenario.name!r} depends on step {res.step_id!r} with "
+                    f"{field}={value!r}, but no {event_type!r} event carrying that "
+                    "value has been observed in the available stream; the policy "
+                    "may be uncheckable.",
+                    UncheckablePolicyWarning,
+                    stacklevel=3,
+                )
 
 
 def _resolve_one(registry: StepRegistry, text: str, where: str) -> Resolution:
