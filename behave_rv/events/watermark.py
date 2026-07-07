@@ -72,6 +72,27 @@ class ReorderBuffer:
         self._seq += 1
         self._max_seen = max(self._max_seen, event.event_time)
 
+    @property
+    def clock_front(self) -> float:
+        """The highest admitted event time (the stream's clock front)."""
+        return self._max_seen
+
+    def advance_clock(self, tick: float) -> None:
+        """Advance the clock as if a tick event at ``tick`` arrived, without
+        admitting any event. Used by wall-clock deadline firing on live
+        sources: the watermark then moves exactly as the admission rules say,
+        so events arriving later that are older than the watermark are late
+        and flagged -- the committed-plus-flagged rule, via the existing
+        machinery rather than a second one."""
+        if tick > self._max_seen:
+            self._max_seen = tick
+
+    def peek_oldest(self) -> float | None:
+        """The earliest buffered event time, or None. On a live source the
+        engine uses this to age the buffer by wall clock: a buffered event is
+        released once grace wall-seconds have passed with no newer event."""
+        return self._heap[0][0] if self._heap else None
+
     def releasable(self) -> list[Event]:
         """Events now safe to emit, in canonical order. Advances the watermark.
 

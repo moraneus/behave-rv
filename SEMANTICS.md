@@ -246,6 +246,40 @@ property tests operate inside this regime.
 The first event in canonical order starts an instance. A key with no events yields
 no instance and no verdict. An empty trace yields no verdicts.
 
+## Wall-clock deadline firing on live sources
+
+Event time drives every verdict. On a **live source** (one that declares
+``live = True`` and supports a timed pull -- ``QueueSource``; replay and
+in-process sources are not live), wall time additionally advances the clock in
+the absence of events, under the stated assumption that a live source's event
+times progress at wall rate (do not mark a source live if its timestamps are
+simulated or compressed). The engine anchors the wall clock to the highest
+admitted event time and, while the stream is quiet, waits only until the
+earliest of: the nearest armed ``within`` deadline plus the grace window, or
+the oldest buffered event's age reaching the grace window.
+
+When that moment arrives with no event, the engine performs a **virtual clock
+tick** at that event time: the watermark advances exactly as if a real tick
+event had arrived (buffered stragglers older than the watermark release first,
+in canonical order), due deadlines fire through the same timer path, and no
+event is dispatched or added to any trace. Consequently:
+
+- A ``within`` deadline ``D`` fires on the live path when either an event's
+  time reaches it (as always) or wall time reaches ``D + grace``, whichever
+  comes first. The verdict's ``at`` is **D, the deadline's event time**, never
+  the wall instant.
+- **Late-after-fire is committed-plus-flagged**: the fire is a commitment that
+  event time has passed ``D``; an event arriving afterwards with time older
+  than the advanced watermark is late and flagged by the existing admission
+  rule -- a verdict never changes, and nothing is silently ignored. This is
+  the same boundary the reordering contract already defines: verdicts can
+  differ from a pure-event replay of the same trace only via the flagged
+  dropped set.
+- On non-live sources nothing changes: only event time drives the clock, and
+  replay verdicts are byte-identical to before. Consumption stays
+  single-threaded -- the mechanism is a blocking pull with a timeout in the
+  consumer thread, not a timer thread.
+
 ## Liveness: type-level and value-level
 
 Liveness is the defense against silently disconnected policies. The engine

@@ -24,11 +24,30 @@ from behave_rv.events.sources import EventSource
 
 _CLOSED = object()
 
+#: returned by :meth:`QueueSource.next_event` when the stream has been closed
+CLOSED = _CLOSED
+
 
 class QueueSource(EventSource):
+    #: live sources assume event_time progresses at wall rate between events,
+    #: which lets the engine fire `within` deadlines on wall time while the
+    #: stream is quiet. Do NOT mark a source live if its timestamps are
+    #: simulated or compressed.
+    live = True
+
     def __init__(self) -> None:
         self._queue: queue.Queue = queue.Queue()
         self._closed = False
+
+    def next_event(self, timeout: float | None):
+        """Blocking pull with an optional timeout (seconds). Returns the next
+        Event, ``CLOSED`` when the stream ended, or ``None`` on timeout --
+        which the engine uses to fire a matured wall-clock deadline."""
+        try:
+            item = self._queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+        return item  # an Event, or the CLOSED sentinel
 
     def push(self, event: Event) -> None:
         """Feed one event. Safe to call from any thread. Raises after close()."""

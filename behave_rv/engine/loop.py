@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from math import isfinite
+from time import monotonic
 from typing import Optional
 
 from behave_rv.compile.automaton import Policy, set_predicate_error_collector
@@ -156,59 +157,14 @@ class Engine:
                     self._sink_log.record(exc, verdict.policy_id)
 
         buffer = ReorderBuffer(self._grace) if self._grace > 0 else None
-        stream = self._ordered(source, buffer) if buffer is not None else source.events()
+        state = (instances, deadlines, ttl_timers, deliver, pred_errors)
 
-        for event in stream:
-            now = event.event_time
-            if not usable_time(now):
-                # unusable event_time -- non-finite or not a number at all
-                # (grace=0 path; the buffer rejects these on the default path)
-                self.invalid_events += 1
-                self.dropped_invalid.append(event)
-                continue
-            self.observed_types.add(event.type)  # liveness harvest: this type was seen
-            for field, value in event.payload.items():
-                # value-level liveness: scalar payload values only (str/int/float/
-                # bool, compared as strings, matching how phrasing params arrive)
-                if isinstance(value, (str, int, float, bool)):
-                    self.observed_values.add((event.type, field, str(value)))
-            self._fire_due_deadlines(now, instances, deadlines, deliver)
-            self._reclaim_quiescent(now, instances, ttl_timers)
-
-            for policy in self._dispatcher.candidates(event):
-                key = Dispatcher.key_of(policy, event)
-                if key is None:
-                    continue
-                instance = self._instance_for(policy, key, instances)
-                instance.witness(event)
-                monitor = instance.monitor
-                snapshot = dict(monitor.__dict__)  # small fixed-size scalar state
-                try:
-                    status = monitor.on_event(event)
-                except Exception as exc:
-                    # atomic per-event state: a raise that propagates through
-                    # on_event (a monitor-internal bug, or a raw programmatic
-                    # predicate outside the compiler's per-call containment)
-                    # leaves the monitor EXACTLY as it was -- the event is
-                    # not-applied for this monitor, never partially applied.
-                    monitor.__dict__.clear()
-                    monitor.__dict__.update(snapshot)
-                    self._record_predicate_error(policy.policy_id, exc)
-                    status = None
-                for err in pred_errors:
-                    # per-predicate containment: each raised predicate was
-                    # no-match for that call alone; record it here with the
-                    # policy context, and let the rest of the event's handling
-                    # stand as evaluated
-                    self._record_predicate_error(policy.policy_id, err)
-                pred_errors.clear()
-                if status is not None:
-                    deliver(self._verdict(instance, status, event, now))
-                else:
-                    self._reschedule(instance, instances, deadlines, ttl_timers)
-
-            if event.type in self._terminal:
-                self._retire_entity(event, instances, deliver)
+        if getattr(source, "live", False) and hasattr(source, "next_event"):
+            self._run_live(source, buffer, state)
+        else:
+            stream = self._ordered(source, buffer) if buffer is not None else source.events()
+            for event in stream:
+                self._handle_event(event, *state)
 
         if buffer is not None:
             self.dropped_late = list(buffer.late)
@@ -231,6 +187,133 @@ class Engine:
         self.live_instances = len(instances)
         set_predicate_error_collector(previous_collector)
         return verdicts
+
+    def _handle_event(self, event, instances, deadlines, ttl_timers, deliver,
+                      pred_errors) -> None:
+        """Apply one admitted event: liveness harvest, due timers, quiescence,
+        dispatch to the candidate policies' instances, terminal retirement."""
+        now = event.event_time
+        if not usable_time(now):
+            # unusable event_time -- non-finite or not a number at all
+            # (grace=0 path; the buffer rejects these on the default path)
+            self.invalid_events += 1
+            self.dropped_invalid.append(event)
+            return
+        self.observed_types.add(event.type)  # liveness harvest: this type was seen
+        for field, value in event.payload.items():
+            # value-level liveness: scalar payload values only (str/int/float/
+            # bool, compared as strings, matching how phrasing params arrive)
+            if isinstance(value, (str, int, float, bool)):
+                self.observed_values.add((event.type, field, str(value)))
+        self._fire_due_deadlines(now, instances, deadlines, deliver)
+        self._reclaim_quiescent(now, instances, ttl_timers)
+
+        for policy in self._dispatcher.candidates(event):
+            key = Dispatcher.key_of(policy, event)
+            if key is None:
+                continue
+            instance = self._instance_for(policy, key, instances)
+            instance.witness(event)
+            monitor = instance.monitor
+            snapshot = dict(monitor.__dict__)  # small fixed-size scalar state
+            try:
+                status = monitor.on_event(event)
+            except Exception as exc:
+                # atomic per-event state: a raise that propagates through
+                # on_event (a monitor-internal bug, or a raw programmatic
+                # predicate outside the compiler's per-call containment)
+                # leaves the monitor EXACTLY as it was -- the event is
+                # not-applied for this monitor, never partially applied.
+                monitor.__dict__.clear()
+                monitor.__dict__.update(snapshot)
+                self._record_predicate_error(policy.policy_id, exc)
+                status = None
+            for err in pred_errors:
+                # per-predicate containment: each raised predicate was
+                # no-match for that call alone; record it here with the
+                # policy context, and let the rest of the event's handling
+                # stand as evaluated
+                self._record_predicate_error(policy.policy_id, err)
+            pred_errors.clear()
+            if status is not None:
+                deliver(self._verdict(instance, status, event, now))
+            else:
+                self._reschedule(instance, instances, deadlines, ttl_timers)
+
+        if event.type in self._terminal:
+            self._retire_entity(event, instances, deliver)
+
+    def _run_live(self, source, buffer, state) -> None:
+        """The live loop: block for the next event OR until the nearest armed
+        deadline matures on the wall clock, whichever comes first.
+
+        Event time on a live source is assumed to progress at wall rate,
+        anchored at the last clock-front advance. A wall fire is a VIRTUAL
+        CLOCK TICK at event time ``deadline + grace``: it advances the
+        watermark exactly as a real tick would (so later events older than the
+        deadline are late and flagged -- committed-plus-flagged), releases
+        buffered stragglers first (preserving canonical order for everything
+        already admitted), and fires the due deadlines through the same timer
+        path, so the verdict's ``at`` is the deadline's event time. Consumption
+        stays single-threaded: no timer thread, no busy loop.
+        """
+        from behave_rv.events.sources.subscription import CLOSED
+
+        instances, deadlines, ttl_timers, deliver, pred_errors = state
+        front = float("-inf")     # highest admitted event time
+        anchor_wall: Optional[float] = None   # wall instant when front last advanced
+
+        while True:
+            # the next wall moment anything is waiting for: an armed deadline
+            # maturing, or a buffered event ageing past the grace window (on an
+            # idle stream nothing else would ever release it)
+            targets = []
+            next_deadline = deadlines.peek()
+            if next_deadline is not None:
+                targets.append(next_deadline + self._grace)
+            if buffer is not None:
+                oldest = buffer.peek_oldest()
+                if oldest is not None:
+                    targets.append(oldest + self._grace)
+            wait = None
+            if targets and anchor_wall is not None:
+                estimate = front + (monotonic() - anchor_wall)
+                wait = max(min(targets) - estimate, 0.0)
+
+            item = source.next_event(wait)
+            if item is CLOSED:
+                break
+            if item is None:
+                # wall fire: behave as if a clock tick at the matured target
+                # arrived, except no event is dispatched and nothing joins the
+                # trace (the epsilon clears the strict release boundary)
+                tick = min(targets) + 1e-9
+                if buffer is not None:
+                    buffer.advance_clock(tick)
+                    for released in buffer.releasable():
+                        self._handle_event(released, *state)
+                if tick > front:
+                    front = tick
+                    anchor_wall = monotonic()
+                self._fire_due_deadlines(tick, instances, deadlines, deliver)
+                continue
+
+            if buffer is not None:
+                buffer.push(item)
+                if buffer.clock_front > front:
+                    front = buffer.clock_front
+                    anchor_wall = monotonic()
+                for released in buffer.releasable():
+                    self._handle_event(released, *state)
+            else:
+                if usable_time(item.event_time) and item.event_time > front:
+                    front = item.event_time
+                    anchor_wall = monotonic()
+                self._handle_event(item, *state)
+
+        if buffer is not None:
+            for released in buffer.flush():
+                self._handle_event(released, *state)
 
     @staticmethod
     def _ordered(source: _Source, buffer: ReorderBuffer):

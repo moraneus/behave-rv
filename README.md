@@ -439,9 +439,10 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
   stream (a replay or a live sample); it cannot predict that a value which has
   never yet appeared never will.
 - **Robustness items not yet built.** Timer heaps are not purged, and the engine
-  loop is single threaded rather than sharded per key. `within` deadlines fire on
-  event time only: with no further events, a deadline waits for the next event or
-  for the source to close. These are known and deferred.
+  loop is single threaded rather than sharded per key. On live sources
+  (`QueueSource`) a `within` deadline also fires on wall time while the stream is
+  quiet (the verdict's `at` stays the deadline's event time); on replay sources
+  only event time drives deadlines, exactly as before.
 - **Event sources.** In process, replay, and subscription (queue) sources are
   implemented. The OpenTelemetry and structured log sources are stubs.
 

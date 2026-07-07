@@ -25,6 +25,12 @@ class TimerQueue:
         heapq.heappush(self._heap, (when, self._seq, instance_id))
         self._seq += 1
 
+    def peek(self) -> float | None:
+        """The earliest scheduled time, or None. May be a stale entry (its
+        instance already settled); callers treat a stale wakeup as cheap --
+        firing at that time pops and revalidates it via due()."""
+        return self._heap[0][0] if self._heap else None
+
     def due(self, now: float) -> Iterator[tuple[float, Hashable]]:
         """Yield (deadline, instance_id) for every timer at or before ``now``."""
         while self._heap and self._heap[0][0] <= now:

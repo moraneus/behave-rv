@@ -146,6 +146,72 @@ def test_close_flush_resolves_armed_within_when_horizon_passed():
     assert v.at == 31.0
 
 
+def test_wall_clock_fires_deadline_on_idle_live_stream():
+    # The field trial's end-of-day hang: a within armed and then silence. On a
+    # live source the deadline now fires on wall time, with `at` equal to the
+    # DEADLINE'S EVENT TIME, without waiting for the next event or close().
+    pol = within("deadline", correlation_key="order_id", seconds=0.2,
+                 is_trigger=lambda e: e.payload.get("status") == "started",
+                 is_response=lambda e: e.payload.get("status") == "completed",
+                 event_types={"order.status"})
+    src = QueueSource()
+    delivered = []
+    engine = Engine([pol], grace=0.1)
+    t = threading.Thread(target=lambda: engine.run(src, sink=delivered.append))
+    t.start()
+    src.push(_oe("started", 0.0))                 # deadline 0.2; then silence
+
+    deadline_wall = time.monotonic() + 5.0
+    while not delivered and time.monotonic() < deadline_wall:
+        time.sleep(0.02)
+    src.close()
+    t.join(timeout=5)
+
+    assert delivered, "the deadline never fired on the idle stream"
+    assert delivered[0].verdict == "violated"
+    assert delivered[0].at == 0.2                 # the deadline's event time,
+    #                                               NOT the wall-clock instant
+
+
+def test_wall_fire_is_committed_and_late_response_is_flagged():
+    # Late-after-fire (committed-plus-flagged): a response arriving after the
+    # wall fire, with event_time before the deadline, is flagged late by the
+    # existing admission rule; the verdict never changes silently.
+    pol = within("deadline", correlation_key="order_id", seconds=0.2,
+                 is_trigger=lambda e: e.payload.get("status") == "started",
+                 is_response=lambda e: e.payload.get("status") == "completed",
+                 event_types={"order.status"})
+    src = QueueSource()
+    delivered = []
+    engine = Engine([pol], grace=0.1)
+    t = threading.Thread(target=lambda: engine.run(src, sink=delivered.append))
+    t.start()
+    src.push(_oe("started", 0.0))
+    deadline_wall = time.monotonic() + 5.0
+    while not delivered and time.monotonic() < deadline_wall:
+        time.sleep(0.02)
+    src.push(_oe("completed", 0.15))              # the would-have-been response
+    time.sleep(0.2)
+    src.close()
+    t.join(timeout=5)
+
+    assert [v.verdict for v in delivered] == ["violated"]   # committed
+    assert engine.late_events == 1                           # and flagged
+    assert engine.dropped_late[0].payload["status"] == "completed"
+
+
+def test_replay_path_never_wall_fires():
+    # Determinism on non-live sources is untouched: an armed within on a replay
+    # (in-process) source stays pending exactly as before, no matter how much
+    # wall time passes during the run.
+    pol = within("deadline", correlation_key="order_id", seconds=30,
+                 is_trigger=lambda e: e.payload.get("status") == "started",
+                 is_response=lambda e: e.payload.get("status") == "completed",
+                 event_types={"order.status"})
+    (v,) = Engine([pol]).run(_src([_oe("started", 1.0)]), emit_pending=True)
+    assert v.verdict == "pending"
+
+
 def test_close_leaves_within_pending_when_horizon_short():
     pol = within("deadline", correlation_key="order_id", seconds=30,
                  is_trigger=lambda e: e.payload.get("status") == "started",
