@@ -44,12 +44,15 @@ def _oe(status, t, oid="A"):
 
 
 @settings(max_examples=300, deadline=None)
-@given(triples, st.lists(policies, min_size=1, max_size=3))
+@given(triples, st.lists(policies, min_size=1, max_size=5))
 def test_sink_sequence_equals_batch_list(tr, policy_dicts):
     # THE pinning property: sink delivery is a transport, not a semantic change.
-    # Multiple policies over three keys make 3+ verdicts per run routine, so a
-    # delivery fault conditioned on any verdict ordinal is visible (mutation M6
-    # was missed when generated runs never exceeded 2 verdicts).
+    # Up to 5 simultaneous policies over three keys, so faults conditioned on
+    # verdict ordinals (mutation M6) or on the policy COUNT (audit mutation N1:
+    # an engine silently dropping a policy at 4+) are visible. The batch is
+    # also checked against the per-policy oracle, so batch-vs-sink agreement
+    # cannot mask a policy both runs lost identically.
+    from tests.oracle import oracle_verdicts
     events = _events(tr)
     built = [_build(p, name=f"p{i}") for i, p in enumerate(policy_dicts)]
     rebuilt = [_build(p, name=f"p{i}") for i, p in enumerate(policy_dicts)]
@@ -62,6 +65,15 @@ def test_sink_sequence_equals_batch_list(tr, policy_dicts):
     assert [_sig(v) for v in delivered] == [_sig(v) for v in batch]
     assert returned == []                      # with a sink, run() does not accumulate
     assert engine.verdicts_delivered == len(batch)
+
+    # every policy's verdicts must be present: compare against the oracle
+    expected = sorted(
+        (f"p{i}", key, verdict)
+        for i, p in enumerate(policy_dicts)
+        for key, verdict in oracle_verdicts(events, p).items()
+    )
+    got = sorted((v.policy_id, v.entity_key["order_id"], v.verdict) for v in batch)
+    assert got == expected
 
 
 def test_sink_object_with_emit_is_accepted():

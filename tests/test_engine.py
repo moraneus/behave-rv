@@ -175,6 +175,39 @@ def test_explicit_zero_grace_is_the_ordering_ignorant_fast_path():
     assert [v.verdict for v in Engine([_precedence_policy()], grace=0).run(s)] == ["violated"]
 
 
+def test_engine_surfaces_invalid_event_accounting_on_both_paths():
+    # Audit mutation N3 (the engine-level invalid counter silently zeroed) was
+    # invisible: the step-4 test asserted only at the BUFFER level. Pin the
+    # engine surface for both admission paths.
+    from behave_rv.compile.automaton import never
+
+    policy = never("p", correlation_key="order_id", event_types={"order.status"},
+                   bad=lambda e: False)
+
+    def bad_events():
+        return [Event("order.status", t, {"order_id": "A"}, {"status": "x"}, "t")
+                for t in (float("nan"), 1.0, None)]
+
+    # buffered (default grace) path
+    src = InProcessSource()
+    for e in bad_events():
+        src.emit(e)
+    engine = Engine([policy])
+    engine.run(src, emit_pending=False)
+    assert engine.invalid_events == 2
+    assert sorted(str(e.event_time) for e in engine.dropped_invalid) == ["nan", "None"] or \
+        len(engine.dropped_invalid) == 2
+
+    # grace=0 fast path
+    src = InProcessSource()
+    for e in bad_events():
+        src.emit(e)
+    engine0 = Engine([policy], grace=0)
+    engine0.run(src, emit_pending=False)
+    assert engine0.invalid_events == 2
+    assert len(engine0.dropped_invalid) == 2
+
+
 def test_emit_pending_surfaces_open_instances_at_stream_end():
     policy = within("deliver-fast", correlation_key="order_id", seconds=30,
                     is_trigger=is_requested, is_response=is_fulfilled,

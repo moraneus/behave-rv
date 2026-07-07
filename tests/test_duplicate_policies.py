@@ -33,6 +33,29 @@ def test_compiler_refuses_duplicate_scenario_names(reg):
         compile_feature(feat, reg)
 
 
+def test_engine_runs_every_one_of_many_policies(reg):
+    # Audit mutation N1 (an engine silently dropping a policy once handed 4+)
+    # was invisible: nothing constructed more than 3 policies. Deterministic
+    # pin: 6 policies, one violating event each, all 6 verdicts must appear.
+    from behave_rv.engine.loop import Engine
+    from behave_rv.events.event import Event
+    from behave_rv.events.sources.inprocess import InProcessSource
+
+    lines = ["Feature: many"]
+    for i in range(6):
+        lines.append(f'  Scenario: rule {i}\n    Then an order is "s{i}" never happens')
+    policies = compile_feature("\n".join(lines) + "\n", reg)
+
+    src = InProcessSource()
+    for i in range(6):
+        src.emit(Event("order.status", float(i), {"order_id": f"o{i}"},
+                       {"status": f"s{i}"}, "t"))
+    verdicts = Engine(policies).run(src, emit_pending=False)
+
+    assert sorted(v.policy_id for v in verdicts) == [f"rule {i}" for i in range(6)]
+    assert all(v.verdict == "violated" for v in verdicts)
+
+
 def test_engine_refuses_duplicate_policy_ids():
     p1 = never("dup", correlation_key="order_id", event_types={"order.status"},
                bad=lambda e: False)
