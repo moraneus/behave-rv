@@ -145,6 +145,20 @@ Feature: cross entity
         compile_feature(feature, reg)
 
 
+def test_within_window_must_be_finite(reg):
+    # Audit G4e: a huge literal parses to float inf, so the deadline could
+    # never fire and the obligation would silently never violate by timeout.
+    big = "9" * 400
+    feature = f'''
+Feature: f
+  Scenario: s
+    When an order is "paid"
+    Then an order is "authorized" within "{big}" seconds
+'''
+    with pytest.raises(CompileError, match="finite number of seconds"):
+        compile_feature(feature, reg)
+
+
 def test_unresolved_step_is_refused(reg):
     feature = '''
 Feature: unknown

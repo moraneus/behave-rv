@@ -44,6 +44,19 @@ def test_releases_once_the_watermark_advances():
     assert _times(buf.releasable()) == [1.0]
 
 
+def test_non_number_times_are_rejected_not_crashed():
+    # Audit G4d: a string or None event_time crashed isfinite() with a
+    # TypeError. The guard is "usable finite real number", so ANY unusable
+    # time is rejected into the same invalid accounting, whatever the reason.
+    buf = ReorderBuffer(grace=5)
+    for bad in ("yesterday", None, object(), [1.0]):
+        buf.push(Event("e", bad, {"order_id": "A"}, {}, "test"))
+    assert len(buf.invalid) == 4
+    assert buf._heap == []
+    buf.push(ev(1.0))
+    assert _times(buf.flush()) == [1.0]           # normal flow unaffected
+
+
 def test_non_finite_times_are_rejected_at_admission():
     # Interrogation D1: inf poisoned the watermark (everything after it was
     # late forever) and NaN entered the heap with undefined ordering. Both are

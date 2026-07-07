@@ -28,7 +28,7 @@ from behave_rv.engine.dispatch import Dispatcher
 from behave_rv.engine.instance import Instance
 from behave_rv.engine.timers import TimerQueue
 from behave_rv.events.event import Event
-from behave_rv.events.watermark import ReorderBuffer
+from behave_rv.events.watermark import ReorderBuffer, usable_time
 from behave_rv.verdict.record import Verdict
 
 InstanceId = tuple[str, tuple[str, ...]]
@@ -146,9 +146,9 @@ class Engine:
 
         for event in stream:
             now = event.event_time
-            if not isfinite(now):
-                # non-finite event_time (grace=0 path; the buffer rejects these
-                # before they reach here on the default path)
+            if not usable_time(now):
+                # unusable event_time -- non-finite or not a number at all
+                # (grace=0 path; the buffer rejects these on the default path)
                 self.invalid_events += 1
                 self.dropped_invalid.append(event)
                 continue
@@ -241,7 +241,9 @@ class Engine:
     ) -> None:
         instance_id = (instance.policy_id, tuple(instance.entity_key.values()))
         deadline = instance.monitor.next_deadline()
-        if deadline is not None:
+        if deadline is not None and isfinite(deadline):
+            # a non-finite deadline (programmatic seconds=inf, or overflow) can
+            # never fire; never let it into the timer heap
             deadlines.schedule(deadline, instance_id)
         if self._ttl is not None:
             ttl_timers.schedule(instance.last_activity + self._ttl, instance_id)

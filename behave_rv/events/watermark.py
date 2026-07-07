@@ -19,6 +19,17 @@ from math import inf, isfinite
 from behave_rv.events.event import Event
 
 
+def usable_time(value) -> bool:
+    """True iff ``value`` can drive the watermark and the timers: a finite real
+    number. Anything else -- inf, -inf, NaN, a string, None, any non-number --
+    is unusable and must be rejected with visibility rather than crash or
+    corrupt ordering."""
+    try:
+        return isfinite(value)
+    except TypeError:
+        return False
+
+
 class ReorderBuffer:
     def __init__(self, grace: float) -> None:
         self.grace = grace
@@ -46,7 +57,7 @@ class ReorderBuffer:
         )
 
     def push(self, event: Event) -> None:
-        if not isfinite(event.event_time):
+        if not usable_time(event.event_time):
             self.invalid.append(event)
             return
         if event.event_time < self._watermark:

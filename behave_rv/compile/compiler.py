@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from math import isfinite
 from collections.abc import Callable
 from typing import Optional
 
@@ -228,7 +229,15 @@ def _parse_obligation(text, registry):
         return "previously", one(m.group("pred"), "previously-condition"), None
     m = _WITHIN.match(text)
     if m:
-        return "within", one(m.group("resp"), "within-response"), float(m.group("secs"))
+        seconds = float(m.group("secs"))
+        if not isfinite(seconds):
+            # a huge literal parses to float inf: the deadline could never fire
+            # and the obligation would be silently unfulfillable-to-violate
+            raise CompileError(
+                f"within window {m.group('secs')!r} is not a finite number of "
+                "seconds; the deadline must be a finite event time"
+            )
+        return "within", one(m.group("resp"), "within-response"), seconds
     m = _BEFORE.match(text)
     if m:
         return "before", one(m.group("prior"), "before-condition"), None
