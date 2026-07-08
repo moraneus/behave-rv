@@ -125,7 +125,10 @@ tasks_lock = threading.Lock()
 def board():
     with tasks_lock:
         current = sorted(tasks.values(), key=lambda t: t["id"])
-    return render_template("board.html", tasks=current, actions=BOARD_ACTIONS)
+    policy_cards = [{"name": p.policy_id,
+                     "steps": [f"{s.keyword} {s.name}" for s in p.authored_scenario.steps]}
+                    for p in policies]
+    return render_template("board.html", tasks=current, policy_cards=policy_cards)
 
 
 @app.route("/task", methods=["POST"])

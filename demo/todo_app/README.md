@@ -17,14 +17,18 @@ Two pages, one engine:
 
 - `http://127.0.0.1:5003` -- the scripted console: green/red buttons replay
   canned correct and buggy flows.
-- `http://127.0.0.1:5003/board` -- the interactive board: a real-looking todo
-  app where YOU create tasks and click start / checkpoint / complete / reopen /
-  edit / block / unblock / archive / delete. Every click emits one event. The
-  board deliberately never enforces the lifecycle -- any button works at any
-  time -- because judging legality is the monitor's job, not the app's. The
-  left-side console shows the live event stream and every verdict; violations
-  arrive as the authored scenario rendered with the failing step marked, and
-  the offending task's card is flagged red.
+- `http://127.0.0.1:5003/board` -- "Taskly", the interactive board: a
+  modern-looking todo app where YOU create tasks and act on them (start /
+  checkpoint / complete on each card, the rest -- edit, reopen, block,
+  unblock, archive, delete -- in the card's overflow menu; the circle
+  checkbox completes). Every click emits one event. The board deliberately
+  never enforces the lifecycle -- any action works at any time -- because
+  judging legality is the monitor's job, not the app's. Three panes:
+  the dark monitor console on the left (live event stream + every verdict,
+  violations rendered as the authored scenario with the failing step
+  marked), your tasks in the middle, and all 12 policies as cards on the
+  right, each showing its Gherkin and per-task verdict badges that flip
+  green/red/grey live. A violating task's card is flagged red.
 
 Things to try on the board: complete a task you never started; edit a task
 after deleting or archiving it; or start a task and just walk away -- the
