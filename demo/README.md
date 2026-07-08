@@ -75,5 +75,16 @@ Every operator appears in at least one policy that the tests fire and verify;
 sits idle, which is the point of the "never refund / never review / miss the
 window" buttons.
 
+## Specification stability under code change
+
+The order demo also demonstrates the catalog mechanism (the "policies survive
+the agent's refactoring" claim): a committed `catalog.json` contract, a pure
+rename absorbed silently with identical verdicts, a contract change surfacing
+as Breaks scoped to the using policies, and the two changes signatures cannot
+see (a renamed status value, a dropped emission) caught by value-level
+liveness instead. See
+[order_service/README.md](order_service/README.md#evolution-the-catalog-surviving-the-agents-refactoring)
+and run `python -m demo.order_service.evolution`.
+
 Per-demo policy tables: [order_service](order_service/README.md),
 [session_service](session_service/README.md), [todo_app](todo_app/README.md).

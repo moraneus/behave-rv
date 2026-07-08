@@ -46,3 +46,29 @@ Two pages, one engine:
 `test_policies.py` replays every mock flow through the real engine with an
 injected deterministic clock and asserts the exact verdict set, including the
 deciding events behind each violation. Run with `pytest demo/order_service`.
+
+## Evolution: the catalog surviving the agent's refactoring
+
+`catalog.json` is the committed behavioral contract between this service's
+code and the 11 policies. `evolution.py` plays five "the agent rewrote the
+service" scenarios against it:
+
+```
+python -m demo.order_service.evolution        # narrated
+pytest demo/order_service/test_evolution.py   # asserted (7 tests)
+```
+
+| Act | The agent's change | What catches it |
+|---|---|---|
+| 1 | function + wording renamed, contract identical | nothing, by design: diff says `renamed`, zero notifications, verdicts identical |
+| 2 | event type + payload field move | signature diff -> 11 Breaks, scoped to exactly the policies using the step, with the contract diff in the message |
+| 3 | status value `"paid"` -> `"charged"` | NOT the diff (contract unchanged, honestly silent); value-level liveness against an observed stream flags the three paid-dependent policies |
+| 4 | the invoice emission silently dropped | NOT the diff; the same liveness check flags `every order is eventually invoiced` |
+| 5 | new uncovered tap + an agent test asserting something weaker | the Suggestion and Weakening channels, never blurred with Breaks |
+
+`test_act0_committed_catalog_matches_the_code` is the CI gate: change the
+step's contract in `steps.py` without regenerating the catalog (a reviewable
+diff plus notifications) and it fails. After an INTENDED contract change,
+regenerate with
+`python -c "from demo.order_service.evolution import write_catalog; write_catalog()"`
+and commit the catalog diff alongside the code.

@@ -1,0 +1,27 @@
+{
+  "catalog_format_version": 1,
+  "entries": [
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "an order is \"{status}\"",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "8b7b781e57a6a635",
+        "correlation_key": [
+          "order_id"
+        ],
+        "event_type": "order.status",
+        "payload_fields": {
+          "status": "any"
+        },
+        "referenced_fields": [
+          "status"
+        ],
+        "trigger_condition": "an order is \"{status}\""
+      },
+      "step_id": "order.status.is",
+      "version": 1
+    }
+  ]
+}
