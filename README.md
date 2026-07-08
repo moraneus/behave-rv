@@ -104,6 +104,9 @@ self-contained and takes no `When` (its own predicate is the forbidden event).
 
 ### Temporal operators
 
+The complete authoring reference, with satisfying and violating traces for
+every form, is [`docs/OPERATORS.md`](docs/OPERATORS.md).
+
 | Operator | Authorable phrasing | Meaning (see `SEMANTICS.md`) |
 | --- | --- | --- |
 | `never` | `Then <predicate> never happens` (no `When`) | The named event must never occur for this entity. Violated the first time it does; otherwise pending. |
