@@ -125,6 +125,55 @@ def test_bug_relock_then_act_fires_until():
     assert v.deciding_events[0].event_time > 5.0
 
 
+def run_manual(clicks, advance_past_timers=False):
+    """Replay board clicks through the real service: 'fail' goes through the
+    actual lockout logic (the third fail emits locked by itself), 'end' emits
+    the terminal, anything else is a direct status click."""
+    clock = FakeClock()
+    events = []
+    service = SessionService(events.append, clock=clock, sleep=clock.sleep)
+    for uid, click in clicks:
+        if click == "fail":
+            service.fail_login(uid)
+        elif click == "end":
+            service.end_session(uid)
+        else:
+            service.act(uid, click)
+        clock.sleep(0.5)
+    if advance_past_timers:
+        events.append(Event("clock.tick", clock.now + 60.0, {}, {}, "test"))
+    src = InProcessSource()
+    for e in events:
+        src.emit(e)
+    verdicts = Engine(load_policies(build_registry()),
+                      terminal_event_types={TERMINAL_TYPE}).run(src, emit_pending=True)
+    return {(v.policy_id, v.entity_key["user_id"]): v for v in verdicts}
+
+
+def test_manual_board_clean_session():
+    vmap = run_manual([("A", "login_ok"), ("A", "action"),
+                       ("A", "logout"), ("A", "end")],
+                      advance_past_timers=True)
+    assert violated(vmap) == set()
+    assert vmap[(EVENTUALLY_LOGOUT, "A")].verdict == "satisfied"
+
+
+def test_manual_board_third_fail_click_locks_and_acting_is_caught():
+    # the lockout is real app logic: three "fail" clicks emit locked by
+    # themselves; the user then acts anyway -> both scoped rules fire, and
+    # the previously rule stays clean because the lock followed a real fail
+    vmap = run_manual([("A", "login_ok"), ("A", "fail"), ("A", "fail"),
+                       ("A", "fail"), ("A", "review"), ("A", "action")])
+    assert violated(vmap) == {(LOCKED_NEVER_ACTS, "A"), (LOCKED_UNTIL, "A")}
+    assert vmap[(LOCK_AFTER_FAIL, "A")].verdict == "satisfied"
+
+
+def test_manual_board_forced_lock_violates_previously():
+    # "force lock" emits locked with no failed attempt right before it
+    vmap = run_manual([("A", "login_ok"), ("A", "locked"), ("A", "review")])
+    assert violated(vmap) == {(LOCK_AFTER_FAIL, "A")}
+
+
 def test_quiet_policies_never_violate_across_all_flows():
     from demo.session_service.service import FLOWS
     for action, (_, _, flow_name) in FLOWS.items():

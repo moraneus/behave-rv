@@ -33,17 +33,48 @@ class SessionService:
         self._emit(Event(TERMINAL_TYPE, self._clock(), {"user_id": uid},
                          {}, "session-service"))
 
-    def _fail_login(self, uid: str) -> None:
-        """Real lockout logic: the third consecutive failure emits locked."""
+    def _register_fail(self, uid: str) -> bool:
+        """The one source of lockout truth: count the failure, reset and
+        report True when it is the one that locks the account."""
         self._fails[uid] = self._fails.get(uid, 0) + 1
-        self._ev(uid, "login_fail")
         if self._fails[uid] >= LOCK_AFTER:
             self._fails[uid] = 0
+            return True
+        return False
+
+    def _fail_login(self, uid: str) -> None:
+        """Real lockout logic: the third consecutive failure emits locked."""
+        locks = self._register_fail(uid)
+        self._ev(uid, "login_fail")
+        if locks:
             self._ev(uid, "locked")
 
     def _lock_via_fails(self, uid: str) -> None:
         for _ in range(LOCK_AFTER):
             self._fail_login(uid)
+
+    # -- manual actions (driven by the board UI, one event per user click) ----
+
+    def act(self, uid: str, status: str) -> None:
+        """Emit a single user-caused status event, no pacing. The board never
+        blocks an action; whether it was legal is the monitor's call."""
+        self._emit(Event(EVENT_TYPE, self._clock(), {"user_id": uid},
+                         {"status": status}, "session-service"))
+
+    def fail_login(self, uid: str) -> bool:
+        """Manual failed login, through the SAME lockout logic as the flows:
+        the third consecutive click emits locked by itself. Returns True when
+        this failure locked the account."""
+        locks = self._register_fail(uid)
+        self.act(uid, "login_fail")
+        if locks:
+            self.act(uid, "locked")
+        return locks
+
+    def end_session(self, uid: str) -> None:
+        """Emit the terminal event: the session's story ends here, so pending
+        obligations (like 'eventually logs out') settle now."""
+        self._end(uid)
 
     # -- normal flows ---------------------------------------------------------
 

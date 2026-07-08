@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ ui.brand }} · live-verified {{ ui.noun }}s</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23{{ accent[1:] }}'/%3E%3Ctext x='50' y='74' font-size='68' text-anchor='middle' fill='white'%3E%E2%9C%93%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --accent:{{ accent }};
+    --accent-soft:color-mix(in srgb, var(--accent) 12%, white);
+    --accent-ink:color-mix(in srgb, var(--accent) 72%, black);
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9; --surface:#ffffff;
+    --ok:#16a34a; --ok-soft:#dcfce7; --bad:#dc2626; --bad-soft:#fee2e2; --pend:#94a3b8;
+    --radius:14px; --shadow:0 1px 2px rgba(15,23,42,.05), 0 4px 16px rgba(15,23,42,.06);
+  }
+  * { box-sizing:border-box; margin:0; }
+  body { font:14px/1.5 -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+         background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+
+  header { background:var(--surface); border-bottom:1px solid var(--line);
+           padding:0 26px; height:58px; display:flex; align-items:center; gap:12px;
+           position:sticky; top:0; z-index:20; }
+  .logo { width:30px; height:30px; border-radius:9px; background:var(--accent); color:#fff;
+          display:grid; place-items:center; font-weight:800; font-size:16px; }
+  header h1 { font-size:16px; font-weight:700; letter-spacing:-.01em; }
+  header .sub { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  header a { margin-left:auto; color:var(--accent-ink); background:var(--accent-soft);
+             text-decoration:none; font-size:12.5px; font-weight:600; padding:7px 14px;
+             border-radius:999px; }
+  header a:hover { filter:brightness(.97); }
+
+  main { display:grid; grid-template-columns:minmax(300px,370px) minmax(380px,1fr) minmax(280px,340px);
+         gap:18px; padding:18px 26px; align-items:start; }
+  @media (max-width:1080px) { main { grid-template-columns:1fr; } }
+
+  .panel-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em;
+                 color:var(--muted); margin:0 2px 10px; display:flex; align-items:center; gap:8px; }
+  .panel-label .dot { width:7px; height:7px; border-radius:99px; background:var(--ok);
+                      box-shadow:0 0 0 3px var(--ok-soft); }
+
+  /* ── monitor console ─────────────────────────────────────── */
+  #console { background:#0b1220; border-radius:var(--radius); box-shadow:var(--shadow);
+             padding:16px; max-height:calc(100vh - 100px); overflow:auto; }
+  #console .panel-label { color:#7c8aa5; }
+  #console .panel-label .dot { box-shadow:0 0 0 3px rgba(22,163,74,.25); }
+  #console section + section { margin-top:18px; }
+  .violation { border:1px solid rgba(220,38,38,.35); border-left:3px solid var(--bad);
+               border-radius:10px; padding:10px 12px; background:rgba(220,38,38,.08);
+               margin-bottom:8px; animation:pop .35s ease; }
+  @keyframes pop { from { transform:translateY(-4px); opacity:0; } }
+  .violation .head { color:#fca5a5; font-weight:650; font-size:12.5px; margin-bottom:6px; }
+  .violation pre { font:11px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+                   white-space:pre-wrap; color:#dbe3f0; }
+  .satline { color:#4ade80; font:11.5px ui-monospace, Menlo, monospace; padding:2px; margin-bottom:2px; }
+  #violations:empty::after { content:"Nothing violated. The monitor is watching quietly.";
+                             color:#3d4a63; font-size:12px; }
+  #feed { font:11.5px/1.7 ui-monospace, "SF Mono", Menlo, monospace; }
+  #feed div { padding:1px 2px; border-bottom:1px solid rgba(148,163,184,.08); white-space:nowrap;
+              overflow:hidden; text-overflow:ellipsis; }
+  #feed .tm { color:#5a6a87; } #feed .ent { color:#7dd3fc; font-weight:600; } #feed .st { color:#cbd5e1; }
+  #feed:empty::after { content:"No events yet."; color:#3d4a63; font-size:12px; }
+
+  /* ── entities column ─────────────────────────────────────── */
+  #newentity { display:flex; gap:10px; margin-bottom:16px; background:var(--surface);
+               border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+               padding:8px; }
+  #newentity input { flex:1; border:0; outline:0; font:inherit; font-size:15px; padding:8px 10px;
+                     background:transparent; color:var(--ink); }
+  #newentity input::placeholder { color:var(--muted); }
+  #newentity button { border:0; border-radius:10px; background:var(--accent); color:#fff;
+                      font:inherit; font-weight:650; padding:9px 18px; cursor:pointer; white-space:nowrap; }
+  #newentity button:hover { filter:brightness(1.06); }
+
+  #cards { display:flex; flex-direction:column; gap:10px; }
+  .entity { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+            box-shadow:var(--shadow); padding:13px 16px; display:flex; gap:13px; align-items:flex-start;
+            transition:border-color .2s, box-shadow .2s; }
+  .entity.flagged { border-color:#fca5a5; box-shadow:0 0 0 3px var(--bad-soft); }
+  .entity.gone { opacity:.55; }
+  .avatar { width:34px; height:34px; border-radius:10px; background:var(--accent-soft);
+            display:grid; place-items:center; font-size:17px; flex:none; margin-top:1px; }
+  .body { flex:1; min-width:0; }
+  .row1 { display:flex; align-items:baseline; gap:10px; }
+  .title { font-weight:600; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tid { color:var(--muted); font:11px ui-monospace, Menlo, monospace; flex:none; margin-left:auto; }
+  .row2 { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:2.5px 10px; border-radius:999px;
+          font-size:11.5px; font-weight:650; background:#f1f5f9; color:#475569; }
+  .pill::before { content:""; width:6px; height:6px; border-radius:99px; background:currentColor; opacity:.7; }
+  .pill.ok { background:var(--ok-soft); color:#15803d; }
+  .pill.info { background:#dbeafe; color:#1d4ed8; }
+  .pill.warn { background:#fef3c7; color:#b45309; }
+  .pill.danger { background:var(--bad-soft); color:#b91c1c; }
+  .pill.violet { background:#ede9fe; color:#6d28d9; }
+  .pill.muted { background:#f1f5f9; color:#64748b; }
+  .acts { display:flex; gap:6px; margin-left:auto; align-items:center; flex-wrap:wrap; }
+  .acts > button { border:1px solid var(--line); background:var(--surface); border-radius:8px;
+                   font:12px inherit; font-weight:550; color:#334155; padding:4.5px 11px; cursor:pointer;
+                   transition:all .12s; }
+  .acts > button:hover { border-color:var(--accent); color:var(--accent-ink); background:var(--accent-soft); }
+  details.menu { position:relative; }
+  details.menu summary { list-style:none; cursor:pointer; border:1px solid var(--line); border-radius:8px;
+                         padding:4.5px 9px; font-weight:700; color:#64748b; line-height:1;
+                         background:var(--surface); }
+  details.menu summary::-webkit-details-marker { display:none; }
+  details.menu summary:hover { border-color:var(--accent); color:var(--accent-ink); }
+  details.menu[open] summary { background:var(--accent-soft); border-color:var(--accent); }
+  .menu-pop { position:absolute; right:0; top:calc(100% + 6px); background:var(--surface);
+              border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,.14);
+              padding:6px; z-index:10; min-width:160px; }
+  .menu-pop button { display:block; width:100%; text-align:left; border:0; background:none;
+                     font:12.5px inherit; color:#334155; padding:7px 10px; border-radius:8px; cursor:pointer; }
+  .menu-pop button:hover { background:#f1f5f9; }
+  .menu-pop button.danger { color:var(--bad); }
+  .menu-pop button.danger:hover { background:var(--bad-soft); }
+  #empty { border:1.5px dashed #cbd5e1; border-radius:var(--radius); color:var(--muted);
+           text-align:center; padding:34px 20px; font-size:13.5px; }
+  .hint { color:var(--muted); font-size:12px; margin-top:14px; line-height:1.6; }
+
+  /* ── policies column ─────────────────────────────────────── */
+  #policies { max-height:calc(100vh - 100px); overflow:auto; display:flex; flex-direction:column; gap:8px; }
+  .policy { background:var(--surface); border:1px solid var(--line); border-radius:12px;
+            box-shadow:var(--shadow); padding:10px 13px; }
+  .policy .pname { font-weight:600; font-size:12.5px; margin-bottom:5px; }
+  .policy .gherkin { font:10.5px/1.55 ui-monospace, "SF Mono", Menlo, monospace; color:var(--muted);
+                     white-space:pre-wrap; margin-bottom:2px; }
+  .policy .gherkin b { color:var(--accent-ink); font-weight:650; }
+  .badges { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .badges:empty { display:none; }
+  .badge { font:10.5px ui-monospace, Menlo, monospace; font-weight:700; color:#fff;
+           background:var(--pend); border-radius:999px; padding:2px 8px; transition:background .2s; }
+  .badge.satisfied { background:var(--ok); } .badge.violated { background:var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✓</div>
+  <div>
+    <h1>{{ ui.brand }}</h1>
+    <div class="sub">{{ ui.tagline }}</div>
+  </div>
+  <a href="/">scripted demo console →</a>
+</header>
+<main>
+  <aside id="console">
+    <section>
+      <div class="panel-label"><span class="dot"></span>Monitor · violations</div>
+      <div id="violations"></div>
+    </section>
+    <section>
+      <div class="panel-label"><span class="dot"></span>Event stream</div>
+      <div id="feed"></div>
+    </section>
+  </aside>
+
+  <section>
+    <div class="panel-label"><span class="dot"></span>Your {{ ui.noun }}s</div>
+    <form id="newentity">
+      <input id="label" placeholder="{{ ui.placeholder }}" autocomplete="off">
+      <button type="submit">{{ ui.create_label }}</button>
+    </form>
+    <div id="cards">
+      {% for e in entities %}
+      <div class="entity" id="card-{{ e.id }}" data-status="{{ e.status }}">
+        <div class="avatar">{{ ui.avatar }}</div>
+        <div class="body">
+          <div class="row1"><span class="title">{{ e.label }}</span><span class="tid">{{ e.id }}</span></div>
+          <div class="row2"><span class="pill">{{ e.status }}</span><span class="acts"></span></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div id="empty" {% if entities %}hidden{% endif %}>No {{ ui.noun }}s yet — create one above.<br>
+      Then try breaking a rule: the app will let you, the monitor won't miss it.</div>
+    <p class="hint">{{ ui.hint }}</p>
+  </section>
+
+  <aside>
+    <div class="panel-label"><span class="dot"></span>Policies · live verdicts</div>
+    <div id="policies">
+      {% for p in policy_cards %}
+      <div class="policy" data-name="{{ p.name }}">
+        <div class="pname">{{ p.name }}</div>
+        <div class="gherkin">{% for s in p.steps %}<b>{{ s.split(' ')[0] }}</b> {{ s.split(' ', 1)[1] }}{% if not loop.last %}
+{% endif %}{% endfor %}</div>
+        <div class="badges"></div>
+      </div>
+      {% endfor %}
+    </div>
+  </aside>
+</main>
+
+<script>
+const UI = {{ ui|tojson }};
+const cards = document.getElementById('cards');
+const feed = document.getElementById('feed');
+const violations = document.getElementById('violations');
+const empty = document.getElementById('empty');
+const policyBadges = {};
+document.querySelectorAll('.policy').forEach(p => policyBadges[p.dataset.name] = p.querySelector('.badges'));
+
+function post(url) {
+  return fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+}
+
+function buildActs(card, eid) {
+  const acts = card.querySelector('.acts');
+  acts.textContent = '';
+  for (const [action, label] of UI.primary) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = (e) => { e.preventDefault(); post(`${UI.base}/${eid}/${action}`); };
+    acts.appendChild(b);
+  }
+  const menu = document.createElement('details');
+  menu.className = 'menu';
+  menu.innerHTML = '<summary>⋯</summary><div class="menu-pop"></div>';
+  const pop = menu.querySelector('.menu-pop');
+  for (const [action, label, danger] of UI.more) {
+    const b = document.createElement('button');
+    b.textContent = label; if (danger) b.className = 'danger';
+    b.onclick = (e) => { e.preventDefault(); menu.removeAttribute('open');
+                         post(`${UI.base}/${eid}/${action}`); };
+    pop.appendChild(b);
+  }
+  acts.appendChild(menu);
+}
+
+function applyStatus(card, status) {
+  card.dataset.status = status;
+  const pill = card.querySelector('.pill');
+  pill.textContent = status;
+  pill.className = 'pill ' + (UI.pills[status] || 'muted');
+  card.classList.toggle('gone', UI.gone.includes(status));
+}
+
+function upsertEntity(d) {
+  let card = document.getElementById('card-' + d.id);
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'entity'; card.id = 'card-' + d.id;
+    card.innerHTML = '<div class="avatar"></div><div class="body">' +
+      '<div class="row1"><span class="title"></span><span class="tid"></span></div>' +
+      '<div class="row2"><span class="pill"></span><span class="acts"></span></div></div>';
+    card.querySelector('.avatar').textContent = UI.avatar;
+    card.querySelector('.tid').textContent = d.id;
+    buildActs(card, d.id);
+    cards.prepend(card);
+    empty.hidden = true;
+  }
+  card.querySelector('.title').textContent = d.label;
+  applyStatus(card, d.status);
+}
+
+document.querySelectorAll('.entity').forEach(c => {
+  buildActs(c, c.id.slice(5));
+  applyStatus(c, c.dataset.status);
+});
+
+document.getElementById('newentity').onsubmit = (e) => {
+  e.preventDefault();
+  const input = document.getElementById('label');
+  fetch(UI.base, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({label: input.value})});
+  input.value = '';
+  input.focus();
+};
+
+new EventSource('/stream').onmessage = (m) => {
+  const d = JSON.parse(m.data);
+  if (d.kind === 'entity') {
+    upsertEntity(d);
+  } else if (d.kind === 'event') {
+    const row = document.createElement('div');
+    row.innerHTML = '<span class="tm"></span> <span class="ent"></span> <span class="st"></span>';
+    row.querySelector('.tm').textContent = 't=' + d.t;
+    row.querySelector('.ent').textContent = d.entity;
+    row.querySelector('.st').textContent = d.status;
+    feed.prepend(row);
+    while (feed.childElementCount > 120) feed.lastChild.remove();
+  } else if (d.kind === 'verdict') {
+    const holder = policyBadges[d.policy];
+    if (holder) {
+      let badge = holder.querySelector(`[data-ent="${d.entity}"]`);
+      if (!badge) { badge = document.createElement('span'); badge.dataset.ent = d.entity;
+                    holder.appendChild(badge); }
+      badge.className = 'badge ' + d.verdict;
+      badge.textContent = d.entity;
+      badge.title = `${d.entity}: ${d.verdict}`;
+    }
+    const card = document.getElementById('card-' + d.entity);
+    if (d.verdict === 'violated') {
+      if (card) card.classList.add('flagged');
+      const v = document.createElement('div');
+      v.className = 'violation';
+      v.innerHTML = '<div class="head"></div><pre></pre>';
+      v.querySelector('.head').textContent = `✗ ${d.entity} — ${d.policy}`;
+      v.querySelector('pre').textContent = d.explanation || '';
+      violations.prepend(v);
+      while (violations.childElementCount > 20) violations.lastChild.remove();
+    } else if (d.verdict === 'satisfied') {
+      const s = document.createElement('div');
+      s.className = 'satline';
+      s.textContent = `✓ ${d.entity} — ${d.policy}`;
+      violations.prepend(s);
+      while (violations.childElementCount > 20) violations.lastChild.remove();
+    }
+  }
+};
+</script>
+</body>
+</html>

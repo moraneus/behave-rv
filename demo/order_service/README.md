@@ -9,11 +9,23 @@ Run it:
 
 ```
 pip install -r demo/requirements.txt
-python -m demo.order_service.app        # open http://127.0.0.1:5001
+python -m demo.order_service.app
 ```
 
-Green buttons play correct flows; each red button plants exactly one bug and
-lights up exactly the policy written to catch it.
+Two pages, one engine:
+
+- `http://127.0.0.1:5001` -- the scripted console: green buttons play correct
+  flows, each red button plants exactly one bug and lights up exactly the
+  policy written to catch it.
+- `http://127.0.0.1:5001/board` -- "Shoply", the interactive board: create
+  orders yourself and drive them by hand (authorize / pay / ship / deliver on
+  the card, the rest -- invoice, cancel, refund, flag, review, charge again,
+  close -- in the overflow menu). The shop never blocks an action; the
+  policies judge each click. Three panes: the dark monitor console (event
+  stream + verdicts, violations rendered as your scenario with the failing
+  step marked), your orders, and all 11 policies as cards with per-order
+  verdict badges flipping live. Closing an undelivered order settles its
+  "eventually" obligations on the spot -- red, with the terminal as witness.
 
 ## Policies
 

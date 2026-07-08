@@ -19,7 +19,7 @@ import queue
 import threading
 import time
 
-from flask import Flask, Response, render_template
+from flask import Flask, Response, render_template, request
 
 from behave_rv.engine.loop import Engine
 from behave_rv.events.sources.subscription import QueueSource
@@ -104,6 +104,81 @@ def index():
                            policies=sorted(by_id))
 
 
+# -- the interactive board: the user IS the mock ---------------------------
+# The board deliberately never enforces the lifecycle. Any button works at any
+# time; the policies decide what was legal. Order state here is display-only.
+
+BOARD_ACTIONS = {"authorize": "authorized", "pay": "paid", "invoice": "invoiced",
+                 "ship": "shipped", "deliver": "delivered", "cancel": "cancelled",
+                 "refund": "refunded", "flag": "fraud_flagged", "review": "reviewed",
+                 "double_charge": "double_charged"}
+
+BOARD_UI = {
+    "brand": "Shoply", "tagline": "an order pipeline verified live by behave_rv",
+    "noun": "order", "avatar": "\U0001f6d2", "placeholder": "What's being ordered?",
+    "create_label": "New order", "base": "/order",
+    "primary": [["authorize", "authorize"], ["pay", "pay"],
+                ["ship", "ship"], ["deliver", "deliver"]],
+    "more": [["invoice", "invoice", False], ["cancel", "cancel", False],
+             ["refund", "refund", False], ["flag", "flag as fraud", False],
+             ["review", "review", False], ["double_charge", "charge again", True],
+             ["close", "close order", True]],
+    "pills": {"created": "muted", "authorized": "info", "paid": "info",
+              "invoiced": "violet", "shipped": "info", "delivered": "ok",
+              "cancelled": "warn", "refunded": "violet", "fraud_flagged": "warn",
+              "reviewed": "ok", "double_charged": "danger", "done": "muted"},
+    "gone": ["done"],
+    "hint": ("This shop never blocks an action — legality is the monitor's job. "
+             "Try paying before authorizing, shipping a cancelled order, or cancelling "
+             "and never refunding: the refund window fires at 5s on the wall clock. "
+             "Close an undelivered order and watch its 'eventually' obligations settle."),
+}
+
+orders: dict[str, dict] = {}
+orders_lock = threading.Lock()
+
+
+@app.route("/board")
+def board():
+    with orders_lock:
+        current = sorted(orders.values(), key=lambda o: o["id"])
+    policy_cards = [{"name": p.policy_id,
+                     "steps": [f"{s.keyword} {s.name}" for s in p.authored_scenario.steps]}
+                    for p in policies]
+    return render_template("board.html", ui=BOARD_UI, accent="#2563eb",
+                           entities=current, policy_cards=policy_cards)
+
+
+@app.route("/order", methods=["POST"])
+def create_order():
+    label = ((request.get_json(silent=True) or {}).get("label") or "").strip()
+    oid = f"ORD-{next(counter)}"
+    with orders_lock:
+        orders[oid] = {"id": oid, "label": label or "Order", "status": "created"}
+        snapshot = dict(orders[oid])
+    service.act(oid, "created")
+    broadcast.publish({"kind": "entity", **snapshot})
+    return {"ok": True, "id": oid}
+
+
+@app.route("/order/<oid>/<action>", methods=["POST"])
+def order_action(oid, action):
+    if action != "close" and action not in BOARD_ACTIONS:
+        return {"ok": False, "error": "unknown action"}, 400
+    with orders_lock:
+        order = orders.get(oid)
+        if order is None:
+            return {"ok": False, "error": "unknown order"}, 404
+        order["status"] = "done" if action == "close" else BOARD_ACTIONS[action]
+        snapshot = dict(order)
+    if action == "close":
+        service.close(oid)
+    else:
+        service.act(oid, BOARD_ACTIONS[action])
+    broadcast.publish({"kind": "entity", **snapshot})
+    return {"ok": True}
+
+
 @app.route("/action/<name>", methods=["POST"])
 def action(name):
     label, kind, flow = FLOWS[name]
@@ -118,5 +193,6 @@ def stream():
 
 
 if __name__ == "__main__":
-    print("Order Service demo -> http://127.0.0.1:5001")
+    print("Order Service demo -> http://127.0.0.1:5001        (scripted flows)")
+    print("Shoply board       -> http://127.0.0.1:5001/board  (interactive app)")
     app.run(port=5001, threaded=True)

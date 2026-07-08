@@ -9,12 +9,24 @@ Run it:
 
 ```
 pip install -r demo/requirements.txt
-python -m demo.session_service.app      # open http://127.0.0.1:5002
+python -m demo.session_service.app
 ```
 
-The marquee contrast here is the two scope forms: "Play: lock, unlock, act"
-fires the latching scoped rule (04) but leaves the interval (`until`) rule
-(06) clean, while "Trigger: re-lock then act" fires both.
+Two pages, one engine:
+
+- `http://127.0.0.1:5002` -- the scripted console. The marquee contrast here
+  is the two scope forms: "Play: lock, unlock, act" fires the latching scoped
+  rule (04) but leaves the interval (`until`) rule (06) clean, while
+  "Trigger: re-lock then act" fires both.
+- `http://127.0.0.1:5002/board` -- "Authly", the interactive board: open
+  sessions yourself and drive them (login ok / fail login / do action on the
+  card; logout, review, unlock, flag, force lock, end session in the overflow
+  menu). The third "fail login" click locks the account through the service's
+  REAL lockout logic -- watch it emit `locked` by itself. Everything else is
+  deliberately unenforced: act while locked, act after logout, or force a
+  lock with no failed attempt (the `previously` rule catches it). Three
+  panes: monitor console, sessions, and all 10 policies as cards with
+  per-user verdict badges flipping live.
 
 ## Policies
 

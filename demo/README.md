@@ -27,11 +27,24 @@ bug each. Watch the chain: action -> event in the live log -> verdict badge
 flips -> the authored scenario renders as a counterexample in the explanation
 panel.
 
-The todo demo additionally has an interactive board at
-`http://127.0.0.1:5003/board`: a real-looking todo app where you drive the
-events yourself (create, start, complete, edit, archive, delete, ...) and a
-left-side monitor console shows each event you cause and every violation the
-engine decides, live.
+Every demo also has an interactive board at `/board` -- a real-looking app
+where YOU drive the events, with a dark monitor console on the left (live
+event stream plus every verdict, violations rendered as the authored scenario
+with the failing step marked) and all policies as cards on the right, their
+per-entity badges flipping green/red/grey live:
+
+- `http://127.0.0.1:5001/board` -- **Shoply**: create and drive orders by
+  hand; close an undelivered order and watch its "eventually" obligations
+  settle red at the terminal.
+- `http://127.0.0.1:5002/board` -- **Authly**: open sessions; the third
+  failed-login click locks the account through the service's real lockout
+  logic, and everything after that is between you and the policies.
+- `http://127.0.0.1:5003/board` -- **Taskly**: a todo app; complete an
+  unstarted task, edit a deleted one, or start a task and walk away until
+  the wall-clock windows fire.
+
+The boards never enforce their own rules -- any action works at any time.
+Judging legality is the monitor's job, which is the whole demonstration.
 
 ## Verify without the UI
 

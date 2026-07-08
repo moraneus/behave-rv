@@ -32,6 +32,19 @@ class OrderService:
         self._emit(Event(TERMINAL_TYPE, self._clock(), {"order_id": oid},
                          {}, "order-service"))
 
+    # -- manual actions (driven by the board UI, one event per user click) ----
+
+    def act(self, oid: str, status: str) -> None:
+        """Emit a single user-caused status event, no pacing. The board never
+        blocks an action; whether it was legal is the monitor's call."""
+        self._emit(Event(EVENT_TYPE, self._clock(), {"order_id": oid},
+                         {"status": status}, "order-service"))
+
+    def close(self, oid: str) -> None:
+        """Emit the terminal event: the order's story ends here, so pending
+        'eventually' obligations settle now, satisfied or violated."""
+        self._done(oid)
+
     # -- normal flows ---------------------------------------------------------
 
     def flow_full_lifecycle(self, oid: str) -> None:

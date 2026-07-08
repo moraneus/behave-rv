@@ -129,6 +129,58 @@ def test_bug_pay_after_flag():
     assert [e.payload["status"] for e in v.deciding_events] == ["fraud_flagged", "paid"]
 
 
+def run_manual(actions, advance_past_timers=False):
+    """Replay board clicks: one service.act per (order_id, status) click --
+    'close' emits the terminal event -- with the clock advancing between
+    clicks the way real clicks are spaced."""
+    clock = FakeClock()
+    events = []
+    service = OrderService(events.append, clock=clock, sleep=clock.sleep)
+    for oid, status in actions:
+        if status == "close":
+            service.close(oid)
+        else:
+            service.act(oid, status)
+        clock.sleep(0.5)
+    if advance_past_timers:
+        events.append(Event("clock.tick", clock.now + 60.0, {}, {}, "test"))
+    src = InProcessSource()
+    for e in events:
+        src.emit(e)
+    verdicts = Engine(load_policies(build_registry()),
+                      terminal_event_types={TERMINAL_TYPE}).run(src, emit_pending=True)
+    return {(v.policy_id, v.entity_key["order_id"]): v for v in verdicts}
+
+
+def test_manual_board_clicks_clean_lifecycle():
+    vmap = run_manual([("A", s) for s in
+                       ("created", "authorized", "paid", "invoiced",
+                        "shipped", "delivered", "close")],
+                      advance_past_timers=True)
+    assert_no_unexpected_violations(vmap)
+    assert vmap[(DELIVERED, "A")].verdict == "satisfied"
+
+
+def test_manual_board_close_settles_unmet_obligations():
+    # closing an order that was never invoiced nor delivered settles both
+    # 'eventually' onces to violated at the terminal
+    vmap = run_manual([("A", "created"), ("A", "authorized"),
+                       ("A", "paid"), ("A", "close")])
+    assert_no_unexpected_violations(vmap, {(INVOICED, "A"), (DELIVERED, "A")})
+
+
+def test_manual_board_clicks_illegal_actions_are_caught_per_order():
+    # two orders driven by hand in one interleaved session: one pays without
+    # authorization, the other ships after cancelling (paid first, so only
+    # the cancelled-scope rule fires)
+    vmap = run_manual([("A", "created"), ("B", "created"),
+                       ("B", "authorized"), ("A", "paid"),
+                       ("B", "paid"), ("B", "invoiced"), ("B", "cancelled"),
+                       ("B", "refunded"), ("B", "shipped")])
+    assert_no_unexpected_violations(vmap, {(PAID_AFTER_AUTH, "A"),
+                                           (CANCELLED_NEVER_SHIPS, "B")})
+
+
 def test_quiet_policies_never_violate_across_all_flows():
     from demo.order_service.service import FLOWS
     for action, (_, _, flow_name) in FLOWS.items():
