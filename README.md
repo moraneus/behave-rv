@@ -389,7 +389,10 @@ that raises is recorded on `engine.sink_errors` and evaluation continues.
 
 This is the distinctive feature. When the code that exposes predicates changes,
 human policies should not rot in silence. behave_rv keeps them aligned with a
-behavioural signature.
+behavioural signature. **The complete mechanism -- all three defense paths with
+real worked examples, the CLI workflow, and the measured detection table over
+an 18-case code-change catalog -- is documented in
+[`STABILITY.md`](STABILITY.md).**
 
 Each registered step has a stable `step_id` and a **behavioural signature**: the
 event type it observes, the fields a policy can reference, the correlation key, the

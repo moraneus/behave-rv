@@ -4,6 +4,10 @@ The reference definition of the correct verdict for each implemented operator, a
 a function of the event **trace**, independent of the implementation. The oracle
 in `tests/oracle.py` implements exactly this; the engine is checked against it.
 
+Specification stability (the catalog diff, liveness, and their measured
+detection table) is specified operationally in `STABILITY.md`; this document
+covers the runtime verdict semantics.
+
 Scope: the operators that exist today — `never`, `before`, `within` — plus the
 event-time reordering contract. Nothing else.
 
