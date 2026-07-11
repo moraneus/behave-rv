@@ -43,8 +43,10 @@ explanation for every violation.
 
 Three roles keep this honest and separate:
 
-- **The code** exposes a monitorable surface. Small, side effect free predicates
-  observe events and bind a correlation key. These are the taps the monitor reads.
+- **The code** exposes a monitorable surface: small predicates that observe
+  events. Steps are REQUIRED to be deterministic and side-effect free; the
+  framework expects this and does not enforce it. These are the taps the
+  monitor reads.
 - **A human** writes the policies in Gherkin, using a fixed temporal vocabulary
   plus the predicates the code exposes.
 - **A deterministic engine** evaluates the policies. There is no language model
@@ -280,16 +282,25 @@ default_registry.alias("order.status.is", 'the order reaches "{status}"')
 
 The step contract is **inverted** relative to classic behave, and the difference
 matters. In behave, a `@when` step performs an action and a `@then` step asserts a
-result, both with side effects, run once. In behave_rv a step is a **pure
-predicate**: it observes an event, returns a boolean, and mutates nothing outside
-itself. It is evaluated continuously over the stream rather than executed once.
+result, both with side effects, run once. In behave_rv a step is REQUIRED to be a
+**pure predicate**: it observes an event, returns a boolean, and mutates nothing
+outside itself. The framework expects this and does not enforce it -- a step that
+sneaks in side effects or nondeterminism silently breaks the reproducibility
+guarantee, and no runtime check will catch it. A step is evaluated continuously
+over the stream rather than executed once.
 
 Three decorators are available: `trigger` (a `When`), `scope` (a `Given`), and
 `obligation` (a `Then`). Today the compiler wires `trigger` predicates into `When`
 steps and into the operands of `before` and `within`; `scope` is recognized but
-refused (see the vocabulary table). A trigger also binds the correlation key by
-calling `ctx.bind(...)`, which is how the engine knows which entity an event
-belongs to.
+refused (see the vocabulary table).
+
+How the engine knows which entity an event belongs to: the decorator declares
+the correlation-key **fields** (`correlation_key="order_id"`), and the engine
+reads their **values** from `event.bindings` when it dispatches. The
+`ctx.bind(...)` call inside a step records into a per-evaluation scratch
+context that the dispatcher does not consume; calling it is optional and has
+no effect on dispatch. It is kept as a readable declaration of which binding
+the step observed (and a hook for future cross-checking), not as a mechanism.
 
 ## Running the monitor
 
@@ -383,6 +394,16 @@ behavioural signature.
 Each registered step has a stable `step_id` and a **behavioural signature**: the
 event type it observes, the fields a policy can reference, the correlation key, the
 exposed payload fields, and a rename invariant fingerprint of the predicate body.
+The fingerprint is a conservative, AST-based approximation of the matching
+contract, not a semantic-equivalence check: it is invariant to identifier names
+and formatting, sensitive to structure and constants, and blind to helper-function
+internals and unavailable source. Known false positives (a break reported where
+behavior is unchanged): introducing a temporary variable, commutative reordering
+of `and`/`or` operands, extracting logic into a helper. Known false negative: a
+change *inside* a called helper's body moves behavior without moving the
+signature (value-level liveness against an observed stream is the backstop
+there). The bias is deliberate: a false alarm costs a glance, a missed alarm
+costs a dormant policy.
 Policy step lines resolve by text against the registered phrasings (primary or
 alias) to a `step_id`; the signature diff and the notification scoping then work
 on that identity, never on the text. A reworded phrasing therefore stays
@@ -419,12 +440,11 @@ interaction of terminal retirement and quiescence reclamation with reordering.
 
 The implementation is validated against that specification by property based tests
 (Hypothesis) that check the engine's verdict against an independent oracle across
-large generated input spaces, including adversarial event orderings. The tested
-fragment is the implemented one: the `never`, `before`, and `within` operators over
-a single correlation key, with event time reordering, late event drops, terminal
-events, and quiescence. The full test suite is 121 tests at the time of writing.
-This is strong evidence over the tested space, not a proof, and the space it covers
-is stated plainly rather than overclaimed.
+large generated input spaces, including adversarial event orderings, plus a real
+mutation-testing campaign (see `MUTATION.md`: 1873 mutants, 89.9% killed, every
+survivor classified). The full test suite is 231 core tests (286 with the demo
+suites) at the time of writing. This is strong evidence over the tested space, not
+a proof, and the space it covers is stated plainly rather than overclaimed.
 
 ## Limitations and scope
 
@@ -435,9 +455,15 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
   compile time.
 - **Operator set.** `never` (plain and `Given`-scoped, latching or `until`),
   `before`, `within`, and the past-time LTL fragment `once`, `historically`,
-  `previously`, and `since` are implemented. Future-time liveness beyond the
-  bounded `within` is deliberately out of the monitorable fragment (an unbounded
-  future property has no defined verdict on a finite prefix).
+  `previously`, and `since` are implemented. One unbounded eventuality IS
+  accepted: `has happened`. It is not refused; it stays honestly `pending` on an
+  open trace and becomes conclusive only when the event occurs or the entity
+  reaches a terminal event -- with no terminal event configured it may remain
+  pending indefinitely, and the engine warns at startup when that combination
+  is running (`NoTerminalConfiguredWarning`; `historically` and `since` settle
+  at a terminal the same way). Bounded response uses `within`; what stays out
+  of the fragment is unbounded liveness that would need a *violated* verdict
+  on a finite prefix, which has none.
 - **Grammar subset.** Exactly one `Then` per scenario, plus one `When` for
   `before`, `within`, and `previously`, and at most one `Given` (wired for
   `never` only). `Given` on the other operators, `When` with `never`, and

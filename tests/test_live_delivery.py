@@ -147,7 +147,7 @@ def test_close_flush_resolves_armed_within_when_horizon_passed():
 
 
 def test_wall_clock_fires_deadline_on_idle_live_stream():
-    # The field trial's end-of-day hang: a within armed and then silence. On a
+    # The seeded-fault evaluation's end-of-day hang: a within armed and then silence. On a
     # live source the deadline now fires on wall time, with `at` equal to the
     # DEADLINE'S EVENT TIME, without waiting for the next event or close().
     pol = within("deadline", correlation_key="order_id", seconds=0.2,

@@ -19,12 +19,19 @@ produces the same verdicts every time.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable
 from math import isfinite
 from time import monotonic
 from typing import Optional
 
-from behave_rv.compile.automaton import Policy, set_predicate_error_collector
+from behave_rv.compile.automaton import (
+    HistoricallyMonitor,
+    OnceMonitor,
+    Policy,
+    SinceMonitor,
+    set_predicate_error_collector,
+)
 from behave_rv.engine.dispatch import Dispatcher
 from behave_rv.engine.instance import Instance
 from behave_rv.engine.timers import TimerQueue
@@ -43,6 +50,11 @@ InstanceId = tuple[str, tuple[str, ...]]
 # end-of-stream flush corrects any residual ordering within the run. Raise it for
 # laggier sources; set grace=0 for the fast path.
 DEFAULT_GRACE = 5.0
+
+
+class NoTerminalConfiguredWarning(UserWarning):
+    """A policy that settles at a terminal event is running with none configured,
+    so on a live stream it may remain pending indefinitely."""
 
 
 class ErrorLog:
@@ -87,6 +99,27 @@ class Engine:
         self._policies = {p.policy_id: p for p in policies}
         self._dispatcher = Dispatcher(self._policies.values())
         self._terminal = frozenset(terminal_event_types)
+        if not self._terminal:
+            # Unbounded eventualities and terminal-settled invariants are NOT
+            # refused (see README "Three valued verdicts"): they stay pending
+            # on an open trace and become conclusive only when the event
+            # occurs or the entity reaches a terminal event. With no terminal
+            # configured, surface that "may stay pending indefinitely" to the
+            # author instead of leaving it silent.
+            unsettleable = [
+                p.policy_id for p in self._policies.values()
+                if isinstance(p.monitor_factory(),
+                              (OnceMonitor, HistoricallyMonitor, SinceMonitor))
+            ]
+            if unsettleable:
+                warnings.warn(
+                    f"policies {unsettleable!r} settle at a terminal event, but no "
+                    "terminal_event_types are configured: on a live stream they may "
+                    "remain pending indefinitely (a replay run with emit_pending "
+                    "reports the honest pending state)",
+                    NoTerminalConfiguredWarning,
+                    stacklevel=2,
+                )
         self._ttl = quiescence_ttl
         self._grace = grace
         # observability, populated by run()

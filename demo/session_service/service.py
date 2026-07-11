@@ -110,7 +110,7 @@ class SessionService:
         self._ev(uid, "logout")
 
     def bug_stale_token(self, uid: str) -> None:
-        """The field-trial security bug: a locked user still acts."""
+        """The seeded-fault evaluation's security bug: a locked user still acts."""
         self._ev(uid, "login_ok")
         self._lock_via_fails(uid)
         self._ev(uid, "review")
