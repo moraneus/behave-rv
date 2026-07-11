@@ -48,3 +48,4 @@ htmlcov/
 # Runtime artifacts
 *.log
 mutants/
+demo/perf/traces/*_100k.jsonl

@@ -1,0 +1,1000 @@
+{"type": "session.status", "event_time": 0.0, "bindings": {"user_id": "USR-1"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 0.35, "bindings": {"user_id": "USR-2"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 0.7, "bindings": {"user_id": "USR-3"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 0.6, "bindings": {"user_id": "USR-1"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 0.95, "bindings": {"user_id": "USR-2"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.2, "bindings": {"user_id": "USR-1"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.0499999999999998, "bindings": {"user_id": "USR-4"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.2999999999999998, "bindings": {"user_id": "USR-3"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.4, "bindings": {"user_id": "USR-5"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.65, "bindings": {"user_id": "USR-4"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.75, "bindings": {"user_id": "USR-6"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.5499999999999998, "bindings": {"user_id": "USR-2"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.7999999999999998, "bindings": {"user_id": "USR-1"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 1.9, "bindings": {"user_id": "USR-3"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.15, "bindings": {"user_id": "USR-2"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.0, "bindings": {"user_id": "USR-5"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.0999999999999996, "bindings": {"user_id": "USR-7"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.25, "bindings": {"user_id": "USR-4"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 2.4, "bindings": {"user_id": "USR-1"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.6, "bindings": {"user_id": "USR-5"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.4499999999999997, "bindings": {"user_id": "USR-8"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.5, "bindings": {"user_id": "USR-3"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.6999999999999997, "bindings": {"user_id": "USR-7"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.75, "bindings": {"user_id": "USR-2"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.8, "bindings": {"user_id": "USR-9"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 2.85, "bindings": {"user_id": "USR-4"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.05, "bindings": {"user_id": "USR-8"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.15, "bindings": {"user_id": "USR-10"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.1, "bindings": {"user_id": "USR-3"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.3, "bindings": {"user_id": "USR-7"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.35, "bindings": {"user_id": "USR-2"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.2, "bindings": {"user_id": "USR-5"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 3.45, "bindings": {"user_id": "USR-4"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.5, "bindings": {"user_id": "USR-11"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.4, "bindings": {"user_id": "USR-9"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.65, "bindings": {"user_id": "USR-8"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.75, "bindings": {"user_id": "USR-10"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 3.7, "bindings": {"user_id": "USR-3"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 3.9, "bindings": {"user_id": "USR-7"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.0, "bindings": {"user_id": "USR-9"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.95, "bindings": {"user_id": "USR-2"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 3.8499999999999996, "bindings": {"user_id": "USR-12"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.1, "bindings": {"user_id": "USR-11"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 3.8000000000000003, "bindings": {"user_id": "USR-5"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.199999999999999, "bindings": {"user_id": "USR-13"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.35, "bindings": {"user_id": "USR-10"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 4.25, "bindings": {"user_id": "USR-8"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 4.55, "bindings": {"user_id": "USR-2"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.449999999999999, "bindings": {"user_id": "USR-12"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.55, "bindings": {"user_id": "USR-14"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.699999999999999, "bindings": {"user_id": "USR-11"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.799999999999999, "bindings": {"user_id": "USR-13"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.5, "bindings": {"user_id": "USR-7"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.6, "bindings": {"user_id": "USR-9"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.049999999999999, "bindings": {"user_id": "USR-12"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.949999999999999, "bindings": {"user_id": "USR-10"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 4.8999999999999995, "bindings": {"user_id": "USR-15"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.1499999999999995, "bindings": {"user_id": "USR-14"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 5.199999999999999, "bindings": {"user_id": "USR-9"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.25, "bindings": {"user_id": "USR-16"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.1, "bindings": {"user_id": "USR-7"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 5.1499999999999995, "bindings": {"user_id": "USR-2"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 5.499999999999999, "bindings": {"user_id": "USR-15"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.649999999999999, "bindings": {"user_id": "USR-12"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.299999999999999, "bindings": {"user_id": "USR-11"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.399999999999999, "bindings": {"user_id": "USR-13"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.6, "bindings": {"user_id": "USR-17"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 5.549999999999999, "bindings": {"user_id": "USR-10"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 5.85, "bindings": {"user_id": "USR-16"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.699999999999999, "bindings": {"user_id": "USR-7"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.999999999999998, "bindings": {"user_id": "USR-13"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.749999999999999, "bindings": {"user_id": "USR-14"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 5.899999999999999, "bindings": {"user_id": "USR-11"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 5.949999999999999, "bindings": {"user_id": "USR-18"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.299999999999999, "bindings": {"user_id": "USR-7"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.099999999999999, "bindings": {"user_id": "USR-15"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.199999999999999, "bindings": {"user_id": "USR-17"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.349999999999999, "bindings": {"user_id": "USR-14"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.249999999999998, "bindings": {"user_id": "USR-12"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.3, "bindings": {"user_id": "USR-19"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.6499999999999995, "bindings": {"user_id": "USR-20"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.549999999999999, "bindings": {"user_id": "USR-18"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.599999999999998, "bindings": {"user_id": "USR-13"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.449999999999999, "bindings": {"user_id": "USR-16"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.799999999999999, "bindings": {"user_id": "USR-17"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.8999999999999995, "bindings": {"user_id": "USR-19"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 6.849999999999998, "bindings": {"user_id": "USR-12"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 6.899999999999999, "bindings": {"user_id": "USR-7"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 6.699999999999998, "bindings": {"user_id": "USR-15"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.0, "bindings": {"user_id": "USR-21"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.149999999999999, "bindings": {"user_id": "USR-18"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 6.949999999999998, "bindings": {"user_id": "USR-14"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.049999999999999, "bindings": {"user_id": "USR-16"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.249999999999999, "bindings": {"user_id": "USR-20"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 7.1999999999999975, "bindings": {"user_id": "USR-13"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 7.399999999999999, "bindings": {"user_id": "USR-17"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.299999999999998, "bindings": {"user_id": "USR-15"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.35, "bindings": {"user_id": "USR-22"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.499999999999999, "bindings": {"user_id": "USR-19"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.6, "bindings": {"user_id": "USR-21"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 7.649999999999999, "bindings": {"user_id": "USR-16"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.749999999999998, "bindings": {"user_id": "USR-18"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 7.549999999999998, "bindings": {"user_id": "USR-14"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 7.849999999999999, "bindings": {"user_id": "USR-20"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 7.999999999999998, "bindings": {"user_id": "USR-17"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 7.699999999999999, "bindings": {"user_id": "USR-23"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.049999999999999, "bindings": {"user_id": "USR-24"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.899999999999998, "bindings": {"user_id": "USR-15"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 7.949999999999999, "bindings": {"user_id": "USR-22"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.299999999999999, "bindings": {"user_id": "USR-23"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.2, "bindings": {"user_id": "USR-21"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.349999999999998, "bindings": {"user_id": "USR-18"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.399999999999999, "bindings": {"user_id": "USR-25"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.1, "bindings": {"user_id": "USR-19"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.499999999999998, "bindings": {"user_id": "USR-15"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.45, "bindings": {"user_id": "USR-20"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.649999999999999, "bindings": {"user_id": "USR-24"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.549999999999999, "bindings": {"user_id": "USR-22"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.7, "bindings": {"user_id": "USR-19"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 8.949999999999998, "bindings": {"user_id": "USR-18"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 8.799999999999999, "bindings": {"user_id": "USR-21"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.999999999999998, "bindings": {"user_id": "USR-25"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.899999999999999, "bindings": {"user_id": "USR-23"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 8.75, "bindings": {"user_id": "USR-26"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.099999999999998, "bindings": {"user_id": "USR-15"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.149999999999999, "bindings": {"user_id": "USR-22"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.1, "bindings": {"user_id": "USR-27"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 9.049999999999999, "bindings": {"user_id": "USR-20"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.249999999999998, "bindings": {"user_id": "USR-24"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.45, "bindings": {"user_id": "USR-28"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.35, "bindings": {"user_id": "USR-26"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.399999999999999, "bindings": {"user_id": "USR-21"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.299999999999999, "bindings": {"user_id": "USR-19"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.499999999999998, "bindings": {"user_id": "USR-23"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.599999999999998, "bindings": {"user_id": "USR-25"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.7, "bindings": {"user_id": "USR-27"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 9.699999999999998, "bindings": {"user_id": "USR-15"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 9.749999999999998, "bindings": {"user_id": "USR-22"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.95, "bindings": {"user_id": "USR-26"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.799999999999999, "bindings": {"user_id": "USR-29"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.049999999999999, "bindings": {"user_id": "USR-28"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.899999999999999, "bindings": {"user_id": "USR-19"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 9.999999999999998, "bindings": {"user_id": "USR-21"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.299999999999999, "bindings": {"user_id": "USR-27"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.099999999999998, "bindings": {"user_id": "USR-23"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.199999999999998, "bindings": {"user_id": "USR-25"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.149999999999999, "bindings": {"user_id": "USR-30"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.349999999999998, "bindings": {"user_id": "USR-22"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.599999999999998, "bindings": {"user_id": "USR-21"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.399999999999999, "bindings": {"user_id": "USR-29"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.5, "bindings": {"user_id": "USR-31"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 10.799999999999997, "bindings": {"user_id": "USR-25"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 10.699999999999998, "bindings": {"user_id": "USR-23"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 10.649999999999999, "bindings": {"user_id": "USR-28"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.549999999999999, "bindings": {"user_id": "USR-26"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.749999999999998, "bindings": {"user_id": "USR-30"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.999999999999998, "bindings": {"user_id": "USR-29"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.899999999999999, "bindings": {"user_id": "USR-27"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.85, "bindings": {"user_id": "USR-32"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.249999999999998, "bindings": {"user_id": "USR-28"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 11.149999999999999, "bindings": {"user_id": "USR-26"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 10.949999999999998, "bindings": {"user_id": "USR-22"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.2, "bindings": {"user_id": "USR-33"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.349999999999998, "bindings": {"user_id": "USR-30"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.1, "bindings": {"user_id": "USR-31"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.199999999999998, "bindings": {"user_id": "USR-21"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.549999999999999, "bindings": {"user_id": "USR-34"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.45, "bindings": {"user_id": "USR-32"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.599999999999998, "bindings": {"user_id": "USR-29"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 11.499999999999998, "bindings": {"user_id": "USR-27"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 11.799999999999997, "bindings": {"user_id": "USR-21"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 11.7, "bindings": {"user_id": "USR-31"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.899999999999999, "bindings": {"user_id": "USR-35"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.149999999999999, "bindings": {"user_id": "USR-34"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.849999999999998, "bindings": {"user_id": "USR-28"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.25, "bindings": {"user_id": "USR-36"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 11.949999999999998, "bindings": {"user_id": "USR-30"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.049999999999999, "bindings": {"user_id": "USR-32"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 12.199999999999998, "bindings": {"user_id": "USR-29"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 12.449999999999998, "bindings": {"user_id": "USR-28"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 12.299999999999999, "bindings": {"user_id": "USR-31"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.649999999999999, "bindings": {"user_id": "USR-32"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 12.549999999999997, "bindings": {"user_id": "USR-30"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.6, "bindings": {"user_id": "USR-37"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.85, "bindings": {"user_id": "USR-36"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.749999999999998, "bindings": {"user_id": "USR-34"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 12.95, "bindings": {"user_id": "USR-38"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 12.899999999999999, "bindings": {"user_id": "USR-31"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 13.249999999999998, "bindings": {"user_id": "USR-32"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 13.299999999999999, "bindings": {"user_id": "USR-39"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 13.349999999999998, "bindings": {"user_id": "USR-34"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 13.45, "bindings": {"user_id": "USR-36"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 13.649999999999999, "bindings": {"user_id": "USR-40"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 13.949999999999998, "bindings": {"user_id": "USR-34"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.0, "bindings": {"user_id": "USR-41"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 13.899999999999999, "bindings": {"user_id": "USR-39"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.049999999999999, "bindings": {"user_id": "USR-36"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.35, "bindings": {"user_id": "USR-42"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.249999999999998, "bindings": {"user_id": "USR-40"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.499999999999998, "bindings": {"user_id": "USR-39"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 14.649999999999999, "bindings": {"user_id": "USR-36"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.6, "bindings": {"user_id": "USR-41"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.7, "bindings": {"user_id": "USR-43"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.95, "bindings": {"user_id": "USR-42"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.049999999999999, "bindings": {"user_id": "USR-44"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 14.849999999999998, "bindings": {"user_id": "USR-40"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.2, "bindings": {"user_id": "USR-41"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.399999999999999, "bindings": {"user_id": "USR-45"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.299999999999999, "bindings": {"user_id": "USR-43"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.099999999999998, "bindings": {"user_id": "USR-39"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.549999999999999, "bindings": {"user_id": "USR-42"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.449999999999998, "bindings": {"user_id": "USR-40"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.699999999999998, "bindings": {"user_id": "USR-39"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.649999999999999, "bindings": {"user_id": "USR-44"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.899999999999999, "bindings": {"user_id": "USR-43"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.749999999999998, "bindings": {"user_id": "USR-46"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.799999999999999, "bindings": {"user_id": "USR-41"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 16.049999999999997, "bindings": {"user_id": "USR-40"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 15.999999999999998, "bindings": {"user_id": "USR-45"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.349999999999998, "bindings": {"user_id": "USR-46"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.15, "bindings": {"user_id": "USR-42"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.45, "bindings": {"user_id": "USR-48"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.25, "bindings": {"user_id": "USR-44"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.099999999999998, "bindings": {"user_id": "USR-47"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.299999999999997, "bindings": {"user_id": "USR-39"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.599999999999998, "bindings": {"user_id": "USR-45"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 16.4, "bindings": {"user_id": "USR-41"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.7, "bindings": {"user_id": "USR-47"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.799999999999997, "bindings": {"user_id": "USR-49"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.5, "bindings": {"user_id": "USR-43"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.75, "bindings": {"user_id": "USR-42"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.95, "bindings": {"user_id": "USR-46"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.9, "bindings": {"user_id": "USR-39"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 16.85, "bindings": {"user_id": "USR-44"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 17.1, "bindings": {"user_id": "USR-43"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.3, "bindings": {"user_id": "USR-47"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.2, "bindings": {"user_id": "USR-45"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.15, "bindings": {"user_id": "USR-50"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.5, "bindings": {"user_id": "USR-51"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 17.35, "bindings": {"user_id": "USR-42"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 17.55, "bindings": {"user_id": "USR-46"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.5, "bindings": {"user_id": "USR-39"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.4, "bindings": {"user_id": "USR-49"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 17.450000000000003, "bindings": {"user_id": "USR-44"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.900000000000002, "bindings": {"user_id": "USR-47"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.75, "bindings": {"user_id": "USR-50"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.1, "bindings": {"user_id": "USR-51"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 17.8, "bindings": {"user_id": "USR-45"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 17.849999999999998, "bindings": {"user_id": "USR-52"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.0, "bindings": {"user_id": "USR-49"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 18.1, "bindings": {"user_id": "USR-39"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 18.45, "bindings": {"user_id": "USR-52"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.2, "bindings": {"user_id": "USR-53"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 18.150000000000002, "bindings": {"user_id": "USR-46"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.6, "bindings": {"user_id": "USR-49"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.35, "bindings": {"user_id": "USR-50"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.700000000000003, "bindings": {"user_id": "USR-51"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.549999999999997, "bindings": {"user_id": "USR-54"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.500000000000004, "bindings": {"user_id": "USR-47"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.9, "bindings": {"user_id": "USR-55"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 18.950000000000003, "bindings": {"user_id": "USR-50"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.100000000000005, "bindings": {"user_id": "USR-47"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.05, "bindings": {"user_id": "USR-52"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.25, "bindings": {"user_id": "USR-56"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.200000000000003, "bindings": {"user_id": "USR-49"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.15, "bindings": {"user_id": "USR-54"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.5, "bindings": {"user_id": "USR-55"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.300000000000004, "bindings": {"user_id": "USR-51"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.650000000000002, "bindings": {"user_id": "USR-52"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.700000000000006, "bindings": {"user_id": "USR-47"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.75, "bindings": {"user_id": "USR-54"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.599999999999998, "bindings": {"user_id": "USR-57"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 19.550000000000004, "bindings": {"user_id": "USR-50"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 19.900000000000006, "bindings": {"user_id": "USR-51"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 19.800000000000004, "bindings": {"user_id": "USR-49"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 19.85, "bindings": {"user_id": "USR-56"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.2, "bindings": {"user_id": "USR-57"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 19.95, "bindings": {"user_id": "USR-58"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.300000000000008, "bindings": {"user_id": "USR-47"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.250000000000004, "bindings": {"user_id": "USR-52"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.1, "bindings": {"user_id": "USR-55"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.35, "bindings": {"user_id": "USR-54"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.299999999999997, "bindings": {"user_id": "USR-59"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.55, "bindings": {"user_id": "USR-58"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.65, "bindings": {"user_id": "USR-60"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.450000000000003, "bindings": {"user_id": "USR-56"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 20.850000000000005, "bindings": {"user_id": "USR-52"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 20.8, "bindings": {"user_id": "USR-57"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.700000000000003, "bindings": {"user_id": "USR-55"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 20.9, "bindings": {"user_id": "USR-59"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 20.90000000000001, "bindings": {"user_id": "USR-47"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 20.950000000000003, "bindings": {"user_id": "USR-54"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.050000000000004, "bindings": {"user_id": "USR-56"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.0, "bindings": {"user_id": "USR-61"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.150000000000002, "bindings": {"user_id": "USR-58"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.25, "bindings": {"user_id": "USR-60"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.349999999999998, "bindings": {"user_id": "USR-62"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.5, "bindings": {"user_id": "USR-59"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 21.300000000000004, "bindings": {"user_id": "USR-55"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 21.650000000000006, "bindings": {"user_id": "USR-56"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.400000000000002, "bindings": {"user_id": "USR-57"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.6, "bindings": {"user_id": "USR-61"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.7, "bindings": {"user_id": "USR-63"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.85, "bindings": {"user_id": "USR-60"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.750000000000004, "bindings": {"user_id": "USR-58"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.000000000000004, "bindings": {"user_id": "USR-57"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 21.95, "bindings": {"user_id": "USR-62"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.049999999999997, "bindings": {"user_id": "USR-64"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 22.350000000000005, "bindings": {"user_id": "USR-58"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.1, "bindings": {"user_id": "USR-59"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.3, "bindings": {"user_id": "USR-63"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.4, "bindings": {"user_id": "USR-65"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.200000000000003, "bindings": {"user_id": "USR-61"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.450000000000003, "bindings": {"user_id": "USR-60"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 22.700000000000003, "bindings": {"user_id": "USR-59"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.55, "bindings": {"user_id": "USR-62"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 22.600000000000005, "bindings": {"user_id": "USR-57"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 22.65, "bindings": {"user_id": "USR-64"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.900000000000002, "bindings": {"user_id": "USR-63"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.75, "bindings": {"user_id": "USR-66"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 22.800000000000004, "bindings": {"user_id": "USR-61"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.150000000000002, "bindings": {"user_id": "USR-62"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.0, "bindings": {"user_id": "USR-65"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.099999999999998, "bindings": {"user_id": "USR-67"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.050000000000004, "bindings": {"user_id": "USR-60"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 23.400000000000006, "bindings": {"user_id": "USR-61"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.45, "bindings": {"user_id": "USR-68"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.35, "bindings": {"user_id": "USR-66"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.25, "bindings": {"user_id": "USR-64"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 23.500000000000004, "bindings": {"user_id": "USR-63"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 23.6, "bindings": {"user_id": "USR-65"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 23.750000000000004, "bindings": {"user_id": "USR-62"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 23.650000000000006, "bindings": {"user_id": "USR-60"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 23.7, "bindings": {"user_id": "USR-67"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.950000000000003, "bindings": {"user_id": "USR-66"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.799999999999997, "bindings": {"user_id": "USR-69"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.15, "bindings": {"user_id": "USR-70"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 23.85, "bindings": {"user_id": "USR-64"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.200000000000003, "bindings": {"user_id": "USR-65"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.05, "bindings": {"user_id": "USR-68"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.3, "bindings": {"user_id": "USR-67"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.4, "bindings": {"user_id": "USR-69"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.450000000000003, "bindings": {"user_id": "USR-64"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.650000000000002, "bindings": {"user_id": "USR-68"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.5, "bindings": {"user_id": "USR-71"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.550000000000004, "bindings": {"user_id": "USR-66"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.849999999999998, "bindings": {"user_id": "USR-72"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.0, "bindings": {"user_id": "USR-69"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 24.800000000000004, "bindings": {"user_id": "USR-65"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 24.900000000000002, "bindings": {"user_id": "USR-67"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.2, "bindings": {"user_id": "USR-73"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.250000000000004, "bindings": {"user_id": "USR-68"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.050000000000004, "bindings": {"user_id": "USR-64"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.1, "bindings": {"user_id": "USR-71"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.150000000000006, "bindings": {"user_id": "USR-66"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 25.500000000000004, "bindings": {"user_id": "USR-67"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.549999999999997, "bindings": {"user_id": "USR-74"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.45, "bindings": {"user_id": "USR-72"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.700000000000003, "bindings": {"user_id": "USR-71"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.650000000000006, "bindings": {"user_id": "USR-64"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.8, "bindings": {"user_id": "USR-73"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 25.750000000000007, "bindings": {"user_id": "USR-66"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 25.850000000000005, "bindings": {"user_id": "USR-68"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.05, "bindings": {"user_id": "USR-72"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 25.9, "bindings": {"user_id": "USR-75"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.300000000000004, "bindings": {"user_id": "USR-71"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.250000000000007, "bindings": {"user_id": "USR-64"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.15, "bindings": {"user_id": "USR-74"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.25, "bindings": {"user_id": "USR-76"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.400000000000002, "bindings": {"user_id": "USR-73"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.599999999999998, "bindings": {"user_id": "USR-77"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.5, "bindings": {"user_id": "USR-75"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.650000000000002, "bindings": {"user_id": "USR-72"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.85, "bindings": {"user_id": "USR-76"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 26.85000000000001, "bindings": {"user_id": "USR-64"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 26.75, "bindings": {"user_id": "USR-74"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.000000000000004, "bindings": {"user_id": "USR-73"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.900000000000006, "bindings": {"user_id": "USR-71"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 26.95, "bindings": {"user_id": "USR-78"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 27.250000000000004, "bindings": {"user_id": "USR-72"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.1, "bindings": {"user_id": "USR-75"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.2, "bindings": {"user_id": "USR-77"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.450000000000003, "bindings": {"user_id": "USR-76"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.299999999999997, "bindings": {"user_id": "USR-79"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 27.35, "bindings": {"user_id": "USR-74"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 27.65, "bindings": {"user_id": "USR-80"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.500000000000007, "bindings": {"user_id": "USR-71"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.55, "bindings": {"user_id": "USR-78"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 27.700000000000003, "bindings": {"user_id": "USR-75"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 27.600000000000005, "bindings": {"user_id": "USR-73"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.8, "bindings": {"user_id": "USR-77"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 27.9, "bindings": {"user_id": "USR-79"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.050000000000004, "bindings": {"user_id": "USR-76"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.150000000000002, "bindings": {"user_id": "USR-78"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.0, "bindings": {"user_id": "USR-81"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.25, "bindings": {"user_id": "USR-80"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.10000000000001, "bindings": {"user_id": "USR-71"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.349999999999998, "bindings": {"user_id": "USR-82"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 28.400000000000002, "bindings": {"user_id": "USR-77"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 28.6, "bindings": {"user_id": "USR-81"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 28.650000000000006, "bindings": {"user_id": "USR-76"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.5, "bindings": {"user_id": "USR-79"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.750000000000004, "bindings": {"user_id": "USR-78"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.7, "bindings": {"user_id": "USR-83"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.95, "bindings": {"user_id": "USR-82"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.049999999999997, "bindings": {"user_id": "USR-84"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 28.85, "bindings": {"user_id": "USR-80"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.1, "bindings": {"user_id": "USR-79"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.3, "bindings": {"user_id": "USR-83"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 29.350000000000005, "bindings": {"user_id": "USR-78"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 29.200000000000003, "bindings": {"user_id": "USR-81"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.4, "bindings": {"user_id": "USR-85"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.450000000000003, "bindings": {"user_id": "USR-80"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.55, "bindings": {"user_id": "USR-82"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.800000000000004, "bindings": {"user_id": "USR-81"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.749999999999996, "bindings": {"user_id": "USR-86"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.65, "bindings": {"user_id": "USR-84"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 29.700000000000003, "bindings": {"user_id": "USR-79"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 29.900000000000002, "bindings": {"user_id": "USR-83"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.0, "bindings": {"user_id": "USR-85"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.050000000000004, "bindings": {"user_id": "USR-80"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.150000000000002, "bindings": {"user_id": "USR-82"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.25, "bindings": {"user_id": "USR-84"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 30.400000000000006, "bindings": {"user_id": "USR-81"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.099999999999998, "bindings": {"user_id": "USR-87"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.45, "bindings": {"user_id": "USR-88"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.349999999999998, "bindings": {"user_id": "USR-86"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.6, "bindings": {"user_id": "USR-85"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.500000000000004, "bindings": {"user_id": "USR-83"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.7, "bindings": {"user_id": "USR-87"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 30.750000000000004, "bindings": {"user_id": "USR-82"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.85, "bindings": {"user_id": "USR-84"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.799999999999997, "bindings": {"user_id": "USR-89"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 30.650000000000006, "bindings": {"user_id": "USR-80"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 31.100000000000005, "bindings": {"user_id": "USR-83"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.05, "bindings": {"user_id": "USR-88"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.15, "bindings": {"user_id": "USR-90"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 30.95, "bindings": {"user_id": "USR-86"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.3, "bindings": {"user_id": "USR-87"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.200000000000003, "bindings": {"user_id": "USR-85"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 31.450000000000003, "bindings": {"user_id": "USR-84"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.4, "bindings": {"user_id": "USR-89"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.650000000000002, "bindings": {"user_id": "USR-88"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.55, "bindings": {"user_id": "USR-86"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.499999999999996, "bindings": {"user_id": "USR-91"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.849999999999998, "bindings": {"user_id": "USR-92"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.75, "bindings": {"user_id": "USR-90"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 31.700000000000006, "bindings": {"user_id": "USR-83"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 31.800000000000004, "bindings": {"user_id": "USR-85"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 31.900000000000002, "bindings": {"user_id": "USR-87"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.15, "bindings": {"user_id": "USR-86"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.0, "bindings": {"user_id": "USR-89"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.25, "bindings": {"user_id": "USR-88"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.099999999999994, "bindings": {"user_id": "USR-91"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.400000000000006, "bindings": {"user_id": "USR-85"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.35, "bindings": {"user_id": "USR-90"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.199999999999996, "bindings": {"user_id": "USR-93"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.6, "bindings": {"user_id": "USR-89"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 32.75, "bindings": {"user_id": "USR-86"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 32.55, "bindings": {"user_id": "USR-94"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.5, "bindings": {"user_id": "USR-87"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.449999999999996, "bindings": {"user_id": "USR-92"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.8, "bindings": {"user_id": "USR-93"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.699999999999996, "bindings": {"user_id": "USR-91"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.9, "bindings": {"user_id": "USR-95"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 32.95, "bindings": {"user_id": "USR-90"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.05, "bindings": {"user_id": "USR-92"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 32.85, "bindings": {"user_id": "USR-88"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.15, "bindings": {"user_id": "USR-94"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 33.1, "bindings": {"user_id": "USR-87"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 33.00000000000001, "bindings": {"user_id": "USR-85"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.25, "bindings": {"user_id": "USR-96"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.3, "bindings": {"user_id": "USR-91"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.2, "bindings": {"user_id": "USR-89"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 33.550000000000004, "bindings": {"user_id": "USR-90"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.4, "bindings": {"user_id": "USR-93"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.5, "bindings": {"user_id": "USR-95"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.65, "bindings": {"user_id": "USR-92"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.60000000000001, "bindings": {"user_id": "USR-85"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.75, "bindings": {"user_id": "USR-94"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.599999999999994, "bindings": {"user_id": "USR-97"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.949999999999996, "bindings": {"user_id": "USR-98"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.85, "bindings": {"user_id": "USR-96"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.800000000000004, "bindings": {"user_id": "USR-89"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.0, "bindings": {"user_id": "USR-93"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 33.9, "bindings": {"user_id": "USR-91"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 34.25, "bindings": {"user_id": "USR-92"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.35, "bindings": {"user_id": "USR-94"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.1, "bindings": {"user_id": "USR-95"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 34.20000000000001, "bindings": {"user_id": "USR-85"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 34.199999999999996, "bindings": {"user_id": "USR-97"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 34.6, "bindings": {"user_id": "USR-93"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.3, "bindings": {"user_id": "USR-99"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.55, "bindings": {"user_id": "USR-98"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.400000000000006, "bindings": {"user_id": "USR-89"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.45, "bindings": {"user_id": "USR-96"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.5, "bindings": {"user_id": "USR-91"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.65, "bindings": {"user_id": "USR-100"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.9, "bindings": {"user_id": "USR-99"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.00000000000001, "bindings": {"user_id": "USR-89"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 34.7, "bindings": {"user_id": "USR-95"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 34.8, "bindings": {"user_id": "USR-97"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.050000000000004, "bindings": {"user_id": "USR-96"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 34.95, "bindings": {"user_id": "USR-94"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.0, "bindings": {"user_id": "USR-101"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.15, "bindings": {"user_id": "USR-98"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.1, "bindings": {"user_id": "USR-91"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.4, "bindings": {"user_id": "USR-97"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.349999999999994, "bindings": {"user_id": "USR-102"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.25, "bindings": {"user_id": "USR-100"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.6, "bindings": {"user_id": "USR-101"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.650000000000006, "bindings": {"user_id": "USR-96"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.550000000000004, "bindings": {"user_id": "USR-94"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.5, "bindings": {"user_id": "USR-99"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.85, "bindings": {"user_id": "USR-100"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 35.60000000000001, "bindings": {"user_id": "USR-89"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 35.949999999999996, "bindings": {"user_id": "USR-102"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.699999999999996, "bindings": {"user_id": "USR-103"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.0, "bindings": {"user_id": "USR-97"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 35.75, "bindings": {"user_id": "USR-98"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.1, "bindings": {"user_id": "USR-99"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.3, "bindings": {"user_id": "USR-103"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.150000000000006, "bindings": {"user_id": "USR-94"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.05, "bindings": {"user_id": "USR-104"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.45, "bindings": {"user_id": "USR-100"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.4, "bindings": {"user_id": "USR-105"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.2, "bindings": {"user_id": "USR-101"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.25000000000001, "bindings": {"user_id": "USR-96"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 36.35, "bindings": {"user_id": "USR-98"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 36.6, "bindings": {"user_id": "USR-97"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 36.55, "bindings": {"user_id": "USR-102"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 36.7, "bindings": {"user_id": "USR-99"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.9, "bindings": {"user_id": "USR-103"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.800000000000004, "bindings": {"user_id": "USR-101"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.75, "bindings": {"user_id": "USR-106"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 36.85000000000001, "bindings": {"user_id": "USR-96"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.099999999999994, "bindings": {"user_id": "USR-107"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.15, "bindings": {"user_id": "USR-102"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 37.050000000000004, "bindings": {"user_id": "USR-100"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 37.400000000000006, "bindings": {"user_id": "USR-101"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.35, "bindings": {"user_id": "USR-106"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.449999999999996, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 37.75, "bindings": {"user_id": "USR-102"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.5, "bindings": {"user_id": "USR-103"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.8, "bindings": {"user_id": "USR-109"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.699999999999996, "bindings": {"user_id": "USR-107"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.end", "event_time": 38.1, "bindings": {"user_id": "USR-103"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 37.95, "bindings": {"user_id": "USR-106"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.05, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.15, "bindings": {"user_id": "USR-110"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.5, "bindings": {"user_id": "USR-111"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.3, "bindings": {"user_id": "USR-107"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.4, "bindings": {"user_id": "USR-109"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.65, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.849999999999994, "bindings": {"user_id": "USR-112"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.550000000000004, "bindings": {"user_id": "USR-106"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 38.75, "bindings": {"user_id": "USR-110"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.150000000000006, "bindings": {"user_id": "USR-106"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 38.9, "bindings": {"user_id": "USR-107"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 39.1, "bindings": {"user_id": "USR-111"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.199999999999996, "bindings": {"user_id": "USR-113"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.0, "bindings": {"user_id": "USR-109"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.35, "bindings": {"user_id": "USR-110"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.25, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.55, "bindings": {"user_id": "USR-114"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.6, "bindings": {"user_id": "USR-109"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.7, "bindings": {"user_id": "USR-111"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.9, "bindings": {"user_id": "USR-115"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.75000000000001, "bindings": {"user_id": "USR-106"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.8, "bindings": {"user_id": "USR-113"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.85, "bindings": {"user_id": "USR-108"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 39.95, "bindings": {"user_id": "USR-110"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.15, "bindings": {"user_id": "USR-114"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.end", "event_time": 40.2, "bindings": {"user_id": "USR-109"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 40.300000000000004, "bindings": {"user_id": "USR-111"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 40.25, "bindings": {"user_id": "USR-116"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.35000000000001, "bindings": {"user_id": "USR-106"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.45, "bindings": {"user_id": "USR-108"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.550000000000004, "bindings": {"user_id": "USR-110"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.4, "bindings": {"user_id": "USR-113"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.599999999999994, "bindings": {"user_id": "USR-117"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.5, "bindings": {"user_id": "USR-115"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.95000000000001, "bindings": {"user_id": "USR-106"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.75, "bindings": {"user_id": "USR-114"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.1, "bindings": {"user_id": "USR-115"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.0, "bindings": {"user_id": "USR-113"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 40.949999999999996, "bindings": {"user_id": "USR-118"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.150000000000006, "bindings": {"user_id": "USR-110"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.050000000000004, "bindings": {"user_id": "USR-108"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.199999999999996, "bindings": {"user_id": "USR-117"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.55, "bindings": {"user_id": "USR-118"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 41.35, "bindings": {"user_id": "USR-114"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 41.3, "bindings": {"user_id": "USR-119"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.6, "bindings": {"user_id": "USR-113"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.65, "bindings": {"user_id": "USR-120"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.75000000000001, "bindings": {"user_id": "USR-110"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 41.55000000000001, "bindings": {"user_id": "USR-106"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 41.9, "bindings": {"user_id": "USR-119"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.650000000000006, "bindings": {"user_id": "USR-108"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.7, "bindings": {"user_id": "USR-115"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 41.8, "bindings": {"user_id": "USR-117"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.15, "bindings": {"user_id": "USR-118"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.0, "bindings": {"user_id": "USR-121"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.25, "bindings": {"user_id": "USR-120"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 42.2, "bindings": {"user_id": "USR-113"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 42.25000000000001, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 42.300000000000004, "bindings": {"user_id": "USR-115"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.4, "bindings": {"user_id": "USR-117"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.5, "bindings": {"user_id": "USR-119"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.349999999999994, "bindings": {"user_id": "USR-122"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.35000000000001, "bindings": {"user_id": "USR-110"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.6, "bindings": {"user_id": "USR-121"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.699999999999996, "bindings": {"user_id": "USR-123"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.85000000000001, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.75, "bindings": {"user_id": "USR-118"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.85, "bindings": {"user_id": "USR-120"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 42.95000000000001, "bindings": {"user_id": "USR-110"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 43.05, "bindings": {"user_id": "USR-124"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 42.949999999999996, "bindings": {"user_id": "USR-122"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.0, "bindings": {"user_id": "USR-117"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.1, "bindings": {"user_id": "USR-119"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.2, "bindings": {"user_id": "USR-121"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.3, "bindings": {"user_id": "USR-123"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.45, "bindings": {"user_id": "USR-120"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.55, "bindings": {"user_id": "USR-122"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.35, "bindings": {"user_id": "USR-118"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.4, "bindings": {"user_id": "USR-125"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.65, "bindings": {"user_id": "USR-124"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.75, "bindings": {"user_id": "USR-126"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 43.7, "bindings": {"user_id": "USR-119"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.45000000000001, "bindings": {"user_id": "USR-108"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 43.6, "bindings": {"user_id": "USR-117"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 43.95, "bindings": {"user_id": "USR-118"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.050000000000004, "bindings": {"user_id": "USR-120"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.9, "bindings": {"user_id": "USR-123"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.099999999999994, "bindings": {"user_id": "USR-127"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 43.800000000000004, "bindings": {"user_id": "USR-121"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.05000000000001, "bindings": {"user_id": "USR-108"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.15, "bindings": {"user_id": "USR-122"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.0, "bindings": {"user_id": "USR-125"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.25, "bindings": {"user_id": "USR-124"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.5, "bindings": {"user_id": "USR-123"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.449999999999996, "bindings": {"user_id": "USR-128"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.65000000000001, "bindings": {"user_id": "USR-108"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 44.400000000000006, "bindings": {"user_id": "USR-121"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 44.550000000000004, "bindings": {"user_id": "USR-118"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.6, "bindings": {"user_id": "USR-125"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.699999999999996, "bindings": {"user_id": "USR-127"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.650000000000006, "bindings": {"user_id": "USR-120"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.8, "bindings": {"user_id": "USR-129"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 44.75, "bindings": {"user_id": "USR-122"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 44.85, "bindings": {"user_id": "USR-124"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.150000000000006, "bindings": {"user_id": "USR-118"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.05, "bindings": {"user_id": "USR-128"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.2, "bindings": {"user_id": "USR-125"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.250000000000014, "bindings": {"user_id": "USR-108"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 45.1, "bindings": {"user_id": "USR-123"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.15, "bindings": {"user_id": "USR-130"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.3, "bindings": {"user_id": "USR-127"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.45, "bindings": {"user_id": "USR-124"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.5, "bindings": {"user_id": "USR-131"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.25000000000001, "bindings": {"user_id": "USR-120"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.4, "bindings": {"user_id": "USR-129"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 45.75000000000001, "bindings": {"user_id": "USR-118"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 45.75, "bindings": {"user_id": "USR-130"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.65, "bindings": {"user_id": "USR-128"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.849999999999994, "bindings": {"user_id": "USR-132"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 45.800000000000004, "bindings": {"user_id": "USR-125"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 45.85000000000001, "bindings": {"user_id": "USR-120"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.1, "bindings": {"user_id": "USR-131"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.0, "bindings": {"user_id": "USR-129"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 46.050000000000004, "bindings": {"user_id": "USR-124"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 45.9, "bindings": {"user_id": "USR-127"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 46.25, "bindings": {"user_id": "USR-128"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.199999999999996, "bindings": {"user_id": "USR-133"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.55, "bindings": {"user_id": "USR-134"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 46.45000000000001, "bindings": {"user_id": "USR-120"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 46.35, "bindings": {"user_id": "USR-130"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.449999999999996, "bindings": {"user_id": "USR-132"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.6, "bindings": {"user_id": "USR-129"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.7, "bindings": {"user_id": "USR-131"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.8, "bindings": {"user_id": "USR-133"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 46.85, "bindings": {"user_id": "USR-128"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.9, "bindings": {"user_id": "USR-135"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.05, "bindings": {"user_id": "USR-132"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.2, "bindings": {"user_id": "USR-129"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 46.95, "bindings": {"user_id": "USR-130"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.25, "bindings": {"user_id": "USR-136"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.5, "bindings": {"user_id": "USR-135"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.15, "bindings": {"user_id": "USR-134"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.300000000000004, "bindings": {"user_id": "USR-131"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.550000000000004, "bindings": {"user_id": "USR-130"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.4, "bindings": {"user_id": "USR-133"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.75, "bindings": {"user_id": "USR-134"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.85, "bindings": {"user_id": "USR-136"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 47.65, "bindings": {"user_id": "USR-132"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 47.800000000000004, "bindings": {"user_id": "USR-129"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 47.599999999999994, "bindings": {"user_id": "USR-137"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 47.949999999999996, "bindings": {"user_id": "USR-138"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.0, "bindings": {"user_id": "USR-133"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 47.900000000000006, "bindings": {"user_id": "USR-131"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.1, "bindings": {"user_id": "USR-135"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 48.150000000000006, "bindings": {"user_id": "USR-130"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 48.199999999999996, "bindings": {"user_id": "USR-137"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.35, "bindings": {"user_id": "USR-134"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.45, "bindings": {"user_id": "USR-136"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.55, "bindings": {"user_id": "USR-138"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.3, "bindings": {"user_id": "USR-139"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 48.6, "bindings": {"user_id": "USR-133"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.65, "bindings": {"user_id": "USR-140"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.9, "bindings": {"user_id": "USR-139"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.7, "bindings": {"user_id": "USR-135"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 48.8, "bindings": {"user_id": "USR-137"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 48.95, "bindings": {"user_id": "USR-134"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.050000000000004, "bindings": {"user_id": "USR-136"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.0, "bindings": {"user_id": "USR-141"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.15, "bindings": {"user_id": "USR-138"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.349999999999994, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.25, "bindings": {"user_id": "USR-140"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 49.300000000000004, "bindings": {"user_id": "USR-135"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.5, "bindings": {"user_id": "USR-139"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 49.4, "bindings": {"user_id": "USR-137"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 49.699999999999996, "bindings": {"user_id": "USR-143"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.75, "bindings": {"user_id": "USR-138"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 49.650000000000006, "bindings": {"user_id": "USR-136"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.6, "bindings": {"user_id": "USR-141"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.85, "bindings": {"user_id": "USR-140"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.05, "bindings": {"user_id": "USR-144"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.1, "bindings": {"user_id": "USR-139"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.2, "bindings": {"user_id": "USR-141"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 49.949999999999996, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.4, "bindings": {"user_id": "USR-145"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.35, "bindings": {"user_id": "USR-138"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.3, "bindings": {"user_id": "USR-143"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.65, "bindings": {"user_id": "USR-144"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 50.7, "bindings": {"user_id": "USR-139"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.45, "bindings": {"user_id": "USR-140"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.75, "bindings": {"user_id": "USR-146"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.55, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.800000000000004, "bindings": {"user_id": "USR-141"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.0, "bindings": {"user_id": "USR-145"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.95, "bindings": {"user_id": "USR-138"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.15, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 50.9, "bindings": {"user_id": "USR-143"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 51.050000000000004, "bindings": {"user_id": "USR-140"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.099999999999994, "bindings": {"user_id": "USR-147"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.449999999999996, "bindings": {"user_id": "USR-148"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.25, "bindings": {"user_id": "USR-144"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 51.400000000000006, "bindings": {"user_id": "USR-141"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 51.699999999999996, "bindings": {"user_id": "USR-147"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.5, "bindings": {"user_id": "USR-143"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.75, "bindings": {"user_id": "USR-142"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.550000000000004, "bindings": {"user_id": "USR-138"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.6, "bindings": {"user_id": "USR-145"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.8, "bindings": {"user_id": "USR-149"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 51.85, "bindings": {"user_id": "USR-144"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 52.1, "bindings": {"user_id": "USR-143"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.05, "bindings": {"user_id": "USR-148"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.15, "bindings": {"user_id": "USR-150"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.2, "bindings": {"user_id": "USR-145"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.3, "bindings": {"user_id": "USR-147"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 52.45, "bindings": {"user_id": "USR-144"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.35, "bindings": {"user_id": "USR-142"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.65, "bindings": {"user_id": "USR-148"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.4, "bindings": {"user_id": "USR-149"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.5, "bindings": {"user_id": "USR-151"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 52.800000000000004, "bindings": {"user_id": "USR-145"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.75, "bindings": {"user_id": "USR-150"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.95, "bindings": {"user_id": "USR-142"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.849999999999994, "bindings": {"user_id": "USR-152"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 52.9, "bindings": {"user_id": "USR-147"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.1, "bindings": {"user_id": "USR-151"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.0, "bindings": {"user_id": "USR-149"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.199999999999996, "bindings": {"user_id": "USR-153"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.35, "bindings": {"user_id": "USR-150"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.25, "bindings": {"user_id": "USR-148"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.449999999999996, "bindings": {"user_id": "USR-152"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.550000000000004, "bindings": {"user_id": "USR-142"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 53.5, "bindings": {"user_id": "USR-147"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.7, "bindings": {"user_id": "USR-151"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.6, "bindings": {"user_id": "USR-149"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.55, "bindings": {"user_id": "USR-154"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 53.95, "bindings": {"user_id": "USR-150"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 53.85, "bindings": {"user_id": "USR-148"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.8, "bindings": {"user_id": "USR-153"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 53.9, "bindings": {"user_id": "USR-155"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.150000000000006, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.05, "bindings": {"user_id": "USR-152"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.15, "bindings": {"user_id": "USR-154"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 54.2, "bindings": {"user_id": "USR-149"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.4, "bindings": {"user_id": "USR-153"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.25, "bindings": {"user_id": "USR-156"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.300000000000004, "bindings": {"user_id": "USR-151"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.5, "bindings": {"user_id": "USR-155"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.599999999999994, "bindings": {"user_id": "USR-157"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.75, "bindings": {"user_id": "USR-154"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.65, "bindings": {"user_id": "USR-152"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.900000000000006, "bindings": {"user_id": "USR-151"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.75000000000001, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.949999999999996, "bindings": {"user_id": "USR-158"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 54.85, "bindings": {"user_id": "USR-156"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.1, "bindings": {"user_id": "USR-155"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.0, "bindings": {"user_id": "USR-153"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.35000000000001, "bindings": {"user_id": "USR-142"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.3, "bindings": {"user_id": "USR-159"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 55.50000000000001, "bindings": {"user_id": "USR-151"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 55.25, "bindings": {"user_id": "USR-152"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.45, "bindings": {"user_id": "USR-156"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.35, "bindings": {"user_id": "USR-154"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.55, "bindings": {"user_id": "USR-158"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 55.7, "bindings": {"user_id": "USR-155"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 55.95, "bindings": {"user_id": "USR-154"}, "payload": {}, "source": "session-service"}
+{"type": "session.end", "event_time": 55.6, "bindings": {"user_id": "USR-153"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.65, "bindings": {"user_id": "USR-160"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.95000000000001, "bindings": {"user_id": "USR-142"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.0, "bindings": {"user_id": "USR-161"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 55.9, "bindings": {"user_id": "USR-159"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.050000000000004, "bindings": {"user_id": "USR-156"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.15, "bindings": {"user_id": "USR-158"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.349999999999994, "bindings": {"user_id": "USR-162"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.25, "bindings": {"user_id": "USR-160"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.6, "bindings": {"user_id": "USR-161"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.5, "bindings": {"user_id": "USR-159"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.55000000000001, "bindings": {"user_id": "USR-142"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.75, "bindings": {"user_id": "USR-158"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.650000000000006, "bindings": {"user_id": "USR-156"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.85, "bindings": {"user_id": "USR-160"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.699999999999996, "bindings": {"user_id": "USR-163"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 56.949999999999996, "bindings": {"user_id": "USR-162"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.2, "bindings": {"user_id": "USR-161"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.1, "bindings": {"user_id": "USR-159"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.15000000000001, "bindings": {"user_id": "USR-142"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.05, "bindings": {"user_id": "USR-164"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 57.25000000000001, "bindings": {"user_id": "USR-156"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 57.35, "bindings": {"user_id": "USR-158"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.4, "bindings": {"user_id": "USR-165"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 57.45, "bindings": {"user_id": "USR-160"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 57.74999999999999, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 57.7, "bindings": {"user_id": "USR-159"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.55, "bindings": {"user_id": "USR-162"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.65, "bindings": {"user_id": "USR-164"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 57.800000000000004, "bindings": {"user_id": "USR-161"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.15, "bindings": {"user_id": "USR-162"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.099999999999994, "bindings": {"user_id": "USR-167"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.25, "bindings": {"user_id": "USR-164"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.349999999999994, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.400000000000006, "bindings": {"user_id": "USR-161"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.449999999999996, "bindings": {"user_id": "USR-168"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.8, "bindings": {"user_id": "USR-169"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.75, "bindings": {"user_id": "USR-162"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.85, "bindings": {"user_id": "USR-164"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.699999999999996, "bindings": {"user_id": "USR-167"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.05, "bindings": {"user_id": "USR-168"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 58.949999999999996, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.15, "bindings": {"user_id": "USR-170"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.00000000000001, "bindings": {"user_id": "USR-161"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.3, "bindings": {"user_id": "USR-167"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 59.45, "bindings": {"user_id": "USR-164"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.35, "bindings": {"user_id": "USR-162"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.49999999999999, "bindings": {"user_id": "USR-171"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.4, "bindings": {"user_id": "USR-169"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.55, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.75, "bindings": {"user_id": "USR-170"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.65, "bindings": {"user_id": "USR-168"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.60000000000001, "bindings": {"user_id": "USR-161"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.849999999999994, "bindings": {"user_id": "USR-172"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.95, "bindings": {"user_id": "USR-162"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 59.9, "bindings": {"user_id": "USR-167"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.0, "bindings": {"user_id": "USR-169"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.15, "bindings": {"user_id": "USR-166"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.199999999999996, "bindings": {"user_id": "USR-173"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.35, "bindings": {"user_id": "USR-170"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.099999999999994, "bindings": {"user_id": "USR-171"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.25, "bindings": {"user_id": "USR-168"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.5, "bindings": {"user_id": "USR-167"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.20000000000001, "bindings": {"user_id": "USR-161"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.550000000000004, "bindings": {"user_id": "USR-162"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 60.6, "bindings": {"user_id": "USR-169"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 60.75, "bindings": {"user_id": "USR-166"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.449999999999996, "bindings": {"user_id": "USR-172"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.55, "bindings": {"user_id": "USR-174"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.699999999999996, "bindings": {"user_id": "USR-171"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 60.80000000000001, "bindings": {"user_id": "USR-161"}, "payload": {}, "source": "perf"}
+{"type": "session.end", "event_time": 60.85, "bindings": {"user_id": "USR-168"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.8, "bindings": {"user_id": "USR-173"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.95, "bindings": {"user_id": "USR-170"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 60.9, "bindings": {"user_id": "USR-175"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.1, "bindings": {"user_id": "USR-167"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.05, "bindings": {"user_id": "USR-172"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 61.150000000000006, "bindings": {"user_id": "USR-162"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 61.35, "bindings": {"user_id": "USR-166"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.15, "bindings": {"user_id": "USR-174"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.5, "bindings": {"user_id": "USR-175"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.24999999999999, "bindings": {"user_id": "USR-176"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 61.550000000000004, "bindings": {"user_id": "USR-170"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.4, "bindings": {"user_id": "USR-173"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.599999999999994, "bindings": {"user_id": "USR-177"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.65, "bindings": {"user_id": "USR-172"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.7, "bindings": {"user_id": "USR-167"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.75, "bindings": {"user_id": "USR-174"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.849999999999994, "bindings": {"user_id": "USR-176"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.95, "bindings": {"user_id": "USR-166"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.1, "bindings": {"user_id": "USR-175"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.0, "bindings": {"user_id": "USR-173"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.3, "bindings": {"user_id": "USR-179"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.199999999999996, "bindings": {"user_id": "USR-177"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 61.949999999999996, "bindings": {"user_id": "USR-178"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.35, "bindings": {"user_id": "USR-174"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.300000000000004, "bindings": {"user_id": "USR-167"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.449999999999996, "bindings": {"user_id": "USR-176"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.550000000000004, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 62.25, "bindings": {"user_id": "USR-172"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.55, "bindings": {"user_id": "USR-178"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.65, "bindings": {"user_id": "USR-180"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 62.6, "bindings": {"user_id": "USR-173"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.8, "bindings": {"user_id": "USR-177"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.95, "bindings": {"user_id": "USR-174"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.7, "bindings": {"user_id": "USR-175"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.150000000000006, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.99999999999999, "bindings": {"user_id": "USR-181"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 62.9, "bindings": {"user_id": "USR-179"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 62.900000000000006, "bindings": {"user_id": "USR-167"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 63.05, "bindings": {"user_id": "USR-176"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.25, "bindings": {"user_id": "USR-180"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.349999999999994, "bindings": {"user_id": "USR-182"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.5, "bindings": {"user_id": "USR-179"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 63.300000000000004, "bindings": {"user_id": "USR-175"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.15, "bindings": {"user_id": "USR-178"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.599999999999994, "bindings": {"user_id": "USR-181"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.4, "bindings": {"user_id": "USR-177"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.75, "bindings": {"user_id": "USR-178"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 63.65, "bindings": {"user_id": "USR-176"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.699999999999996, "bindings": {"user_id": "USR-183"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.85, "bindings": {"user_id": "USR-180"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.550000000000004, "bindings": {"user_id": "USR-174"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.75000000000001, "bindings": {"user_id": "USR-166"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 64.0, "bindings": {"user_id": "USR-177"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.15, "bindings": {"user_id": "USR-174"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.05, "bindings": {"user_id": "USR-184"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 63.949999999999996, "bindings": {"user_id": "USR-182"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.1, "bindings": {"user_id": "USR-179"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.35000000000001, "bindings": {"user_id": "USR-166"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.19999999999999, "bindings": {"user_id": "USR-181"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.45, "bindings": {"user_id": "USR-180"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.35, "bindings": {"user_id": "USR-178"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.3, "bindings": {"user_id": "USR-183"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.39999999999999, "bindings": {"user_id": "USR-185"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.55, "bindings": {"user_id": "USR-182"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.75, "bindings": {"user_id": "USR-174"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.75, "bindings": {"user_id": "USR-186"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.69999999999999, "bindings": {"user_id": "USR-179"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.64999999999999, "bindings": {"user_id": "USR-184"}, "payload": {"status": "flagged"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.79999999999998, "bindings": {"user_id": "USR-181"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.end", "event_time": 64.94999999999999, "bindings": {"user_id": "USR-178"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 65.05, "bindings": {"user_id": "USR-180"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.99999999999999, "bindings": {"user_id": "USR-185"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.89999999999999, "bindings": {"user_id": "USR-183"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 64.95, "bindings": {"user_id": "USR-166"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.14999999999999, "bindings": {"user_id": "USR-182"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.1, "bindings": {"user_id": "USR-187"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.24999999999999, "bindings": {"user_id": "USR-184"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.end", "event_time": 65.29999999999998, "bindings": {"user_id": "USR-179"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 65.49999999999999, "bindings": {"user_id": "USR-183"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.35, "bindings": {"user_id": "USR-186"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.end", "event_time": 65.35, "bindings": {"user_id": "USR-174"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 65.45, "bindings": {"user_id": "USR-188"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.end", "event_time": 65.39999999999998, "bindings": {"user_id": "USR-181"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.55, "bindings": {"user_id": "USR-166"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.69999999999999, "bindings": {"user_id": "USR-187"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 65.64999999999999, "bindings": {"user_id": "USR-180"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 65.8, "bindings": {"user_id": "USR-189"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.59999999999998, "bindings": {"user_id": "USR-185"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 65.84999999999998, "bindings": {"user_id": "USR-184"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 65.74999999999999, "bindings": {"user_id": "USR-182"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.05, "bindings": {"user_id": "USR-188"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.19999999999997, "bindings": {"user_id": "USR-185"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.09999999999998, "bindings": {"user_id": "USR-183"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 65.94999999999999, "bindings": {"user_id": "USR-186"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.14999999999999, "bindings": {"user_id": "USR-190"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.29999999999998, "bindings": {"user_id": "USR-187"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.end", "event_time": 66.34999999999998, "bindings": {"user_id": "USR-182"}, "payload": {}, "source": "perf"}
+{"type": "session.status", "event_time": 66.39999999999999, "bindings": {"user_id": "USR-189"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.54999999999998, "bindings": {"user_id": "USR-186"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.69999999999997, "bindings": {"user_id": "USR-183"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.5, "bindings": {"user_id": "USR-191"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.64999999999999, "bindings": {"user_id": "USR-188"}, "payload": {"status": "logout"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.89999999999998, "bindings": {"user_id": "USR-187"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.74999999999999, "bindings": {"user_id": "USR-190"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.99999999999999, "bindings": {"user_id": "USR-189"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.85, "bindings": {"user_id": "USR-192"}, "payload": {"status": "login_ok"}, "source": "session-service"}
+{"type": "session.status", "event_time": 66.79999999999997, "bindings": {"user_id": "USR-185"}, "payload": {"status": "locked"}, "source": "session-service"}
+{"type": "session.end", "event_time": 67.14999999999998, "bindings": {"user_id": "USR-186"}, "payload": {}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.19999999999999, "bindings": {"user_id": "USR-193"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.1, "bindings": {"user_id": "USR-191"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.24999999999999, "bindings": {"user_id": "USR-188"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.39999999999996, "bindings": {"user_id": "USR-185"}, "payload": {"status": "review"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.34999999999998, "bindings": {"user_id": "USR-190"}, "payload": {"status": "action"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.29999999999997, "bindings": {"user_id": "USR-183"}, "payload": {"status": "unlocked"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.44999999999999, "bindings": {"user_id": "USR-192"}, "payload": {"status": "login_fail"}, "source": "session-service"}
+{"type": "session.status", "event_time": 67.59999999999998, "bindings": {"user_id": "USR-189"}, "payload": {"status": "logout"}, "source": "session-service"}
