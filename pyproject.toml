@@ -48,4 +48,4 @@ line-length = 100
 source_paths = [ "behave_rv/" ]
 pytest_add_cli_args_test_selection = [ "tests/" ]
 do_not_mutate = [ "behave_rv/expose/*", "behave_rv/vendor_behave/*" ]
-also_copy = [ "examples/" ]
+also_copy = [ "examples/", "demo/" ]
