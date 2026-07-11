@@ -27,6 +27,17 @@ Two pages, one engine:
   verdict badges flipping live. Closing an undelivered order settles its
   "eventually" obligations on the spot -- red, with the terminal as witness.
 
+- `http://127.0.0.1:5001/stability` -- the stability panel: four real code
+  changes (a pure rename, a payload-field rename, an app-side status-value
+  rename, a helper-function change), each applied in a sandboxed copy and run
+  through the REAL defense stack -- catalog diff, value-level liveness against
+  the app's own stream, and a verdict replay of the seeded fault before and
+  after. Absorption is shown as a positive, the break with its contract diff
+  and affected policies, the value rename with the silent failure and the
+  liveness alarm side by side, and the helper change as the documented blind
+  spot. Backed by `stability.py` (tested in `test_stability_panel.py`);
+  nothing is mocked. See `STABILITY.md` at the repo root.
+
 ## Policies
 
 | # | Policy (scenario name) | Operator | Category | Fired by |

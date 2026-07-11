@@ -179,6 +179,26 @@ def order_action(oid, action):
     return {"ok": True}
 
 
+# -- the stability panel: real code changes through the real defense stack ----
+
+from demo.order_service.stability import CHANGES, apply_change  # noqa: E402
+
+
+@app.route("/stability")
+def stability_page():
+    cards = [{"id": cid, "title": spec["title"], "kind": spec["kind"]}
+             for cid, spec in CHANGES.items()]
+    return render_template("stability.html", cards=cards)
+
+
+@app.route("/stability/<change_id>", methods=["POST"])
+def stability_apply(change_id):
+    if change_id not in CHANGES:
+        return {"error": "unknown change"}, 404
+    # runs in a sandbox: separate registries and services, never the live engine
+    return apply_change(change_id)
+
+
 @app.route("/action/<name>", methods=["POST"])
 def action(name):
     label, kind, flow = FLOWS[name]
@@ -193,6 +213,7 @@ def stream():
 
 
 if __name__ == "__main__":
-    print("Order Service demo -> http://127.0.0.1:5001        (scripted flows)")
-    print("Shoply board       -> http://127.0.0.1:5001/board  (interactive app)")
+    print("Order Service demo -> http://127.0.0.1:5001            (scripted flows)")
+    print("Shoply board       -> http://127.0.0.1:5001/board      (interactive app)")
+    print("Stability panel    -> http://127.0.0.1:5001/stability  (code-change defenses)")
     app.run(port=5001, threaded=True)
