@@ -22,6 +22,7 @@ def build_registry() -> StepRegistry:
     return registry
 
 
+
 def load_policies(registry: StepRegistry):
     policies = []
     for path in sorted(POLICY_DIR.glob("*.feature")):

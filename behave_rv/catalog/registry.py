@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -158,6 +159,46 @@ class StepRegistry:
                     )
                     break  # one match per step_id is enough
         return resolutions
+
+    def copy_into(self, other: "StepRegistry") -> None:
+        """Re-register every step and alias of this registry into ``other``.
+
+        The module-level import hook for CLI tooling: a steps module that
+        builds its registry in a factory can expose it to the process default
+        registry with ``build_registry().copy_into(default_registry)``. An
+        identical re-registration is tolerated by ``other`` (re-imports are
+        no-ops); a conflicting one raises, as always.
+        """
+        for entry in self._entries.values():
+            other.register(entry.kind, entry.phrasing, self._funcs[entry.step_id],
+                           step_id=entry.step_id,
+                           event_type=entry.signature.event_type,
+                           correlation_key=entry.signature.correlation_key,
+                           provenance=entry.provenance)
+        for step_id, phrasings in self._aliases.items():
+            for phrasing in phrasings:
+                if phrasing not in other._aliases.get(step_id, []):
+                    other.alias(step_id, phrasing)
+
+    # -- isolation ------------------------------------------------------------
+
+    @contextmanager
+    def isolated(self):
+        """Temporarily present an EMPTY registry through this same object.
+
+        Tooling that loads a steps module (which registers into the process
+        default registry as an import side effect) uses this to capture that
+        module's catalog in isolation -- and to load a different version of
+        the same step_ids later in the same process -- without permanently
+        mutating shared state. On exit the previous registrations are
+        restored exactly.
+        """
+        saved = (self._entries, self._funcs, self._aliases)
+        self._entries, self._funcs, self._aliases = {}, {}, {}
+        try:
+            yield self
+        finally:
+            self._entries, self._funcs, self._aliases = saved
 
     # -- access -------------------------------------------------------------
 
