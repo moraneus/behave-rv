@@ -180,6 +180,11 @@ python -m behave_rv catalog diff --steps app/steps.py --catalog catalog.json \
 The catalog lives in the repository and is reviewed like any interface
 change: an INTENDED contract change is a regenerated `catalog.json` in the
 same commit, and the diff output names every policy the change affects.
+The artifact is stable across interpreter versions (the fingerprint uses a
+version-stable AST serialization; verified byte-identical under CPython
+3.10, 3.13, and 3.14) and across processes, so a catalog written on one
+machine gates truthfully on another -- this task's fresh-clone check caught
+and fixed the version dependence.
 
 ## The measured table
 

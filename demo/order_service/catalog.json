@@ -7,7 +7,7 @@
       "phrasing": "an order is \"{status}\"",
       "provenance": "llm",
       "signature": {
-        "condition_fingerprint": "ff9b2eacdc175b3a",
+        "condition_fingerprint": "48bf11668ed70f4a",
         "correlation_key": [
           "order_id"
         ],

@@ -49,3 +49,17 @@ def test_fingerprint_empty_when_source_unavailable():
     # cannot read, to exercise the source-unavailable fallback.
     f = eval("lambda ctx, event, status: True")
     assert condition_fingerprint(f) == ""
+
+
+def test_fingerprint_is_python_version_stable():
+    """The committed catalog must not depend on which interpreter wrote it.
+    This pins the exact fingerprint of the canonical step shape; the value was
+    verified byte-identical under CPython 3.10, 3.13, and 3.14 (ast.dump, by
+    contrast, differs across versions -- the fresh-clone check caught catalogs
+    written on one version reporting spurious breaks on another). Changing the
+    fingerprint algorithm intentionally means updating this pin AND
+    regenerating every committed catalog in the same commit."""
+    from demo.order_service.steps import build_registry
+
+    entry = build_registry().entries()[0]
+    assert entry.signature.condition_fingerprint == "48bf11668ed70f4a"

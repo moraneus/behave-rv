@@ -95,8 +95,30 @@ def condition_fingerprint(func) -> str:
     ) + "|" + ",".join(sorted(arg.arg for arg in fn.args.kwonlyargs))
     normalized = _Alpha().visit(fn)
     ast.fix_missing_locations(normalized)
-    payload = f"{ast.dump(normalized)}|params:{binding_params}"
+    payload = f"{_stable_dump(normalized)}|params:{binding_params}"
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def _stable_dump(node) -> str:
+    """A Python-version-stable AST serialization.
+
+    ``ast.dump`` output changes across interpreter versions (new node fields
+    appear, e.g. ``type_params`` in 3.12), so a fingerprint built on it made
+    the committed catalog report spurious breaks the moment a teammate or CI
+    ran a different Python. Serializing node type names plus only the
+    NON-EMPTY fields is stable across versions for any code that does not use
+    syntax the older version lacks -- and code that does cannot run there
+    anyway."""
+    if isinstance(node, ast.AST):
+        parts = []
+        for name, value in ast.iter_fields(node):
+            if value is None or (isinstance(value, list) and not value):
+                continue  # absent-vs-empty is exactly where versions disagree
+            parts.append(f"{name}={_stable_dump(value)}")
+        return f"{node.__class__.__name__}({', '.join(parts)})"
+    if isinstance(node, list):
+        return "[" + ", ".join(_stable_dump(item) for item in node) + "]"
+    return repr(node)
 
 
 def payload_fields(func) -> dict[str, str]:
