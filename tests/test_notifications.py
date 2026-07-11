@@ -46,7 +46,11 @@ def test_changed_unused_step_does_not_break():
     old = [entry("s2", signature=sig())]
     new = [entry("s2", signature=sig(event_type="order.state"))]
 
-    assert notifications(old, new, USES).breaks == []
+    notes = notifications(old, new, USES)
+    assert notes.breaks == []
+    # mutation-triage addition (kills channel notifications_32): a CHANGED
+    # unused step is not a suggestion either -- suggestions are for ADDED steps
+    assert notes.suggestions == []
 
 
 def test_removed_used_step_breaks():
@@ -196,6 +200,35 @@ def test_new_uncovered_step_becomes_a_suggestion():
     (s,) = notes.suggestions
     assert s.step_id == "fresh"
     assert s.phrasing == "something new"
+    # mutation-triage addition (kills channel notifications_39)
+    assert "no policy covers it" in s.detail
+
+
+def test_new_step_already_covered_is_not_a_suggestion():
+    # mutation-triage addition (kills channel notifications_35): an ADDED step
+    # that a policy already uses needs no coverage proposal.
+    uses = [PolicyUse(policy_id="early-adopter", owner="alice",
+                      step_ids=frozenset({"fresh"}))]
+    notes = notifications([], [entry("fresh", phrasing="something new")], uses)
+    assert notes.suggestions == []
+
+
+def test_uses_and_weakenings_carry_their_owners():
+    # mutation-triage additions (kill channel uses_from_policies_4 and
+    # _weakenings_10): scoping is BY owner, so the owner fields are load-bearing.
+    from behave_rv.compile.automaton import Policy
+    from behave_rv.notify.channel import uses_from_policies
+
+    compiled = Policy(policy_id="p", correlation_key=("k",),
+                      event_types=frozenset({"t"}), monitor_factory=lambda: None,
+                      used_step_ids=frozenset({"s1"}))
+    (use,) = uses_from_policies([compiled], owner="carol")
+    assert use.owner == "carol"
+
+    old_tests = [AgentTest("t1", owner="the-agent", asserts="a")]
+    new_tests = [AgentTest("t1", owner="the-agent", asserts="b")]
+    (w,) = notifications([], [], [], old_tests=old_tests, new_tests=new_tests).weakenings
+    assert w.owner == "the-agent"
 
 
 # --- weakenings ------------------------------------------------------------

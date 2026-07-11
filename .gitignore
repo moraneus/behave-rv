@@ -47,3 +47,4 @@ htmlcov/
 
 # Runtime artifacts
 *.log
+mutants/
