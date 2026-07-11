@@ -78,6 +78,20 @@ class Notifications:
     weakenings: list[Weakening] = field(default_factory=list)
 
 
+def uses_from_policies(policies, owner: str = "unknown") -> list[PolicyUse]:
+    """Build the policy-to-step dependency map from compiled policies.
+
+    Reads ``Policy.used_step_ids`` -- the step_ids each scenario actually
+    resolved to at compile time. This is the real map; deriving it from event
+    types is wrong in general, because several steps may observe the same
+    event type. Policies with an empty ``used_step_ids`` (hand-built, never
+    compiled) are skipped: their dependencies are unknown, not empty.
+    """
+    return [PolicyUse(policy_id=p.policy_id, owner=owner,
+                      step_ids=frozenset(p.used_step_ids))
+            for p in policies if p.used_step_ids]
+
+
 def notifications(
     old_catalog: list[CatalogEntry],
     new_catalog: list[CatalogEntry],

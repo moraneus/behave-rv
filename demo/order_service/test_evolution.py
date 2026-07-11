@@ -31,7 +31,7 @@ from demo.order_service.evolution import (
 
 
 def _uses():
-    return policy_uses(build_registry(), load_policies(build_registry()))
+    return policy_uses(load_policies(build_registry()))
 
 
 def test_act0_committed_catalog_matches_the_code():

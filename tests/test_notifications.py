@@ -68,6 +68,114 @@ def test_only_owners_who_used_the_step_are_notified():
     assert owners == {"alice"}
 
 
+# --- the real dependency map (used_step_ids), end to end ---------------------
+#
+# Two DIFFERENT steps observing the SAME event type, two policies each using a
+# different one. An event-type heuristic cannot tell them apart; the compiled
+# used_step_ids can. A signature change to one step must notify only the
+# policy that uses that step.
+
+
+def _register_status_step(registry):
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status):
+        if event.type == "order.status" and event.payload.get("status") == status:
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+
+def _shared_type_registry_v1():
+    from behave_rv.catalog.registry import StepRegistry
+
+    registry = StepRegistry()
+    _register_status_step(registry)
+
+    # a second step over the SAME event type, different condition
+    @registry.trigger('an order amount above "{limit}" is recorded',
+                      step_id="order.amount.exceeds",
+                      event_type="order.status", correlation_key="order_id")
+    def order_amount_exceeds(ctx, event, limit):
+        if event.type == "order.status" and \
+                float(event.payload.get("amount", 0)) > float(limit):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+def _shared_type_registry_v2():
+    """The amount step's contract moves (payload field 'amount' -> 'total');
+    the status step is byte-identical."""
+    from behave_rv.catalog.registry import StepRegistry
+
+    registry = StepRegistry()
+    _register_status_step(registry)
+
+    @registry.trigger('an order amount above "{limit}" is recorded',
+                      step_id="order.amount.exceeds",
+                      event_type="order.status", correlation_key="order_id")
+    def order_amount_exceeds(ctx, event, limit):
+        if event.type == "order.status" and \
+                float(event.payload.get("total", 0)) > float(limit):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+_SHARED_TYPE_POLICIES = """
+Feature: shared event type
+
+  Scenario: status policy
+    Then an order is "chargeback" never happens
+
+  Scenario: amount policy
+    Then an order amount above "1000" is recorded never happens
+"""
+
+
+def test_compiler_records_the_resolved_step_ids():
+    from behave_rv.compile.compiler import compile_feature
+
+    status_policy, amount_policy = compile_feature(
+        _SHARED_TYPE_POLICIES, _shared_type_registry_v1())
+    assert status_policy.used_step_ids == frozenset({"order.status.is"})
+    assert amount_policy.used_step_ids == frozenset({"order.amount.exceeds"})
+    # both policies listen to the same event type: the type is NOT the map
+    assert status_policy.event_types == amount_policy.event_types
+
+
+def test_break_scoping_is_by_step_identity_not_event_type():
+    from behave_rv.compile.compiler import compile_feature
+    from behave_rv.notify.channel import uses_from_policies
+
+    v1 = _shared_type_registry_v1()
+    v2 = _shared_type_registry_v2()   # the amount step's contract moves;
+    #                                   the status step is untouched
+
+    uses = uses_from_policies(compile_feature(_SHARED_TYPE_POLICIES, v1),
+                              owner="carol")
+    notes = notifications(v1.entries(), v2.entries(), uses)
+
+    assert {b.policy_id for b in notes.breaks} == {"amount policy"}
+    assert all(b.step_id == "order.amount.exceeds" for b in notes.breaks)
+    # the status policy shares the event type but not the step: NOT notified
+
+
+def test_uses_from_policies_skips_uncompiled_policies():
+    from behave_rv.compile.automaton import Policy
+    from behave_rv.notify.channel import uses_from_policies
+
+    # a hand-built policy has no recorded dependencies: unknown, not empty
+    hand_built = Policy(policy_id="hand", correlation_key=("k",),
+                        event_types=frozenset({"t"}), monitor_factory=lambda: None)
+    assert uses_from_policies([hand_built]) == []
+
+
 # --- silent rename ---------------------------------------------------------
 
 

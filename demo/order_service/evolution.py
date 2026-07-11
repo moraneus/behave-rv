@@ -33,7 +33,7 @@ from behave_rv.catalog.store import load_catalog, save_catalog
 from behave_rv.compile.compiler import UncheckablePolicyWarning, compile_feature
 from behave_rv.engine.loop import Engine
 from behave_rv.events.sources.inprocess import InProcessSource
-from behave_rv.notify.channel import AgentTest, PolicyUse, notifications
+from behave_rv.notify.channel import AgentTest, notifications, uses_from_policies
 
 from demo.order_service.service import TERMINAL_TYPE, OrderService
 from demo.order_service.steps import POLICY_DIR, build_registry, load_policies
@@ -65,15 +65,11 @@ def write_catalog():
     save_catalog(CATALOG_PATH, build_registry().entries())
 
 
-def policy_uses(registry, policies):
-    """Which step_ids each policy binds. In this demo the event_type ->
-    step_id mapping is one-to-one, so a policy uses a step exactly when it
-    listens to that step's event type."""
-    by_type = {e.signature.event_type: e.step_id for e in registry.entries()}
-    return [PolicyUse(policy_id=p.policy_id, owner=OWNER,
-                      step_ids=frozenset(by_type[t] for t in p.event_types
-                                         if t in by_type))
-            for p in policies]
+def policy_uses(policies):
+    """Which step_ids each policy binds: the compiler records the resolved
+    step_ids on each Policy (used_step_ids), so this is the real dependency
+    map, not an event-type heuristic."""
+    return uses_from_policies(policies, owner=OWNER)
 
 
 def record_trace(service_cls, flow_names):
@@ -223,7 +219,7 @@ def _statuses(changes):
 
 def main():
     committed = committed_catalog()
-    uses = policy_uses(build_registry(), load_policies(build_registry()))
+    uses = policy_uses(load_policies(build_registry()))
     print("=" * 72)
     print("Act 0  the committed contract")
     print(f"  {CATALOG_PATH.name}: {len(committed)} step(s), "

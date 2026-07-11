@@ -418,6 +418,12 @@ class Policy:
     # scenario with the failing step marked. The engine ignores both.
     authored_scenario: Any = None
     failing_step_index: Optional[int] = None
+    # Every step_id the scenario resolved to (trigger, obligation operand(s),
+    # scope, closing step): the real policy-to-step dependency map, set by the
+    # compiler. The notification channel scopes Breaks with this; event types
+    # are NOT a substitute (several steps may observe the same event type).
+    # Empty only for hand-built policies that never went through the compiler.
+    used_step_ids: frozenset[str] = frozenset()
 
 
 def never(
