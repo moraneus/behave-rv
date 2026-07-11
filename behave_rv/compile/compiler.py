@@ -19,8 +19,9 @@ with a temporal suffix:
         Then <registered step> within "<n>" seconds
         Then <registered step> previously
 
-Each step is resolved against the catalog by stable step_id (so a rephrasing that
-maps to the same step_id still compiles). The correlation key is taken from the
+Each step line is resolved by text against the registered phrasings (primary or
+alias) to a stable step_id, so a rephrasing still compiles when the previous
+wording is retained as an alias. The correlation key is taken from the
 resolved steps (a Given scope must share the Then's key); a scenario that needs
 more than one independent entity key is refused -- the single-key fragment.
 

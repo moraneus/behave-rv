@@ -1,9 +1,11 @@
 """The step catalog entry and its signature.
 
 The catalog is the hinge of the whole system: it is what makes human policies
-survive the agent's refactoring. Human policies bind to ``step_id``, not to
-phrasing text, so renames flow through untouched. A signature change to a *used*
-step is a versioned, reviewable event.
+survive the agent's refactoring. Signature equivalence and break scoping work on
+the stable ``step_id``, never on the phrasing text, so code renames flow through
+untouched; a reworded phrasing stays backward compatible when the previous
+wording is retained as an alias. A signature change to a *used* step is a
+versioned, reviewable event.
 """
 
 from __future__ import annotations

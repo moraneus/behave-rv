@@ -79,7 +79,8 @@ window" buttons.
 
 The order demo also demonstrates the catalog mechanism (the "policies survive
 the agent's refactoring" claim): a committed `catalog.json` contract, a pure
-rename absorbed silently with identical verdicts, a contract change surfacing
+rename absorbed silently with identical verdicts (the old wording retained
+as an alias), a contract change surfacing
 as Breaks scoped to the using policies, and the two changes signatures cannot
 see (a renamed status value, a dropped emission) caught by value-level
 liveness instead. See

@@ -60,7 +60,7 @@ pytest demo/order_service/test_evolution.py   # asserted (7 tests)
 
 | Act | The agent's change | What catches it |
 |---|---|---|
-| 1 | function + wording renamed, contract identical | nothing, by design: diff says `renamed`, zero notifications, verdicts identical |
+| 1 | function + wording renamed (old wording retained as an alias), contract identical | nothing, by design: diff says `renamed`, zero notifications, verdicts identical |
 | 2 | event type + payload field move | signature diff -> 11 Breaks, scoped to exactly the policies using the step, with the contract diff in the message |
 | 3 | status value `"paid"` -> `"charged"` | NOT the diff (contract unchanged, honestly silent); value-level liveness against an observed stream flags the three paid-dependent policies |
 | 4 | the invoice emission silently dropped | NOT the diff; the same liveness check flags `every order is eventually invoiced` |

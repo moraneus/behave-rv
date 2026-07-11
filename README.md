@@ -65,8 +65,10 @@ everything downstream of parsing with a runtime engine.
 - **Event time reordering by default.** Verdicts are decided on event time, not
   arrival order, using a watermark with a grace window.
 - **Specification stability across code change.** Steps carry behavioural
-  signatures and policies bind to stable step identities, so renames are absorbed
-  silently while a genuine change in behaviour surfaces as a scoped notification.
+  signatures keyed by stable step identities. Code renames (functions, variables,
+  internals) are absorbed silently; a phrasing rename is backward compatible when
+  the previous wording is retained as an alias; a genuine change in behaviour
+  surfaces as a scoped notification.
 - **Explanations as the authored scenario.** A violation is rendered as the human's
   own scenario with the failing step marked and the real event values shown.
 
@@ -270,7 +272,9 @@ def order_status_is(ctx, event, status):
 
 
 # A second wording for the SAME step_id. A policy may use either phrasing; both
-# bind to order.status.is, so a rephrasing flows through untouched.
+# resolve to order.status.is. THIS is how a rephrasing stays backward compatible:
+# the previous wording is retained as an alias. Without the alias, a .feature
+# written against the old wording would no longer compile.
 default_registry.alias("order.status.is", 'the order reaches "{status}"')
 ```
 
@@ -379,13 +383,20 @@ behavioural signature.
 Each registered step has a stable `step_id` and a **behavioural signature**: the
 event type it observes, the fields a policy can reference, the correlation key, the
 exposed payload fields, and a rename invariant fingerprint of the predicate body.
-Policies bind to the `step_id`, not to the phrasing text.
+Policy step lines resolve by text against the registered phrasings (primary or
+alias) to a `step_id`; the signature diff and the notification scoping then work
+on that identity, never on the text. A reworded phrasing therefore stays
+backward compatible exactly when the previous wording is retained as an alias
+(`registry.alias`, shown above).
 
 After a change, the new catalog is diffed against the committed one:
 
 - A **rename** of a function, a variable, or the phrasing, with no change to the
-  event, its fields, or the matching condition, leaves the signature equal. It is
-  absorbed silently. No notification is produced.
+  event, its fields, or the matching condition, leaves the signature equal. The
+  catalog diff classifies it `renamed` and produces no notification. For existing
+  `.feature` files to keep compiling across a phrasing rename, the previous
+  wording must be retained as an alias; the diff being silent does not by itself
+  re-resolve old text.
 - A **semantic change**, such as renaming a referenced field, changing the event
   type, widening the correlation key, or adding a guard inside the predicate body,
   changes the signature. It surfaces as a **break** notification, scoped only to the
