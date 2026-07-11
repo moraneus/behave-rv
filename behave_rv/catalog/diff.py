@@ -90,5 +90,10 @@ def describe_signature_change(old: StepSignature, new: StepSignature) -> str:
     if old.payload_fields != new.payload_fields:
         parts.append(f"payload_fields {old.payload_fields} -> {new.payload_fields}")
     if old.condition_fingerprint != new.condition_fingerprint:
-        parts.append("trigger condition changed (step body)")
+        parts.append(
+            "trigger condition changed (step body or binding parameters; the "
+            "structural fingerprint is conservative -- a behavior-preserving "
+            "refactor such as a temporary variable, reordered operands, or an "
+            "extracted helper also trips it, so review the step body)"
+        )
     return "; ".join(parts) if parts else "no behavioral change"

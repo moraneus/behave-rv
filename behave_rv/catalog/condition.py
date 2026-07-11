@@ -72,16 +72,31 @@ class _Alpha(ast.NodeTransformer):
 
 
 def condition_fingerprint(func) -> str:
-    """A rename-invariant fingerprint of the step's matching condition.
+    """A rename-invariant fingerprint of the step's matching contract.
+
+    Two ingredients:
+
+    * the alpha-normalized body AST -- invariant to identifier names and
+      formatting, sensitive to structure and constants;
+    * the step's BINDING-parameter names (everything after the positional
+      ``(ctx, event)`` pair). Those names are contract, not representation:
+      the compiler binds phrasing placeholders to them BY NAME
+      (``func(**params)``), so renaming one silently disconnects every policy
+      whose placeholder no longer matches. Found by the stability catalog's
+      case B7 -- alpha normalization alone erased exactly this.
 
     Returns "" when the source is unavailable; the diff treats a "" fingerprint
     conservatively (any change away from a known fingerprint surfaces)."""
     fn = _function_ast(func)
     if fn is None:
         return ""
+    binding_params = ",".join(
+        arg.arg for arg in (*fn.args.posonlyargs, *fn.args.args)[2:]
+    ) + "|" + ",".join(sorted(arg.arg for arg in fn.args.kwonlyargs))
     normalized = _Alpha().visit(fn)
     ast.fix_missing_locations(normalized)
-    return hashlib.sha256(ast.dump(normalized).encode()).hexdigest()[:16]
+    payload = f"{ast.dump(normalized)}|params:{binding_params}"
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
 def payload_fields(func) -> dict[str, str]:
