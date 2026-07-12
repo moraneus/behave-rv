@@ -40,6 +40,10 @@ def signatures_equivalent(a: StepSignature, b: StepSignature) -> bool:
         and a.correlation_key == b.correlation_key
         and a.payload_fields == b.payload_fields
         and a.condition_fingerprint == b.condition_fingerprint
+        # helper_hashes is implied by the fingerprint (which hashes the same
+        # body identities) but compared explicitly so the equivalence is
+        # readable and does not depend on the hash construction
+        and set(a.helper_hashes.values()) == set(b.helper_hashes.values())
     )
 
 
@@ -90,6 +94,16 @@ def describe_signature_change(old: StepSignature, new: StepSignature) -> str:
         )
     if old.payload_fields != new.payload_fields:
         parts.append(f"payload_fields {old.payload_fields} -> {new.payload_fields}")
+    changed_helpers = sorted(
+        name for name in set(old.helper_hashes) & set(new.helper_hashes)
+        if old.helper_hashes[name] != new.helper_hashes[name])
+    gone = sorted(set(old.helper_hashes) - set(new.helper_hashes))
+    added = sorted(set(new.helper_hashes) - set(old.helper_hashes))
+    if changed_helpers:
+        parts.append("helper(s) changed: " + ", ".join(changed_helpers)
+                     + " (call-graph fingerprint)")
+    if gone or added:
+        parts.append(f"reachable helper set changed (-{gone or '[]'} +{added or '[]'})")
     if old.condition_fingerprint != new.condition_fingerprint:
         parts.append(
             "trigger condition changed (step body or binding parameters; the "

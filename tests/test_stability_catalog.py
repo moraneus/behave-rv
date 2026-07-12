@@ -43,14 +43,19 @@ def test_family_c_disconnects_are_caught_by_liveness():
         assert outcome.diff_breaks == []       # and the diff is HONESTLY silent
 
 
-def test_c4_is_the_documented_boundary_not_a_hidden_one():
-    # xfail-style: this asserts the MISS. If a future mechanism starts
-    # catching helper-indirection changes, this test fails and the docs'
-    # limitation statement must be updated alongside the mechanism.
+def test_c4_helper_changes_are_now_detected_by_the_call_graph_fingerprint():
+    # This test previously asserted C4 as the documented MISS, xfail-style,
+    # with the promise that a mechanism catching it must update docs and test
+    # together. That happened: the interprocedural fingerprint
+    # (docs/design/interprocedural-fingerprint.md) resolves same-module and
+    # same-package calls, so the helper's body change moves the caller's
+    # fingerprint and the diff breaks. The new documented boundary is C4b
+    # (calls through values), asserted below.
     c4 = OUTCOMES["C4"]
-    assert c4.behavior_changed is True         # the policy genuinely went dormant
-    assert c4.classification == "MISS (documented)"
-    assert c4.diff_breaks == [] and c4.liveness == []
+    assert c4.behavior_changed is True
+    assert c4.classification == "CORRECT (diff)"
+    assert c4.diff_breaks
+    assert any("helper" in b.detail for b in c4.diff_breaks)
 
 
 def test_family_d_false_alarm_rate_is_recorded():

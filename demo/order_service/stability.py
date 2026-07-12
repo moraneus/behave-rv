@@ -170,8 +170,8 @@ CHANGES = {
                    'self._ev(oid, "PAID")   # was: self._ev(oid, "paid")',
     ),
     "helper_change": dict(
-        title="The predicate's helper function changes (the blind spot)",
-        kind="blindspot",
+        title="The predicate's helper function changes (now detected)",
+        kind="break",
         code_after='def _matches(event, status):\n'
                    '    return event.type == "order.status" and \\\n'
                    '           event.payload.get("status") == status.upper()   # was: == status',
@@ -230,10 +230,12 @@ def apply_change(change_id: str) -> dict:
                     "change. The policy goes quiet on the very fault it used to "
                     "catch (left table), and value-level liveness against the "
                     "app's own stream is what raises the alarm (right panel).",
-        "blindspot": "Nothing speaks. The fingerprint does not follow indirection "
-                     "into helper functions, the stream still carries the expected "
-                     "values, and the policy is silently dormant. This is the "
-                     "documented residual limitation (see STABILITY.md).",
+        "blindspot": "Nothing speaks. The call goes through a VALUE, which static "
+                     "resolution deliberately does not follow, the stream still "
+                     "carries the expected values, and the policy is silently "
+                     "dormant. This is the documented residual boundary -- and the "
+                     "signature's unresolved_calls names the call site the "
+                     "fingerprint cannot see (see STABILITY.md).",
     }
 
     return {

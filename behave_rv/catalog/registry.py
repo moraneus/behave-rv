@@ -19,7 +19,7 @@ from typing import Any, Iterable
 
 import parse
 
-from behave_rv.catalog.condition import condition_fingerprint
+from behave_rv.catalog.condition import fingerprint_bundle
 from behave_rv.catalog.condition import payload_fields as extract_payload_fields
 from behave_rv.catalog.entry import CatalogEntry, StepSignature
 
@@ -70,13 +70,16 @@ class StepRegistry:
         correlation_key: str | Iterable[str],
         provenance: str = "llm",
     ) -> CatalogEntry:
+        fingerprint, helper_hashes, unresolved_calls = fingerprint_bundle(func)
         signature = StepSignature(
             event_type=event_type,
             trigger_condition=phrasing,
             payload_fields=extract_payload_fields(func),
             referenced_fields=referenced_fields(phrasing),
             correlation_key=_normalize_key(correlation_key),
-            condition_fingerprint=condition_fingerprint(func),
+            condition_fingerprint=fingerprint,
+            helper_hashes=helper_hashes,
+            unresolved_calls=unresolved_calls,
         )
         entry = CatalogEntry(
             step_id=step_id,

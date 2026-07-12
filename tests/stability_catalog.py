@@ -499,7 +499,7 @@ CASES = [
     Case("C3", "disconnect", "app carries the value under a different field name",
          True, "liveness", variant_service=ServiceC3FieldRenamed),
     Case("C4", "disconnect", "predicate delegates to a helper; the helper changes",
-         True, "none (documented miss)", variant_registry=registry_c4_variant,
+         True, "diff", variant_registry=registry_c4_variant,
          baseline_registry=registry_c4_baseline),
     Case("D1", "conservative", "introduce a temporary variable in the predicate",
          False, "silent", variant_registry=registry_d1_temp_variable),

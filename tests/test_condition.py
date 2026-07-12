@@ -62,4 +62,4 @@ def test_fingerprint_is_python_version_stable():
     from demo.order_service.steps import build_registry
 
     entry = build_registry().entries()[0]
-    assert entry.signature.condition_fingerprint == "48bf11668ed70f4a"
+    assert entry.signature.condition_fingerprint == "fb94516a6c63b8f5"

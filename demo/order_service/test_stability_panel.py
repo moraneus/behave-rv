@@ -33,11 +33,11 @@ def test_rename_value_shows_the_silent_failure_and_the_liveness_alarm():
     assert any("status='paid'" in m for m in result["liveness"])
 
 
-def test_helper_change_is_the_documented_blind_spot():
+def test_helper_change_is_now_detected_by_the_call_graph_fingerprint():
     result = apply_change("helper_change")
-    assert result["diff_statuses"] == {"order.status.is": "unchanged"}
-    assert result["breaks"] == []
-    assert result["liveness"] == []
+    assert result["diff_statuses"] == {"order.status.is": "changed"}
+    assert len(result["breaks"]) == 11
+    assert any("helper" in b["detail"] for b in result["breaks"])
     assert result["marquee"]["before"] == "violated"
-    assert result["marquee"]["after"] == "pending"       # dormant, nobody spoke
-    assert "residual limitation" in result["narrative"]
+    assert result["marquee"]["after"] == "pending"       # dormant -- which is
+    #                                     exactly why the break matters

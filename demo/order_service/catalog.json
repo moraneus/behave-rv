@@ -1,5 +1,5 @@
 {
-  "catalog_format_version": 1,
+  "catalog_format_version": 2,
   "entries": [
     {
       "kind": "trigger",
@@ -7,18 +7,24 @@
       "phrasing": "an order is \"{status}\"",
       "provenance": "llm",
       "signature": {
-        "condition_fingerprint": "48bf11668ed70f4a",
+        "condition_fingerprint": "fb94516a6c63b8f5",
         "correlation_key": [
           "order_id"
         ],
         "event_type": "order.status",
+        "helper_hashes": {},
         "payload_fields": {
           "status": "any"
         },
         "referenced_fields": [
           "status"
         ],
-        "trigger_condition": "an order is \"{status}\""
+        "trigger_condition": "an order is \"{status}\"",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get",
+          "registry.trigger"
+        ]
       },
       "step_id": "order.status.is",
       "version": 1

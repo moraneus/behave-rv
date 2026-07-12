@@ -27,6 +27,7 @@ import ast
 import hashlib
 import inspect
 import textwrap
+from typing import Optional
 
 
 def _function_ast(func) -> ast.AST | None:
@@ -71,32 +72,123 @@ class _Alpha(ast.NodeTransformer):
         return node
 
 
-def condition_fingerprint(func) -> str:
-    """A rename-invariant fingerprint of the step's matching contract.
-
-    Two ingredients:
-
-    * the alpha-normalized body AST -- invariant to identifier names and
-      formatting, sensitive to structure and constants;
-    * the step's BINDING-parameter names (everything after the positional
-      ``(ctx, event)`` pair). Those names are contract, not representation:
-      the compiler binds phrasing placeholders to them BY NAME
-      (``func(**params)``), so renaming one silently disconnects every policy
-      whose placeholder no longer matches. Found by the stability catalog's
-      case B7 -- alpha normalization alone erased exactly this.
-
-    Returns "" when the source is unavailable; the diff treats a "" fingerprint
-    conservatively (any change away from a known fingerprint surfaces)."""
-    fn = _function_ast(func)
-    if fn is None:
-        return ""
-    binding_params = ",".join(
-        arg.arg for arg in (*fn.args.posonlyargs, *fn.args.args)[2:]
-    ) + "|" + ",".join(sorted(arg.arg for arg in fn.args.kwonlyargs))
+def _own_hash(fn: ast.AST, binding_params: Optional[str]) -> str:
+    """Hash one function's own normalized AST. ``binding_params`` is appended
+    for the PREDICATE only: its placeholder-bound parameter names are contract
+    (the compiler calls ``func(**params)`` by name -- the B7 lesson). Helper
+    parameters are internal representation and are alpha-normalized away like
+    any local."""
     normalized = _Alpha().visit(fn)
     ast.fix_missing_locations(normalized)
-    payload = f"{_stable_dump(normalized)}|params:{binding_params}"
+    payload = _stable_dump(normalized)
+    if binding_params is not None:
+        payload += f"|params:{binding_params}"
     return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def _binding_params(fn: ast.AST) -> str:
+    return ",".join(
+        arg.arg for arg in (*fn.args.posonlyargs, *fn.args.args)[2:]
+    ) + "|" + ",".join(sorted(arg.arg for arg in fn.args.kwonlyargs))
+
+
+def _resolve_calls(func, tree: ast.AST):
+    """Statically resolve this function's call sites, deliberately narrowly.
+
+    Resolved: plain-name calls to functions in the same module (via
+    ``__globals__``), and ``module.attr`` calls where the module is imported
+    here and the target function lives in the same top-level package as the
+    predicate. Everything else -- dynamic dispatch, getattr, functions passed
+    as values, object methods, builtins/stdlib/third-party, and resolvable
+    functions whose source is unavailable (lambdas) -- lands in the unresolved
+    list: visible, never silently ignored.
+    """
+    globals_ = getattr(func, "__globals__", {}) or {}
+    own_module = getattr(func, "__module__", "") or ""
+    own_package = own_module.split(".")[0]
+    resolved: list = []
+    unresolved: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        candidate, name = None, "<dynamic>"
+        if isinstance(node.func, ast.Name):
+            name = node.func.id
+            target = globals_.get(name)
+            if inspect.isfunction(target):
+                target_module = getattr(target, "__module__", "") or ""
+                if target_module == own_module or (
+                        own_package and target_module.split(".")[0] == own_package):
+                    candidate = target
+        elif isinstance(node.func, ast.Attribute):
+            name = node.func.attr
+            if isinstance(node.func.value, ast.Name):
+                name = f"{node.func.value.id}.{node.func.attr}"
+                base = globals_.get(node.func.value.id)
+                if inspect.ismodule(base):
+                    target = getattr(base, node.func.attr, None)
+                    if inspect.isfunction(target):
+                        target_module = getattr(target, "__module__", "") or ""
+                        if own_package and target_module.split(".")[0] == own_package:
+                            candidate = target
+        if candidate is not None and _function_ast(candidate) is not None:
+            resolved.append(candidate)
+        else:
+            unresolved.append(name)
+    return resolved, unresolved
+
+
+def fingerprint_bundle(func):
+    """(fingerprint, helper_hashes, unresolved_calls) for a step predicate.
+
+    The fingerprint covers the predicate's own normalized AST (binding
+    parameters contract-bearing, per B7) plus the SORTED SET of reachable
+    helpers' own normalized-AST hashes -- flat reachable-set hashing rather
+    than nested Merkle: the same detection power for a set-equality diff, and
+    trivially cycle-safe and order-independent. Helper NAMES are not hashed
+    (a helper rename absorbs, harness case A5); they are returned in
+    ``helper_hashes`` so a break can say WHICH helper changed. Resolution is
+    transitive to full depth; cycles contribute each function once.
+
+    Returns ("", {}, []) when the predicate's source is unavailable; the diff
+    treats "" conservatively.
+    """
+    fn = _function_ast(func)
+    if fn is None:
+        return "", {}, []
+
+    helper_hashes: dict[str, str] = {}
+    unresolved: list[str] = []
+    visited = {f"{func.__module__}.{func.__qualname__}"}
+    queue = [func]
+    own = None
+    while queue:
+        current = queue.pop()
+        # resolution FIRST, on a fresh parse: _Alpha normalization mutates the
+        # tree in place and renames the very Names resolution looks up
+        tree = fn if current is func else _function_ast(current)
+        resolved, unres = _resolve_calls(current, tree)
+        unresolved.extend(unres)
+        for helper in resolved:
+            qualname = f"{helper.__module__}.{helper.__qualname__}"
+            if qualname not in visited:
+                visited.add(qualname)
+                queue.append(helper)
+        if current is func:
+            own = _own_hash(tree, _binding_params(tree))
+        else:
+            helper_hashes[f"{current.__module__}.{current.__qualname__}"] = \
+                _own_hash(tree, None)
+
+    combined = own + "|calls:" + ",".join(sorted(set(helper_hashes.values())))
+    fingerprint = hashlib.sha256(combined.encode()).hexdigest()[:16]
+    return fingerprint, helper_hashes, sorted(set(unresolved))
+
+
+def condition_fingerprint(func) -> str:
+    """The fingerprint alone; see :func:`fingerprint_bundle` for the full
+    contract (helpers reached, unresolved call sites)."""
+    return fingerprint_bundle(func)[0]
 
 
 def _stable_dump(node) -> str:

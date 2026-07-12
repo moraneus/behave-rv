@@ -10,7 +10,7 @@ versioned, reviewable event.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -22,6 +22,12 @@ class StepSignature:
     referenced_fields: set[str]      # the subset a specification can actually bind or read
     correlation_key: tuple[str, ...]  # one key, possibly a tuple for composite identity
     condition_fingerprint: str = ""  # rename-invariant fingerprint of the match condition
+    # call-graph coverage (docs/design/interprocedural-fingerprint.md):
+    # per-helper normalized-AST hashes for every statically reachable helper
+    # (names for diff messages only; the fingerprint hashes body identities),
+    # and the call sites the resolver could NOT follow -- the visible boundary
+    helper_hashes: dict = field(default_factory=dict)
+    unresolved_calls: list = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         # referenced_fields sorted and correlation_key listed so the JSON form is
@@ -33,6 +39,8 @@ class StepSignature:
             "referenced_fields": sorted(self.referenced_fields),
             "correlation_key": list(self.correlation_key),
             "condition_fingerprint": self.condition_fingerprint,
+            "helper_hashes": dict(sorted(self.helper_hashes.items())),
+            "unresolved_calls": sorted(self.unresolved_calls),
         }
 
     @classmethod
@@ -44,6 +52,8 @@ class StepSignature:
             referenced_fields=set(data["referenced_fields"]),
             correlation_key=tuple(data["correlation_key"]),
             condition_fingerprint=data.get("condition_fingerprint", ""),
+            helper_hashes=dict(data.get("helper_hashes", {})),
+            unresolved_calls=list(data.get("unresolved_calls", [])),
         )
 
 

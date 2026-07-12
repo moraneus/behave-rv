@@ -242,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.action == "save":
                 return catalog_save_command(args)
             return catalog_diff_command(args)
-        except (FileNotFoundError, json.JSONDecodeError) as exc:
+        except (FileNotFoundError, json.JSONDecodeError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
 

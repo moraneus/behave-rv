@@ -13,7 +13,11 @@ from os import PathLike
 
 from behave_rv.catalog.entry import CatalogEntry
 
-CATALOG_FORMAT_VERSION = 1
+# v2 (2026-07-12): signatures gained helper_hashes and unresolved_calls, and
+# the fingerprint algorithm covers the reachable call graph
+# (docs/design/interprocedural-fingerprint.md). v1 catalogs are refused with a
+# recompute message rather than producing spurious breaks.
+CATALOG_FORMAT_VERSION = 2
 
 
 def save_catalog(path: str | PathLike[str], entries: Iterable[CatalogEntry]) -> None:
@@ -29,4 +33,13 @@ def save_catalog(path: str | PathLike[str], entries: Iterable[CatalogEntry]) -> 
 def load_catalog(path: str | PathLike[str]) -> list[CatalogEntry]:
     with open(path, encoding="utf-8") as fh:
         document = json.load(fh)
+    version = document.get("catalog_format_version")
+    if version != CATALOG_FORMAT_VERSION:
+        raise ValueError(
+            f"catalog {path} is format v{version}; this tool writes "
+            f"v{CATALOG_FORMAT_VERSION} (the fingerprint now covers the call "
+            "graph). Recompute it with 'python -m behave_rv catalog save' and "
+            "commit the regenerated file -- old and new fingerprints are not "
+            "comparable, so diffing them would report spurious breaks."
+        )
     return [CatalogEntry.from_dict(item) for item in document["entries"]]
