@@ -1,4 +1,5 @@
-"""Reordering window and event-time handling: a watermark with a short grace window for late arrivals.
+"""Reordering window and event-time handling: a watermark with a short grace window
+for late arrivals.
 
 Distributed and telemetry sources deliver events out of order. The engine needs
 events in event-time order so that ordering and precedence are decided by event

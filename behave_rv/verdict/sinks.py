@@ -1,4 +1,5 @@
-"""Verdict sinks: structured JSON logs by default, optional metrics and alert hooks. No model in this path.
+"""Verdict sinks: structured JSON logs by default, optional metrics and alert hooks.
+No model in this path.
 
 A sink receives a :class:`~behave_rv.verdict.record.Verdict` and disposes of it.
 The default is one JSON object per line, which is greppable and replayable.

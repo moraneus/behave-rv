@@ -142,7 +142,8 @@ class SessionService:
 FLOWS = {
     "login": ("Play: login, work, logout", "normal", "flow_login_work_logout"),
     "lock_review": ("Play: 3 fails, lock, review", "normal", "flow_lock_and_review"),
-    "unlock_contrast": ("Play: lock, unlock, act (scope contrast)", "normal", "flow_unlock_contrast"),
+    "unlock_contrast": ("Play: lock, unlock, act (scope contrast)", "normal",
+                        "flow_unlock_contrast"),
     "flagged": ("Play: flagged + reviewed", "normal", "flow_flagged_reviewed"),
     "action_no_login": ("Trigger: action without login", "bug", "bug_action_without_login"),
     "logout_no_login": ("Trigger: logout without login", "bug", "bug_logout_without_login"),

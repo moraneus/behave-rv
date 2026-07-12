@@ -598,10 +598,10 @@ Feature: f
 @pytest.mark.parametrize("feature, fragment", [
     ("Feature: f\n  Scenario: s\n    Given an order is \"a\"\n    Given an order is \"b\"\n"
      "    Then an order is \"c\" never happens", "at most one Given"),
-    ("Feature: f\n  Scenario: s\n    When an order is \"a\"\n    Then an order is \"b\" has happened",
-     "self-contained"),
-    ("Feature: f\n  Scenario: s\n    Then an order is \"a\" before\n    Then an order is \"b\" before",
-     "exactly one Then"),
+    ("Feature: f\n  Scenario: s\n    When an order is \"a\"\n"
+     "    Then an order is \"b\" has happened", "self-contained"),
+    ("Feature: f\n  Scenario: s\n    Then an order is \"a\" before\n"
+     "    Then an order is \"b\" before", "exactly one Then"),
     ("Feature: f\n  Scenario: s\n    Then an order is \"a\" before", "exactly one When"),
     ("Feature: f\n  Scenario: s\n    Then an order is \"a\" waffles eventually",
      "'<step> before'."),
@@ -716,10 +716,13 @@ def test_signature_change_description_names_exactly_the_changed_facets():
         return StepSignature(**base)
 
     cases = [
-        (sig(correlation_key=("k", "k2")), "correlation_key", ["payload_fields", "referenced_fields"]),
+        (sig(correlation_key=("k", "k2")), "correlation_key",
+         ["payload_fields", "referenced_fields"]),
         (sig(referenced_fields={"b"}), "referenced_fields", ["correlation_key"]),
-        (sig(payload_fields={"b": "any"}), "payload_fields", ["correlation_key", "referenced_fields"]),
-        (sig(condition_fingerprint="f2"), "condition changed", ["payload_fields", "correlation_key"]),
+        (sig(payload_fields={"b": "any"}), "payload_fields",
+         ["correlation_key", "referenced_fields"]),
+        (sig(condition_fingerprint="f2"), "condition changed",
+         ["payload_fields", "correlation_key"]),
     ]
     for changed, expected, absent in cases:
         detail = describe_signature_change(sig(), changed)

@@ -95,7 +95,8 @@ def compile_feature(
     appeared on that field -- the value-level liveness that catches a renamed
     status silently disconnecting a policy.
     """
-    feature = parse_feature(text_or_feature) if isinstance(text_or_feature, str) else text_or_feature
+    feature = (parse_feature(text_or_feature)
+               if isinstance(text_or_feature, str) else text_or_feature)
     policies = [
         compile_scenario(scenario, registry, observed_event_types=observed_event_types,
                          observed_values=observed_values)

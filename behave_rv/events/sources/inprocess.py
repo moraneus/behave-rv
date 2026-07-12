@@ -1,4 +1,4 @@
-"""In-process emitter source: the application calls our library directly. Lowest latency. Build first.
+"""In-process emitter source: the application calls our library directly. Lowest latency.
 
 The application pushes events with :meth:`emit` (or the :meth:`emit_event`
 convenience); the engine pulls them with :meth:`events`. ``source`` is stamped

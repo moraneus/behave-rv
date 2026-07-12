@@ -296,7 +296,8 @@ def oracle_lifecycle(arrival_events, policy, grace, terminal_types, ttl):
                         if s == policy["prior"]:
                             st["seen_prior"] = True
                         if s == policy["trigger"]:
-                            verdicts.append((k, "satisfied" if st["seen_prior"] else "violated", now))
+                            verdicts.append(
+                                (k, "satisfied" if st["seen_prior"] else "violated", now))
                             st["settled"] = True
                             produced = True
                     elif op == "within":

@@ -1,4 +1,5 @@
-"""Per-key instance state: automaton state plus a bounded window of recent events (the witnessing trace).
+"""Per-key instance state: automaton state plus a bounded window of recent events
+(the witnessing trace).
 
 One monitor instance per distinct correlation key value, holding its automaton
 and a bounded window of its own recent events used to explain a verdict.

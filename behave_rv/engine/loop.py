@@ -441,7 +441,8 @@ class Engine:
             status = instance.monitor.on_terminal()
             if status is not None:
                 deliver(
-                    self._verdict(instance, status, instance.monitor.trigger_event, event.event_time)
+                    self._verdict(instance, status, instance.monitor.trigger_event,
+                                  event.event_time)
                 )
 
     # -- error recording ------------------------------------------------------

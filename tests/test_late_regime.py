@@ -98,7 +98,8 @@ def test_admitted_set_invariance(case):
     # them, so it is a DIFFERENT arrival order that admits the SAME set. The verdict
     # over that set must be identical.
     clean = canonical_sorted(admitted)
-    assert _engine_run(arrival, policy, grace).verdicts == _engine_run(clean, policy, grace).verdicts
+    assert (_engine_run(arrival, policy, grace).verdicts
+            == _engine_run(clean, policy, grace).verdicts)
 
 
 # --- Property 3: drop characterization / ascending admits everything --------

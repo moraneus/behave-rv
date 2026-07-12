@@ -82,7 +82,8 @@ def describe_signature_change(old: StepSignature, new: StepSignature) -> str:
     if old.event_type != new.event_type:
         parts.append(f"event_type {old.event_type!r} -> {new.event_type!r}")
     if old.correlation_key != new.correlation_key:
-        parts.append(f"correlation_key {tuple(old.correlation_key)} -> {tuple(new.correlation_key)}")
+        parts.append(
+            f"correlation_key {tuple(old.correlation_key)} -> {tuple(new.correlation_key)}")
     if old.referenced_fields != new.referenced_fields:
         parts.append(
             f"referenced_fields {set(old.referenced_fields)} -> {set(new.referenced_fields)}"

@@ -1,4 +1,4 @@
-"""Dispatcher: index by event type to candidate policies, then by correlation key to the live instance.
+"""Dispatcher: index by event type to candidate policies, then by key to the live instance.
 
 This is the hot path. Keep it allocation light. The dispatcher does not own the
 instances; it answers "which policies care about this event type" and "what is

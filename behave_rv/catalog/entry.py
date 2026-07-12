@@ -17,11 +17,11 @@ from typing import Any
 @dataclass
 class StepSignature:
     event_type: str                  # which event it observes
-    trigger_condition: str           # condition over observable state (abstracted, not the code path)
+    trigger_condition: str           # condition over observable state (not the code path)
     payload_fields: dict[str, str]   # field name -> type, for fields exposed
     referenced_fields: set[str]      # the subset a specification can actually bind or read
     correlation_key: tuple[str, ...]  # one key, possibly a tuple for composite identity
-    condition_fingerprint: str = ""  # rename-invariant fingerprint of the body-level match condition
+    condition_fingerprint: str = ""  # rename-invariant fingerprint of the match condition
 
     def to_dict(self) -> dict[str, Any]:
         # referenced_fields sorted and correlation_key listed so the JSON form is
