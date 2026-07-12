@@ -63,3 +63,17 @@ def test_fingerprint_is_python_version_stable():
 
     entry = build_registry().entries()[0]
     assert entry.signature.condition_fingerprint == "fb94516a6c63b8f5"
+
+
+def test_fingerprint_with_helpers_is_python_version_stable():
+    """The interprocedural extension must not reintroduce the ast.dump
+    cross-version bug: this pins a fingerprint whose reachable set spans three
+    helpers (including one reached through a module global), verified
+    byte-identical under CPython 3.10 through 3.14. Same update protocol as
+    the pin above: an intentional algorithm change updates this AND
+    regenerates every committed catalog in one commit."""
+    from tests import _fingerprint_fixtures as fx
+
+    fingerprint, helpers, _ = fx.fingerprint_bundle(fx.pred_deep)
+    assert fingerprint == "bf5affe5f9caf76c"
+    assert len(helpers) == 3
