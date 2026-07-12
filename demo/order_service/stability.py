@@ -134,6 +134,24 @@ def _helper_v2(event, status):
 
 
 _ACTIVE_HELPER = _helper_v1
+_VALUE_HELPER = _helper_v1
+
+
+def _registry_with_value_helper():
+    """C4b: the helper arrives as a VALUE (a parameter default); static
+    resolution deliberately does not follow values, so this is the honest
+    boundary -- visible in the signature's unresolved_calls."""
+    registry = StepRegistry()
+
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status, _check=_VALUE_HELPER):
+        if _check(event, status):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
 
 
 def _registry_with_helper():
@@ -176,6 +194,13 @@ CHANGES = {
                    '    return event.type == "order.status" and \\\n'
                    '           event.payload.get("status") == status.upper()   # was: == status',
     ),
+    "helper_via_value": dict(
+        title="A helper passed as a VALUE changes (the honest boundary)",
+        kind="blindspot",
+        code_after='# the helper arrives as a value; resolution stops here\n'
+                   'def order_is(ctx, event, status, _check=_matches_v2):   # was: _matches_v1\n'
+                   '    if _check(event, status): ...',
+    ),
 }
 
 
@@ -193,6 +218,16 @@ def apply_change(change_id: str) -> dict:
         _ACTIVE_HELPER = _helper_v2
         variant_registry = _registry_with_helper()
         variant_trace = _seeded_trace()
+    elif change_id == "helper_via_value":
+        global _VALUE_HELPER
+        _VALUE_HELPER = _helper_v1
+        baseline_registry = _registry_with_value_helper()
+        baseline_verdicts = _verdicts(_compile_all(baseline_registry), _seeded_trace())
+        baseline_liveness = set(_liveness(baseline_registry, _seeded_trace()))
+        _VALUE_HELPER = _helper_v2
+        variant_registry = _registry_with_value_helper()
+        variant_trace = _seeded_trace()
+        _VALUE_HELPER = _helper_v1
     else:
         baseline_registry = build_registry()
         baseline_verdicts = _verdicts(_compile_all(baseline_registry), _seeded_trace())
@@ -238,8 +273,13 @@ def apply_change(change_id: str) -> dict:
                      "fingerprint cannot see (see STABILITY.md).",
     }
 
+    unresolved = sorted(set(
+        call for entry in variant_registry.entries()
+        for call in entry.signature.unresolved_calls))
+
     return {
         "change_id": change_id,
+        "unresolved_calls": unresolved,
         "title": spec["title"],
         "kind": spec["kind"],
         "code_before": BASELINE_CODE if change_id != "rename_value"

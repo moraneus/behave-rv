@@ -67,3 +67,37 @@ def test_v1_catalog_is_a_clean_cli_error_not_spurious_breaks(tmp_path, capsys):
     assert rc == 2
     err = capsys.readouterr().err
     assert "format v1" in err and "spurious breaks" in err
+
+
+def test_same_package_module_attribute_calls_resolve():
+    # the second resolution form: module.attr where the module is a
+    # same-top-level-package sibling (mutation spot-check exposed this branch
+    # as untested)
+    fingerprint, helpers, unresolved = fx.fingerprint_bundle(fx.pred_pkg_attr)
+    assert fingerprint
+    assert set(helpers) == {"tests._pkg_helper_mod.check"}
+    assert unresolved == ["get"]     # the helper's own method call, transitively visible
+
+
+def test_cross_package_and_third_party_calls_stay_unresolved():
+    _, helpers, unresolved = fx.fingerprint_bundle(fx.pred_third_party)
+    assert helpers == {}
+    assert "third_party_by_name" in unresolved       # by-name import of parse.parse
+    assert "parse.parse" in unresolved               # module-attr, other package
+    assert "json.dumps" in unresolved                # stdlib module-attr
+    assert "str" in unresolved and "bool" in unresolved   # builtins, per design
+
+
+def test_dynamic_call_forms_are_unresolved_and_never_crash():
+    _, helpers, unresolved = fx.fingerprint_bundle(fx.pred_dynamic_forms)
+    assert helpers == {}
+    assert "<dynamic>" in unresolved                 # the subscripted call
+    assert "_lambda_helper" in unresolved            # resolvable name, no source
+
+
+def test_same_package_by_name_imports_resolve():
+    # the Name branch's package clause: a by-name import from a sibling module
+    # (different __module__, same top-level package) must resolve
+    fingerprint, helpers, _ = fx.fingerprint_bundle(fx.pred_pkg_by_name)
+    assert fingerprint
+    assert set(helpers) == {"tests._pkg_helper_mod.check"}

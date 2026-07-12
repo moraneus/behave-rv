@@ -41,3 +41,13 @@ def test_helper_change_is_now_detected_by_the_call_graph_fingerprint():
     assert result["marquee"]["before"] == "violated"
     assert result["marquee"]["after"] == "pending"       # dormant -- which is
     #                                     exactly why the break matters
+
+
+def test_helper_via_value_is_the_honest_boundary():
+    result = apply_change("helper_via_value")
+    assert result["diff_statuses"] == {"order.status.is": "unchanged"}
+    assert result["breaks"] == [] and result["liveness"] == []
+    assert result["marquee"]["before"] == "violated"
+    assert result["marquee"]["after"] == "pending"       # dormant, nobody spoke
+    assert "_check" in result["unresolved_calls"]        # ...but the boundary shows
+    assert "residual boundary" in result["narrative"]

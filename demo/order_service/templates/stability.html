@@ -176,6 +176,10 @@ async function apply(id) {
   } else {
     line('  no breaks', 'okline');
   }
+  if (r.unresolved_calls && r.unresolved_calls.length) {
+    line('# unresolved call sites (the fingerprint cannot follow these)');
+    line('  ' + r.unresolved_calls.join(', '), r.kind === 'blindspot' ? 'brk' : '');
+  }
   if (r.liveness.length) {
     line(`# liveness (against the app's own stream)`);
     for (const m of r.liveness) line(`  ! ${m}`, 'live');
