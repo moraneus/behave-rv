@@ -399,14 +399,17 @@ event type it observes, the fields a policy can reference, the correlation key, 
 exposed payload fields, and a rename invariant fingerprint of the predicate body.
 The fingerprint is a conservative, AST-based approximation of the matching
 contract, not a semantic-equivalence check: it is invariant to identifier names
-and formatting, sensitive to structure and constants, and blind to helper-function
-internals and unavailable source. Known false positives (a break reported where
-behavior is unchanged): introducing a temporary variable, commutative reordering
-of `and`/`or` operands, extracting logic into a helper. Known false negative: a
-change *inside* a called helper's body moves behavior without moving the
-signature (value-level liveness against an observed stream is the backstop
-there). The bias is deliberate: a false alarm costs a glance, a missed alarm
-costs a dormant policy.
+and formatting, sensitive to structure and constants, and it covers the
+normalized bodies of every helper the predicate statically reaches (same-module
+and same-package calls, transitively — `docs/design/interprocedural-fingerprint.md`).
+Known false positives (a break reported where behavior is unchanged):
+introducing a temporary variable, commutative reordering of `and`/`or`
+operands, extracting or splitting logic into helpers. Known false negative: a
+helper reached through a VALUE (a callback, a parameter default, dynamic
+dispatch) is not followed; the signature's `unresolved_calls` names every such
+call site, so the weaker protection is visible rather than silent. The bias is
+deliberate: a false alarm costs a glance, a missed alarm costs a dormant
+policy.
 Policy step lines resolve by text against the registered phrasings (primary or
 alias) to a `step_id`; the signature diff and the notification scoping then work
 on that identity, never on the text. A reworded phrasing therefore stays

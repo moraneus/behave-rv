@@ -108,7 +108,10 @@ def _resolve_calls(func, tree: ast.AST):
     own_package = own_module.split(".")[0]
     resolved: list = []
     unresolved: list[str] = []
-    for node in ast.walk(tree):
+    # walk the BODY only: decorator calls are representational (stripped from
+    # the hash) and must not pollute the unresolved-calls visibility list
+    body_nodes = [n for stmt in getattr(tree, "body", []) for n in ast.walk(stmt)]
+    for node in body_nodes:
         if not isinstance(node, ast.Call):
             continue
         candidate, name = None, "<dynamic>"

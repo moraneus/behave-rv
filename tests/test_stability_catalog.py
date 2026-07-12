@@ -23,7 +23,10 @@ def test_every_declared_ground_truth_matches_the_replayed_one():
 
 
 def test_family_a_absorbs_are_silent():
-    for cid in ("A1", "A2", "A3", "A4"):
+    # A5 (helper renamed, body identical) and A6 (helper definitions
+    # reordered) joined with the call-graph fingerprint: names and definition
+    # order are not hashed, only body identities
+    for cid in ("A1", "A2", "A3", "A4", "A5", "A6"):
         assert OUTCOMES[cid].classification == "CORRECT (silent)", cid
 
 
@@ -59,18 +62,34 @@ def test_c4_helper_changes_are_now_detected_by_the_call_graph_fingerprint():
 
 
 def test_family_d_false_alarm_rate_is_recorded():
-    false_alarms = [cid for cid in ("D1", "D2", "D3")
+    false_alarms = [cid for cid in ("D1", "D2", "D3", "D4")
                     if OUTCOMES[cid].classification == "FALSE ALARM"]
-    # conservative by design: all three structural refactors trip the
-    # fingerprint; the rate is stated in STABILITY.md, not hidden
-    assert false_alarms == ["D1", "D2", "D3"]
+    # conservative by design: all four structural refactors (D4: splitting a
+    # helper changes the reachable set) trip the fingerprint; the rate is
+    # stated in STABILITY.md, not hidden
+    assert false_alarms == ["D1", "D2", "D3", "D4"]
     for cid in false_alarms:
         assert OUTCOMES[cid].behavior_changed is False
 
 
+def test_c4b_is_the_new_documented_boundary():
+    # xfail-style, the same protocol C4 carried: this asserts the MISS. A
+    # mechanism that starts resolving calls through values must update the
+    # docs' boundary statement alongside this test.
+    c4b = OUTCOMES["C4b"]
+    assert c4b.behavior_changed is True
+    assert c4b.classification == "MISS (documented)"
+    assert c4b.diff_breaks == [] and c4b.liveness == []
+    # ...and the weaker protection is VISIBLE: the signature records the
+    # call site static resolution could not follow
+    from tests.stability_catalog import registry_c4b_baseline
+    signature = registry_c4b_baseline().entries()[0].signature
+    assert "_check" in signature.unresolved_calls
+
+
 def test_the_catalog_covers_every_declared_case():
     assert {c.case_id for c in CASES} == set(OUTCOMES)
-    assert len(CASES) == 18
+    assert len(CASES) == 22
 
 
 def test_catalog_save_is_stable_across_processes(tmp_path):

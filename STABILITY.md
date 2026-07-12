@@ -19,7 +19,13 @@ bound.
 carries a behavioral signature: the declared event type, the correlation key,
 the referenced fields (the phrasing's placeholders), the exposed payload
 fields read in the body, and a *fingerprint* of the matching contract — the
-alpha-normalized AST of the predicate body plus the binding-parameter names.
+alpha-normalized AST of the predicate body, the binding-parameter names, and
+the normalized bodies of every helper the predicate statically reaches
+(same-module and same-package calls, transitively; see
+`docs/design/interprocedural-fingerprint.md`). Call sites the resolver cannot
+follow — dynamic dispatch, functions passed as values, object methods,
+builtins — are recorded in the signature's `unresolved_calls`, so the
+protection boundary is visible per step.
 The committed `catalog.json` is the contract; after a code change, the diff
 classifies every step: equal signature with new wording is a **rename**
 (absorbed silently), a moved signature is a **break**, reported against
@@ -145,26 +151,47 @@ unchanged by verdict replay — still trips the structural fingerprint and
 produces the break above with the same conservative-fingerprint message.
 This is deliberate: the fingerprint cannot prove two structures equivalent,
 and a false alarm costs a glance where a missed alarm costs a dormant policy.
-The measured false-alarm rate on the three refactor probes is 3/3, and the
-break message says exactly what to do with it (review the step body).
+The measured false-alarm rate on the four refactor probes is 4/4 (D4 —
+splitting a helper in two — joins D1–D3: the reachable set changes, so the
+conservative alarm fires), and the break message says exactly what to do
+with it (review the step body).
 
-### 6. The helper blind spot (the residual limitation, shown honestly)
+### 6. A helper change — now detected (the call-graph fingerprint)
 
 The predicate delegates to `_matches(event, status)`; the *helper's*
-condition changes. Verdict replay proves the policy goes dormant on the very
-fault it used to catch — and nothing speaks:
+condition changes while the step body stays byte-identical. This was the
+mechanism's one documented MISS (old case C4) until the interprocedural
+fingerprint closed it: the fingerprint covers the normalized bodies of every
+statically reachable helper, so the diff breaks and names the helper:
 
 ```
-  order.status.is: unchanged        # the step body is literally identical
-  liveness: nothing to report       # the stream still carries the old values
+  order.status.is: changed
+
+  contract: reachable helper set changed
+    (-['..._helper_matches_v1'] +['..._helper_matches_v2']);
+    trigger condition changed (...)
 ```
 
-This is the documented boundary: static fingerprints do not follow
-indirection, and the observed stream did not change. The suite asserts this
-MISS explicitly (`test_c4_is_the_documented_boundary_not_a_hidden_one`), so
-if a future mechanism starts catching it, the documentation must move with
-the code. Mitigation: keep matching logic inside the step body, which is
-exactly what the conservative D3 false alarm nudges toward.
+Helper NAMES are not hashed — renaming a helper (A5) or reordering helper
+definitions (A6) absorbs like any other rename; only body identities count.
+
+### 7. The NEW boundary: a helper behind a value (C4b), shown honestly
+
+Pass the helper as a value (`def order_is(ctx, event, status, _check=_v1)`)
+and change what the value refers to: behavior changes, the step's AST is
+identical, and static resolution deliberately does not follow values —
+nothing speaks. This is the new documented boundary, asserted xfail-style
+(`test_c4b_is_the_new_documented_boundary`) under the same protocol old C4
+carried. What makes it honest rather than silent: the signature records the
+call site the resolver could not follow —
+
+```
+  unresolved_calls: ['_check', 'ctx.bind']
+```
+
+— in the committed catalog, per step, so a reviewer can see exactly where the
+fingerprint's protection ends. Mitigation: call helpers by name, which is
+what the resolver covers.
 
 ## The workflow
 
@@ -205,40 +232,50 @@ B1   True       changed(11 brk)        0         CORRECT (diff)             rena
 B2   True       changed(11 brk)        11        CORRECT (diff)             change the declared event type
 B3   True       changed(11 brk)        0         CORRECT (diff)             change the correlation key
 B4   True       changed(11 brk)        0         CORRECT (diff)             tighten the guard inside the predicate body
-B5   True       removed(11 brk)+refusal 0        CORRECT (diff)             delete the step entirely
-B6   True       changed,unchanged(1 brk) 0       CORRECT (diff)             two steps share an event type; change one; scope check
+B5   True       removed(11 brk)+refusal 0         CORRECT (diff)             delete the step entirely
+B6   True       changed,unchanged(1 brk) 0         CORRECT (diff)             two steps share an event type; change one; scope check
 B7   True       changed(11 brk)        0         CORRECT (diff)             rename the placeholder-bound parameter (phrasing kept)
 C1   True       unchanged(0 brk)       3         CORRECT (liveness)         app emits "PAID" instead of "paid", step untouched
 C2   True       unchanged(0 brk)       11        CORRECT (liveness)         app emits a different event type, step untouched
 C3   True       unchanged(0 brk)       17        CORRECT (liveness)         app carries the value under a different field name
-C4   True       unchanged(0 brk)       0         MISS (documented)          predicate delegates to a helper; the helper changes
+C4   True       changed(11 brk)        0         CORRECT (diff)             predicate delegates to a helper; the helper changes
+A5   False      unchanged(0 brk)       0         CORRECT (silent)           rename a helper (call site updated), body identical
+A6   False      unchanged(0 brk)       0         CORRECT (silent)           reorder two helper definitions, no call/body changes
+C4b  True       unchanged(0 brk)       0         MISS (documented)          helper change behind an unresolvable (value) call
+D4   False      changed(11 brk)        0         FALSE ALARM                split one helper into two, behavior preserved
 D1   False      changed(11 brk)        0         FALSE ALARM                introduce a temporary variable in the predicate
 D2   False      changed(11 brk)        0         FALSE ALARM                reorder commutative boolean operands
 D3   False      changed(11 brk)        0         FALSE ALARM                extract unchanged logic into a helper
 --------------------------------------------------------------------------------------------------------------
-false alarms in conservative probes: 3/3
+false alarms in conservative probes: 4/4
 ```
 
-Reading it plainly: every representational change is absorbed (4/4), every
-signature-visible break is caught and scoped (7/7 — including B7, a silent
-break this very harness discovered and whose fix added binding-parameter
-names to the fingerprint), every app-side disconnect visible to a
-representative stream is caught (3/3), the one architectural blind spot is
-C4 and it is asserted as such, and the conservative probes alarm 3/3 by
-design.
+Reading it plainly: every representational change is absorbed (6/6 — now
+including helper renames and helper definition reordering), every
+signature-visible break is caught and scoped (7/7), every app-side
+disconnect visible to a representative stream is caught (3/3), helper body
+changes behind static calls are caught (C4, formerly the documented miss),
+the one remaining blind spot is C4b (calls through values) and it is
+asserted as such with its weaker protection visible in `unresolved_calls`,
+and the conservative probes alarm 4/4 by design.
 
 ## Residual limitations (the honest bottom line)
 
-1. **Helper indirection** (C4): a behavior change inside a called helper
-   moves no signature and, when the stream is unchanged, no liveness warning.
-   Static fingerprints do not follow indirection.
+1. **Calls through values** (C4b): resolution covers same-module and
+   same-package calls BY NAME, transitively. A helper reached through a
+   value (a parameter default, a callback, dynamic dispatch, an object
+   method) is not followed — deliberately: a resolver clever enough to chase
+   values is a resolver that can err in the quiet direction, which inverts
+   the trust model (see `docs/design/interprocedural-fingerprint.md`). The
+   boundary is visible per step in the signature's `unresolved_calls`.
 2. **Stream representativeness**: liveness vouches only for what the observed
    trace shows. A value that never appeared cannot be flagged as newly
    missing; an unrepresentative trace weakens the check to exactly its
    coverage.
-3. **Conservatism**: behavior-preserving structural refactors (D1–D3) alarm.
-   That is a cost paid deliberately, and the break message routes it to a
-   glance rather than an investigation.
+3. **Conservatism**: behavior-preserving structural refactors (D1–D4,
+   including splitting a helper) alarm. That is a cost paid deliberately,
+   and the break message routes it to a glance rather than an
+   investigation.
 
 See the live demonstration: `python -m demo.order_service.app`, then
 `http://127.0.0.1:5001/stability`.

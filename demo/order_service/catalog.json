@@ -22,8 +22,7 @@
         "trigger_condition": "an order is \"{status}\"",
         "unresolved_calls": [
           "ctx.bind",
-          "get",
-          "registry.trigger"
+          "get"
         ]
       },
       "step_id": "order.status.is",

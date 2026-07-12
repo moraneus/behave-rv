@@ -359,6 +359,149 @@ def registry_c4_variant():
     return _registry_with_helper(_helper_matches_v2)
 
 
+# A5: rename a helper (call site updated), body identical -- the hash covers
+# body identities, not names, so this must absorb.
+
+def _a5_helper_original(event, status):
+    return event.type == "order.status" and event.payload.get("status") == status
+
+
+def _a5_helper_renamed(event, status):
+    return event.type == "order.status" and event.payload.get("status") == status
+
+
+def registry_a5_baseline():
+    registry = StepRegistry()
+
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status):
+        if _a5_helper_original(event, status):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+def registry_a5_variant():
+    registry = StepRegistry()
+
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status):
+        if _a5_helper_renamed(event, status):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+# A6: reorder two helper DEFINITIONS in the module (no call or body changes);
+# the predicates live in two fixture modules differing only in definition order.
+
+def _a6_registry(module):
+    registry = StepRegistry()
+    registry.register("trigger", 'an order is "{status}"', module.predicate,
+                      step_id="order.status.is", event_type="order.status",
+                      correlation_key="order_id")
+    return registry
+
+
+def registry_a6_baseline():
+    from tests import _a6_order_one
+    return _a6_registry(_a6_order_one)
+
+
+def registry_a6_variant():
+    from tests import _a6_order_two
+    return _a6_registry(_a6_order_two)
+
+
+# C4b: the helper change hides behind an UNRESOLVABLE call (the helper is
+# passed as a default-argument VALUE); static resolution deliberately stops
+# here, and the signature's unresolved_calls makes the weaker protection
+# visible. The new documented boundary after the C4 fix.
+
+def _c4b_check_v1(event, status):
+    return event.type == "order.status" and event.payload.get("status") == status
+
+
+def _c4b_check_v2(event, status):
+    return event.type == "order.status" and event.payload.get("status") == status.upper()
+
+
+def _c4b_registry(check):
+    registry = StepRegistry()
+
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status, _check=check):
+        if _check(event, status):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+def registry_c4b_baseline():
+    return _c4b_registry(_c4b_check_v1)
+
+
+def registry_c4b_variant():
+    return _c4b_registry(_c4b_check_v2)
+
+
+# D4: split one helper into two, behavior preserved -- the reachable set
+# changes, so this alarms conservatively, alongside D1-D3.
+
+def _d4_combined(event, status):
+    return event.type == "order.status" and event.payload.get("status") == status
+
+
+def _d4_type_ok(event):
+    return event.type == "order.status"
+
+
+def _d4_status_ok(event, status):
+    return event.payload.get("status") == status
+
+
+def _d4_split(event, status):
+    return _d4_type_ok(event) and _d4_status_ok(event, status)
+
+
+_D4_ACTIVE = _d4_combined
+
+
+def _d4_registry():
+    registry = StepRegistry()
+
+    @registry.trigger('an order is "{status}"', step_id="order.status.is",
+                      event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status):
+        if _D4_ACTIVE(event, status):
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    return registry
+
+
+def registry_d4_baseline():
+    global _D4_ACTIVE
+    _D4_ACTIVE = _d4_combined
+    return _d4_registry()
+
+
+def registry_d4_variant():
+    global _D4_ACTIVE
+    _D4_ACTIVE = _d4_split
+    return _d4_registry()
+
+
 def registry_d1_temp_variable():
     registry = StepRegistry()
 
@@ -501,6 +644,18 @@ CASES = [
     Case("C4", "disconnect", "predicate delegates to a helper; the helper changes",
          True, "diff", variant_registry=registry_c4_variant,
          baseline_registry=registry_c4_baseline),
+    Case("A5", "absorb", "rename a helper (call site updated), body identical",
+         False, "silent", variant_registry=registry_a5_variant,
+         baseline_registry=registry_a5_baseline),
+    Case("A6", "absorb", "reorder two helper definitions, no call/body changes",
+         False, "silent", variant_registry=registry_a6_variant,
+         baseline_registry=registry_a6_baseline),
+    Case("C4b", "disconnect", "helper change behind an unresolvable (value) call",
+         True, "none (documented miss)", variant_registry=registry_c4b_variant,
+         baseline_registry=registry_c4b_baseline),
+    Case("D4", "conservative", "split one helper into two, behavior preserved",
+         False, "silent", variant_registry=registry_d4_variant,
+         baseline_registry=registry_d4_baseline),
     Case("D1", "conservative", "introduce a temporary variable in the predicate",
          False, "silent", variant_registry=registry_d1_temp_variable),
     Case("D2", "conservative", "reorder commutative boolean operands",
