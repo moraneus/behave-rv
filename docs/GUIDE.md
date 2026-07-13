@@ -706,7 +706,7 @@ warning naming the value you just touched. At runtime, the dashboard's
 "⚠ no matching events observed" badge is the live form of the same signal.
 
 Full mechanism, worked examples for every path, the measured detection
-tables (22 step-side cases, 17 app-side cases), and the stated boundaries
+tables (22 step-side cases, 22 app-side categories), and the stated boundaries
 (calls through values, stream representativeness, function-granularity
 conservatism): [`STABILITY.md`](../STABILITY.md).
 
@@ -848,11 +848,11 @@ conservatively, because callable identity pins emission order.
 Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
 code structure, so behavior driven by runtime data (config, database
 contents, request payloads) is invisible to it, and its conservatisms are
-measured and declared (the 17-case E-series in
-[`STABILITY.md`](../STABILITY.md), an 86-mutant adversarial campaign with
-zero misses, and a replay of this repo's own git history with every
-classification correct — full honest results in
-[`APP_SURFACE_EVALUATION.md`](APP_SURFACE_EVALUATION.md)). It is the
+measured and declared (the 22-category E-series in
+[`STABILITY.md`](../STABILITY.md), a 619-mutant adversarial campaign across
+six applications with zero misses, and a replay of this repo's own git
+history with every classification correct — the complete record is
+[`EXPERIMENTS.md`](../EXPERIMENTS.md)). It is the
 earliest net, not the last one — the runtime layers above remain the ground
 truth.
 

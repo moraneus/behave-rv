@@ -389,7 +389,9 @@ keys added by callers flow through caller hashes in the slice instead.)
 
 ### The measured table (E-series)
 
-Seventeen realistic APP changes against a fixed baseline service. Ground
+Twenty-two realistic APP changes against a fixed baseline service — one
+case per edit category, including exception-path, loop, ternary, decorator,
+and cross-module emission. Ground
 truth is verified per run by executing the same scripted traffic through
 baseline and variant and comparing the emitted event STREAM (with the policy
 verdict set checked alongside -- E10 shows the layering: the stream changed,
@@ -416,16 +418,20 @@ E14   extract-method refactor inside an emit slice             same     same    
 E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
 E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
 E17   a benign attribute added in the constructor              same     same      risk      FALSE ALARM  (by design: emit-path state flows through instance attributes, so the constructor joins every slice of its class; attribute dependencies are approximated at method granularity)
-
-17 cases: 13 correct, 4 false alarm(s) (all by design), 0 miss(es)
+E18   the status emitted on an exception path changes          changed  same      risk      CORRECT
+E19   a loop emission processes fewer items                    changed  changed   risk      CORRECT
+E20   a ternary guard on the emitted value moves               changed  same      risk      CORRECT
+E21   a decorator on an emit-path method changes behavior      changed  changed   risk      CORRECT
+E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
 ```
 
 Every stream change is caught (0 misses), every no-op stays silent except
 the four DECLARED conservatisms (E13-E15 and E17, the constructor rule),
 which are asserted to be exactly that family and nothing more. The E-series
-is the curated benchmark; the adversarial one -- an 86-mutant campaign with
-executed ground truth, which found and drove the closure of four
-detection/scoping holes -- is reported with full honesty in
+is the curated benchmark; the adversarial one -- a 619-mutant campaign
+over six applications with executed ground truth, which found and drove the
+closure of five detection/scoping holes -- is reported in full in
+[EXPERIMENTS.md](EXPERIMENTS.md) and
 [docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md).
 
 ### Replayed against this repository's own history

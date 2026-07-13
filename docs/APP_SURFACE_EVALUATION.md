@@ -30,8 +30,12 @@ mutation campaign's **first run found 8 missed detections and 8 unsound
 scopings** across its then-83 mutants, reducing to four distinct root causes;
 three were fixed and one absorbed into a conservative scoping rule, after
 which the campaign is clean -- and has remained clean as the corpus grew to
-its current 86 mutants (the baseline subject gained a constant-guarded path
-with case E16). We consider the found-then-fixed trajectory
+its current 619 mutants across six applications (the corpus has since
+grown twice: the baseline subject gained new emission shapes with the
+curated categories, and the three demonstration services joined as subjects
+with their full real policy sets; a fifth defect — decorators stripped from
+hashes — was found by curated case E21 and fixed the same way; the complete
+per-experiment record is EXPERIMENTS.md at the repository root). We consider the found-then-fixed trajectory
 itself part of the result: it demonstrates what the method's blind spots look
 like and that they are discoverable by systematic testing rather than by
 production incidents.
@@ -176,38 +180,49 @@ positives.
 
 ### RQ1 — Detection on curated realistic changes (E-series)
 
-Seventeen hand-constructed changes spanning the absorb/flag/break space,
-each with ground truth verified per run by execution
+Twenty-two hand-constructed changes — a taxonomy with one case per edit
+category, spanning the absorb/flag/break space and including exception-path,
+loop, ternary, decorator, and cross-module emission — each with ground truth
+verified per run by execution
 (`python -m tests.stability_app_surface`, asserted in pytest):
 
 ```
-case  change                                                    stream   verdicts  detected  outcome
-E1    comment and docstring edited                              same     same      silent    CORRECT
-E2    local variable renamed in an emit path                    same     same      silent    CORRECT
-E3    the service class renamed                                 same     same      silent    CORRECT
-E4    guard before an emission tightened                        changed  changed   risk      CORRECT
-E5    helper logic changed two calls deep                       changed  changed   risk      CORRECT
-E6    an emitted status value renamed (vocabulary drift)        changed  changed   risk      CORRECT
-E7    a payload field renamed                                   changed  changed   break     CORRECT
-E8    the event type constant changed                           changed  changed   break     CORRECT
-E9    an emission deleted                                       changed  changed   break     CORRECT
-E10   a new emission added inside an existing method            changed  same      risk      CORRECT
-E11   the terminal emission moved before the status it follows  changed  changed   risk      CORRECT
-E12   a function outside every emit slice changed               same     same      silent    CORRECT
-E13   a function on an emit path renamed (pure)                 same     same      risk      FALSE ALARM (by design)
-E14   extract-method refactor inside an emit slice              same     same      risk      FALSE ALARM (by design)
-E15   the event type becomes computed instead of a constant     same     same      break     FALSE ALARM (by design)
-E16   a module-level constant used in emission logic changes    changed  changed   risk      CORRECT
-E17   a benign attribute added in the constructor               same     same      risk      FALSE ALARM (by design)
+case  change                                                   stream   verdicts  detected  outcome
+E1    comment and docstring edited                             same     same      silent    CORRECT
+E2    local variable renamed in an emit path                   same     same      silent    CORRECT
+E3    the service class renamed                                same     same      silent    CORRECT
+E4    guard before an emission tightened                       changed  changed   risk      CORRECT
+E5    helper logic changed two calls deep                      changed  changed   risk      CORRECT
+E6    an emitted status value renamed (vocabulary drift)       changed  changed   risk      CORRECT
+E7    a payload field renamed                                  changed  changed   break     CORRECT
+E8    the event type constant changed                          changed  changed   break     CORRECT
+E9    an emission deleted                                      changed  changed   break     CORRECT
+E10   a new emission added inside an existing method           changed  same      risk      CORRECT
+E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
+E12   a function outside every emit slice changed              same     same      silent    CORRECT
+E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
+E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
+E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
+E17   a benign attribute added in the constructor              same     same      risk      FALSE ALARM  (by design: emit-path state flows through instance attributes, so the constructor joins every slice of its class; attribute dependencies are approximated at method granularity)
+E18   the status emitted on an exception path changes          changed  same      risk      CORRECT
+E19   a loop emission processes fewer items                    changed  changed   risk      CORRECT
+E20   a ternary guard on the emitted value moves               changed  same      risk      CORRECT
+E21   a decorator on an emit-path method changes behavior      changed  changed   risk      CORRECT
+E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
 ```
 
-13/17 correct, 0 misses, 4 false alarms — all four in the *declared*
+18/22 correct, 0 misses, 4 false alarms — all four in the *declared*
 conservatism family, asserted in the test suite to be exactly that family
 and nothing more. E10 exhibits the layering the design intends: a new
 emission changes the stream but no verdict (nothing observes it yet), and it
 is still surfaced. E15 is a false alarm we defend as policy: when the event
 type stops being statically analyzable, losing the check must itself
-surface.
+surface. E21 is the record of the fifth found defect: decorators were
+stripped from app-side hashes, so a wrapper edited to suppress the call was
+invisible — verified as a genuine pre-fix miss (silent before the fix, risk
+after), fixed by keeping decorators in the hash and joining the decorator's
+body to the decorated function's slice.
 
 ### RQ2 — Adversarial detection completeness (mutation campaign)
 
@@ -217,7 +232,9 @@ comparison operator swaps, boolean operator swaps, if-condition negation,
 statement deletion — to three subjects: the E-series baseline service (27
 mutants), the ticketing example application (42), and a probe *designed to
 stress the suspected weakest point* — a module-level, non-event-type constant
-participating in emission logic (14). 86 mutants total; each is executed
+participating in emission logic (16), and the three demonstration services
+with their real policy sets (order 133, session 179, todo 175 mutants).
+619 mutants total; each is executed
 under fixed traffic for stream ground truth (a mutant that raises counts as
 stream-changing) and independently analyzed.
 
@@ -253,12 +270,21 @@ each is a hole any reader would want to know the shape of:
 
 ```
 subject     mutants  crash-at-traffic  stream-changed & flagged  MISSED  stream-same & flagged  stream-same & silent
-jobs        30       8                 28                        0       0                      2
-ticketing   42       6                 42                        0       0                      0
-probe       14       4                 14                        0       0                      0
+jobs             64  13                 60                       0        2                      2
+ticketing        52   6                 52                       0        0                      0
+probe            16   4                 16                       0        0                      0
+order           133   6                 86                       0        6                     41
+session         179  11                116                       0       18                     45
+todo            175   6                113                       0        5                     57
+total           619  46                443                       0       31                    145
 ```
 
-86/86 correct: zero misses, and — notable — **zero alarms on
+Every one of the 31 stream-preserving flags sits in code the scripted
+traffic never exercises — UI-driven entry points, the lockout-counter
+reset, boundary values the traffic straddles: real emission-code changes
+that replay cannot expose, each named in the committed artifact.
+
+619/619 with zero misses, and — notable — **zero unexplained alarms on
 stream-preserving mutants**; the only two stream-preserving mutants in the
 corpus (edits to functions outside every slice) were correctly silent. The
 class-level-constant sibling of defect 1 (`self.LIMIT` reading a class
@@ -269,7 +295,8 @@ regression test.
 
 For the 43 mutants whose policy verdict sets changed (17 jobs, 26
 ticketing): is every policy whose verdicts moved contained in the reported
-at-risk set? **43/43 sound** after the two scoping fixes (35/43 before).
+at-risk set? **314/314 sound** after the two scoping fixes (35/43 on the
+original corpus before them).
 Tightness is not free: the deadline-coupling rule adds the deadline policies
 of the entity to every flagged site's report (in the ticketing subject, 2 of
 6 policies), clearly labeled so a reviewer can discount them when timing is
@@ -356,7 +383,7 @@ claim to its true scope.
   difference on this traffic", not "provably equivalent". The E13/E14/E17
   alarms are argued equivalent by construction, not proven.
 - **The evaluation drove the hardening.** The mutation campaign found the
-  holes and the same authors fixed them and re-ran; the final 86/86 is
+  holes and the same authors fixed them and re-ran; the final 619/619 is
   therefore a fixed-point of this benchmark, not an independent test. New
   operator families (e.g. reordering statements across functions, mutating
   mutable module state, decorator changes) could find new holes; mutable
@@ -388,8 +415,8 @@ Or individually -- all from the repository root, standard library plus the
 package itself, deterministic (no randomness, no timestamps):
 
 ```bash
-python -m tests.stability_app_surface     # RQ1: the 17-case E-series
-python -m tests.exp_app_mutation          # RQ2/RQ3: 86 mutants, exit 1 on any miss
+python -m tests.stability_app_surface     # RQ1: the 22-category E-series
+python -m tests.exp_app_mutation          # RQ2/RQ3: 619 mutants, exit 1 on any miss
 python -m tests.measure_app_history       # RQ4: this repo's own commits
 python -m tests.exp_app_scaling           # RQ5: cost vs size
 python -m tests.exp_app_coverage          # RQ6: resolvability and tightness
