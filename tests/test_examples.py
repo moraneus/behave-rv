@@ -38,11 +38,14 @@ def test_ticketing_replay_check_finds_exactly_the_seeded_faults():
 
 
 def test_ticketing_committed_catalog_matches_the_code():
-    # the example models the real convention: catalog.json is committed and
-    # CI diffs it -- so the example's own catalog must never drift
+    # the example models the real convention: catalog.json is committed (BOTH
+    # sides -- steps and the app's emit sites) and CI diffs it, so the
+    # example's own catalog must never drift
     result = _run("-m", "behave_rv", "catalog", "diff",
                   "--steps", "examples/ticketing/monitoring/steps.py",
                   "--catalog", "examples/ticketing/monitoring/catalog.json",
-                  "--policies", "examples/ticketing/monitoring/policies")
+                  "--policies", "examples/ticketing/monitoring/policies",
+                  "--app", "examples/ticketing/app_service.py")
     assert result.returncode == 0, result.stdout + result.stderr
+    assert "app surface diff (5 emit site(s))" in result.stdout
     assert "ok: no breaks" in result.stdout

@@ -1,5 +1,112 @@
 {
-  "catalog_format_version": 2,
+  "app_surface": [
+    {
+      "binding_keys": [
+        "ticket_id"
+      ],
+      "event_type": "ticket.status",
+      "function": "TicketService._status",
+      "module": "app_service",
+      "payload_fields": [
+        "<splat>",
+        "status"
+      ],
+      "site_id": "app_service.TicketService._status#1",
+      "slice_fingerprint": "eb75b4f9f910980a",
+      "slice_functions": {
+        "app_service.TicketService._status": "6788fb35c806f3fd",
+        "app_service.TicketService.assign": "85c6da3494b0f43f",
+        "app_service.TicketService.close": "cd6ed944e67f9d14",
+        "app_service.TicketService.escalate": "e9e09231ef439726",
+        "app_service.TicketService.open_ticket": "1bcd7d22f85da2bb",
+        "app_service.TicketService.resolve": "2eaf9013c090dd55"
+      },
+      "unresolved_calls": [
+        "self._clock",
+        "self._emit"
+      ]
+    },
+    {
+      "binding_keys": [
+        "ticket_id"
+      ],
+      "event_type": "ticket.reply",
+      "function": "TicketService.agent_reply",
+      "module": "app_service",
+      "payload_fields": [
+        "direction"
+      ],
+      "site_id": "app_service.TicketService.agent_reply#1",
+      "slice_fingerprint": "6793cabcc3bbe1e1",
+      "slice_functions": {
+        "app_service.TicketService.agent_reply": "b6a9a8fa97a1f4ff"
+      },
+      "unresolved_calls": [
+        "self._clock",
+        "self._emit"
+      ]
+    },
+    {
+      "binding_keys": [
+        "ticket_id"
+      ],
+      "event_type": "ticket.closed",
+      "function": "TicketService.close",
+      "module": "app_service",
+      "payload_fields": [],
+      "site_id": "app_service.TicketService.close#1",
+      "slice_fingerprint": "406891a1fb4fd02f",
+      "slice_functions": {
+        "app_service.TicketService._status": "6788fb35c806f3fd",
+        "app_service.TicketService.close": "cd6ed944e67f9d14"
+      },
+      "unresolved_calls": [
+        "self._clock",
+        "self._emit"
+      ]
+    },
+    {
+      "binding_keys": [
+        "ticket_id"
+      ],
+      "event_type": "ticket.reply",
+      "function": "TicketService.customer_reply",
+      "module": "app_service",
+      "payload_fields": [
+        "direction"
+      ],
+      "site_id": "app_service.TicketService.customer_reply#1",
+      "slice_fingerprint": "b1f5bfd792831cb3",
+      "slice_functions": {
+        "app_service.TicketService.customer_reply": "f99746ce62b74276"
+      },
+      "unresolved_calls": [
+        "self._clock",
+        "self._emit"
+      ]
+    },
+    {
+      "binding_keys": [
+        "ticket_id"
+      ],
+      "event_type": "ticket.priority",
+      "function": "TicketService.set_priority",
+      "module": "app_service",
+      "payload_fields": [
+        "level"
+      ],
+      "site_id": "app_service.TicketService.set_priority#1",
+      "slice_fingerprint": "bb4c32935b21edf3",
+      "slice_functions": {
+        "app_service.TicketService.set_priority": "ae21b7bf127ed93c"
+      },
+      "unresolved_calls": [
+        "self._clock",
+        "self._emit"
+      ]
+    }
+  ],
+  "catalog_format_version": 3,
   "entries": [
     {
       "kind": "trigger",
