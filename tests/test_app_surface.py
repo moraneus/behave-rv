@@ -217,3 +217,12 @@ def test_affected_steps_scope_by_event_type():
 def test_sites_round_trip_through_dicts(tmp_path):
     sites = _analyze(tmp_path, BASE)
     assert [EmitSite.from_dict(s.to_dict()) for s in sites] == sites
+
+
+def test_docstring_edit_on_an_emit_path_is_absorbed(tmp_path):
+    # found on real history: a docstring-only commit flagged as behavior-risk
+    # before docstrings were stripped from the normalization
+    changed = BASE.replace(
+        'def start(self, job_id, name):',
+        'def start(self, job_id, name):\n        """Queue the job for work."""')
+    assert set(_statuses(_classify(tmp_path, BASE, changed)).values()) == {APP_UNCHANGED}

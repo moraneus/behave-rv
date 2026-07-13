@@ -12,9 +12,9 @@
         "status"
       ],
       "site_id": "app_service.TicketService._status#1",
-      "slice_fingerprint": "eb75b4f9f910980a",
+      "slice_fingerprint": "536371021603a5e2",
       "slice_functions": {
-        "app_service.TicketService._status": "6788fb35c806f3fd",
+        "app_service.TicketService._status": "ea3bc4e33ba2d81e",
         "app_service.TicketService.assign": "85c6da3494b0f43f",
         "app_service.TicketService.close": "cd6ed944e67f9d14",
         "app_service.TicketService.escalate": "e9e09231ef439726",
@@ -55,9 +55,9 @@
       "module": "app_service",
       "payload_fields": [],
       "site_id": "app_service.TicketService.close#1",
-      "slice_fingerprint": "406891a1fb4fd02f",
+      "slice_fingerprint": "a382d085b557a69c",
       "slice_functions": {
-        "app_service.TicketService._status": "6788fb35c806f3fd",
+        "app_service.TicketService._status": "ea3bc4e33ba2d81e",
         "app_service.TicketService.close": "cd6ed944e67f9d14"
       },
       "unresolved_calls": [

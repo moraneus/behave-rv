@@ -234,9 +234,11 @@ class Case:
 
 
 CASES = [
-    Case("E1", "comment added, body reflowed",
+    Case("E1", "comment and docstring edited",
          _replace("    def start(self, job_id):",
-                  "    # transition to the running state\n    def start(self, job_id):"),
+                  "    # transition to the running state\n"
+                  "    def start(self, job_id):\n"
+                  '        """Move the job to the running state."""'),
          expect="silent", stream_changes=False, verdicts_change=False),
     Case("E2", "local variable renamed in an emit path",
          lambda s: s.replace("title = clean_name(name)", "label = clean_name(name)")

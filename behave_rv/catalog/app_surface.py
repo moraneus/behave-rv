@@ -134,8 +134,23 @@ class _AppAlpha(_Alpha):
         return node
 
 
+def _strip_docstrings(node: ast.AST) -> None:
+    """Docstrings are Expr(Constant) statements, so the hash would flag an edit
+    to one -- but a docstring cannot change emission behavior (found on real
+    history: a docstring-only commit flagged as behavior-risk). Representational,
+    so stripped. Code reading ``__doc__`` at runtime is outside the fragment."""
+    for child in ast.walk(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            body = child.body
+            if body and isinstance(body[0], ast.Expr) \
+                    and isinstance(body[0].value, ast.Constant) \
+                    and isinstance(body[0].value.value, str):
+                child.body = body[1:] or [ast.Pass()]
+
+
 def _norm_hash(fn: ast.AST) -> str:
     clone = copy.deepcopy(fn)              # _Alpha mutates in place
+    _strip_docstrings(clone)
     normalized = _AppAlpha().visit(clone)
     ast.fix_missing_locations(normalized)
     return hashlib.sha256(_stable_dump(normalized).encode()).hexdigest()[:16]
