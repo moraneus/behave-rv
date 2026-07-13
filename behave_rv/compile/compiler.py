@@ -177,6 +177,7 @@ def compile_scenario(
         authored_scenario=scenario,
         failing_step_index=scenario.steps.index(then[0]),
         used_step_ids=frozenset(r.step_id for r in used),
+        has_deadline=operator == "within",
     )
 
 

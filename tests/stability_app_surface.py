@@ -53,6 +53,7 @@ from behave_rv.events.event import Event
 
 STATUS = "job.status"
 DONE = "job.done"
+MIN_LEN = 0
 
 
 def clean_name(name):
@@ -78,7 +79,7 @@ class JobService:
 
     def submit(self, job_id, name):
         title = clean_name(name)
-        if title:
+        if len(title) > MIN_LEN:
             self._status(job_id, "queued")
 
     def start(self, job_id):
@@ -160,6 +161,10 @@ def run_traffic(service, clock) -> None:
     service.start("J4")
     clock.tick()
     service.finish("J4")
+    clock.tick()
+    service.submit("J5", "x")            # length 1: on MIN_LEN's boundary (E16)
+    clock.tick()
+    service.start("J5")
 
 
 def observe(app_source: str) -> tuple[list, set]:
@@ -242,13 +247,14 @@ CASES = [
          expect="silent", stream_changes=False, verdicts_change=False),
     Case("E2", "local variable renamed in an emit path",
          lambda s: s.replace("title = clean_name(name)", "label = clean_name(name)")
-                    .replace("if title:", "if label:"),
+                    .replace("if len(title) > MIN_LEN:", "if len(label) > MIN_LEN:"),
          expect="silent", stream_changes=False, verdicts_change=False),
     Case("E3", "the service class renamed",
          _replace("class JobService:", "class JobPipeline:"),
          expect="silent", stream_changes=False, verdicts_change=False),
     Case("E4", "guard before an emission tightened",
-         _replace("if title:", 'if title and not title.startswith("tmp-"):'),
+         _replace("if len(title) > MIN_LEN:",
+                  'if len(title) > MIN_LEN and not title.startswith("tmp-"):'),
          expect="risk", stream_changes=True, verdicts_change=True),
     Case("E5", "helper logic changed two calls deep",
          _replace("return name.strip()",
@@ -287,13 +293,13 @@ CASES = [
                    "proven representational, so it flags"),
     Case("E14", "extract-method refactor inside an emit slice",
          _replace("        title = clean_name(name)\n"
-                  "        if title:\n"
+                  "        if len(title) > MIN_LEN:\n"
                   '            self._status(job_id, "queued")',
                   "        if self._admissible(name):\n"
                   '            self._status(job_id, "queued")\n'
                   "\n"
                   "    def _admissible(self, name):\n"
-                  "        return bool(clean_name(name))"),
+                  "        return len(clean_name(name)) > MIN_LEN"),
          expect="risk", stream_changes=False, verdicts_change=False,
          by_design="slice membership changed; structural fingerprints cannot "
                    "prove the refactor equivalent"),
@@ -304,6 +310,16 @@ CASES = [
          expect="break", stream_changes=False, verdicts_change=False,
          by_design="the type is no longer statically analyzable; losing the "
                    "check must surface, not silently degrade"),
+    Case("E16", "a module-level constant used in emission logic changes",
+         _replace("MIN_LEN = 0", "MIN_LEN = 1"),
+         expect="risk", stream_changes=True, verdicts_change=True),
+    Case("E17", "a benign attribute added in the constructor",
+         _replace("        self._clock = clock",
+                  "        self._clock = clock\n        self._audit = []"),
+         expect="risk", stream_changes=False, verdicts_change=False,
+         by_design="emit-path state flows through instance attributes, so the "
+                   "constructor joins every slice of its class; attribute "
+                   "dependencies are approximated at method granularity"),
 ]
 
 

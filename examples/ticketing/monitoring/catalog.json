@@ -11,9 +11,14 @@
         "<splat>",
         "status"
       ],
+      "referenced_constants": {
+        "app_service.EVENT_TYPE": "'ticket.status'",
+        "app_service.TERMINAL_TYPE": "'ticket.closed'"
+      },
       "site_id": "app_service.TicketService._status#1",
-      "slice_fingerprint": "536371021603a5e2",
+      "slice_fingerprint": "fbe9a91192738f0e",
       "slice_functions": {
+        "app_service.TicketService.__init__": "16b1e1570a95adf9",
         "app_service.TicketService._status": "ea3bc4e33ba2d81e",
         "app_service.TicketService.assign": "85c6da3494b0f43f",
         "app_service.TicketService.close": "cd6ed944e67f9d14",
@@ -36,9 +41,13 @@
       "payload_fields": [
         "direction"
       ],
+      "referenced_constants": {
+        "app_service.REPLY_TYPE": "'ticket.reply'"
+      },
       "site_id": "app_service.TicketService.agent_reply#1",
-      "slice_fingerprint": "6793cabcc3bbe1e1",
+      "slice_fingerprint": "9e08ab5b593eae2d",
       "slice_functions": {
+        "app_service.TicketService.__init__": "16b1e1570a95adf9",
         "app_service.TicketService.agent_reply": "b6a9a8fa97a1f4ff"
       },
       "unresolved_calls": [
@@ -54,9 +63,14 @@
       "function": "TicketService.close",
       "module": "app_service",
       "payload_fields": [],
+      "referenced_constants": {
+        "app_service.EVENT_TYPE": "'ticket.status'",
+        "app_service.TERMINAL_TYPE": "'ticket.closed'"
+      },
       "site_id": "app_service.TicketService.close#1",
-      "slice_fingerprint": "a382d085b557a69c",
+      "slice_fingerprint": "1b6ebdb8b17f3a5a",
       "slice_functions": {
+        "app_service.TicketService.__init__": "16b1e1570a95adf9",
         "app_service.TicketService._status": "ea3bc4e33ba2d81e",
         "app_service.TicketService.close": "cd6ed944e67f9d14"
       },
@@ -75,9 +89,13 @@
       "payload_fields": [
         "direction"
       ],
+      "referenced_constants": {
+        "app_service.REPLY_TYPE": "'ticket.reply'"
+      },
       "site_id": "app_service.TicketService.customer_reply#1",
-      "slice_fingerprint": "b1f5bfd792831cb3",
+      "slice_fingerprint": "71de25004de23916",
       "slice_functions": {
+        "app_service.TicketService.__init__": "16b1e1570a95adf9",
         "app_service.TicketService.customer_reply": "f99746ce62b74276"
       },
       "unresolved_calls": [
@@ -95,9 +113,13 @@
       "payload_fields": [
         "level"
       ],
+      "referenced_constants": {
+        "app_service.PRIORITY_TYPE": "'ticket.priority'"
+      },
       "site_id": "app_service.TicketService.set_priority#1",
-      "slice_fingerprint": "bb4c32935b21edf3",
+      "slice_fingerprint": "d47f9e342f1a8649",
       "slice_functions": {
+        "app_service.TicketService.__init__": "16b1e1570a95adf9",
         "app_service.TicketService.set_priority": "ae21b7bf127ed93c"
       },
       "unresolved_calls": [

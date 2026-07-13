@@ -45,11 +45,10 @@ from pathlib import Path
 from behave_rv.catalog.app_surface import (
     APP_REMOVED,
     BEHAVIOR_RISK,
-    DYNAMIC,
     INTERFACE_BREAK,
-    affected_step_ids,
     analyze_app,
     classify_app_changes,
+    scope_step_ids,
 )
 from behave_rv.catalog.diff import classify_changes
 from behave_rv.catalog.store import load_app_surface, load_catalog, save_catalog
@@ -179,6 +178,7 @@ def catalog_diff_command(args) -> int:
 
         # the real policy-to-step dependency map, from the compiled policies
         uses = []
+        deadline_policies: list[tuple[str, frozenset]] = []
         liveness: list[str] = []
         observed = None
         if args.trace:
@@ -193,6 +193,9 @@ def catalog_diff_command(args) -> int:
                         observed_event_types=observed[0] if observed else None,
                         observed_values=observed[1] if observed else None)
                 uses.extend(uses_from_policies(policies, owner=args.owner))
+                deadline_policies.extend(
+                    (p.policy_id, frozenset(p.correlation_key))
+                    for p in policies if p.has_deadline)
                 liveness += [str(w.message) for w in caught
                              if issubclass(w.category, UncheckablePolicyWarning)]
             except CompileError as exc:
@@ -234,7 +237,7 @@ def catalog_diff_command(args) -> int:
         for message in liveness:
             print(f"  ! {message}")
 
-    app_breaks, app_risks = _app_surface_diff(args, current, uses)
+    app_breaks, app_risks = _app_surface_diff(args, current, uses, deadline_policies)
 
     failures = len(notes.breaks) + len(app_breaks)
     if args.fail_on_app_risk:
@@ -250,7 +253,8 @@ def catalog_diff_command(args) -> int:
     return 0
 
 
-def _app_surface_diff(args, current_entries, uses) -> tuple[list[str], list[str]]:
+def _app_surface_diff(args, current_entries, uses,
+                      deadline_policies) -> tuple[list[str], list[str]]:
     """Diff the app's emit sites against the committed app surface and print the
     scoped report. Returns (breaks, risks) -- breaks always gate the exit code,
     risks only under --fail-on-app-risk."""
@@ -284,13 +288,21 @@ def _app_surface_diff(args, current_entries, uses) -> tuple[list[str], list[str]
         if bucket is None:
             continue
         site = change.new or change.old
-        if site.event_type == DYNAMIC:
+        step_ids = scope_step_ids(change, current_entries)   # old AND new sides
+        if step_ids is None:
             scope = "cannot scope: dynamic event type — review ALL policies"
         else:
-            step_ids = affected_step_ids(site, current_entries)
             policies = sorted({p for sid in step_ids for p in users_of.get(sid, [])})
             scope = (f"policies at risk: {', '.join(policies)}" if policies
                      else "no compiled policy observes this event type")
+            # deadline coupling: event-time advancement drives 'within' timers,
+            # so ANY flagged site of the same entity can move their verdicts
+            keys = frozenset(k for k in site.binding_keys if not k.startswith("<"))
+            coupled = sorted({pid for pid, key in deadline_policies
+                              if key == keys} - set(policies))
+            if coupled:
+                scope += ("\n      deadline policies on the same entity "
+                          f"(event-time coupling): {', '.join(coupled)}")
         bucket.append(f"{change.site_id} (event {site.event_type!r})\n"
                       f"      {change.detail}\n      {scope}")
 

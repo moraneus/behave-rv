@@ -226,3 +226,27 @@ def test_docstring_edit_on_an_emit_path_is_absorbed(tmp_path):
         'def start(self, job_id, name):',
         'def start(self, job_id, name):\n        """Queue the job for work."""')
     assert set(_statuses(_classify(tmp_path, BASE, changed)).values()) == {APP_UNCHANGED}
+
+
+def test_module_constant_in_emission_logic_is_fingerprinted(tmp_path):
+    # found by the mutation campaign: LIMIT = 10 -> 11 changed emissions with
+    # no function body changing; constants referenced by the slice are now
+    # part of the fingerprint
+    with_const = BASE.replace('DONE = "job.done"', 'DONE = "job.done"\nMIN = 2') \
+                     .replace("if label:", "if len(label) > MIN:")
+    changed = with_const.replace("MIN = 2", "MIN = 3")
+    by_id = {c.site_id: c for c in _classify(tmp_path, with_const, changed)}
+    risk = by_id["jobs_app.JobService._status#1"]
+    assert risk.status == BEHAVIOR_RISK
+    assert "jobs_app.MIN" in risk.detail
+
+
+def test_constructor_wiring_is_inside_the_slice(tmp_path):
+    # found by the mutation campaign: emit-path state flows through instance
+    # attributes, and the methods ASSIGNING them must be in the slice
+    (site,) = [s for s in _analyze(tmp_path, BASE)
+               if s.site_id == "jobs_app.JobService._status#1"]
+    assert "jobs_app.JobService.__init__" in site.slice_functions
+    changed = BASE.replace("        self._emit = emit\n", "")
+    by_id = _statuses(_classify(tmp_path, BASE, changed))
+    assert by_id["jobs_app.JobService._status#1"] == BEHAVIOR_RISK

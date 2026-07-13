@@ -81,8 +81,13 @@ class EmitSite:
     binding_keys: list[str]         # sorted; may contain markers
     payload_fields: list[str]       # sorted; may contain "<splat>"/"<dynamic>"
     slice_functions: dict[str, str]  # qualname -> alpha-normalized own-hash
-    slice_fingerprint: str          # hash of the SET of member hashes
+    slice_fingerprint: str          # hash of member hashes + referenced constants
     unresolved_calls: list[str] = field(default_factory=list)
+    # module-level constants any slice member reads, name -> repr(value): a
+    # LIMIT = 10 participating in emission logic lives outside every function
+    # body, so it must be fingerprinted separately (found by the mutation
+    # campaign, docs/APP_SURFACE_EVALUATION.md)
+    referenced_constants: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -95,6 +100,7 @@ class EmitSite:
             "slice_functions": dict(sorted(self.slice_functions.items())),
             "slice_fingerprint": self.slice_fingerprint,
             "unresolved_calls": sorted(self.unresolved_calls),
+            "referenced_constants": dict(sorted(self.referenced_constants.items())),
         }
 
     @classmethod
@@ -109,6 +115,7 @@ class EmitSite:
             slice_functions=dict(data["slice_functions"]),
             slice_fingerprint=data["slice_fingerprint"],
             unresolved_calls=list(data["unresolved_calls"]),
+            referenced_constants=dict(data.get("referenced_constants", {})),
         )
 
 
@@ -159,7 +166,7 @@ def _norm_hash(fn: ast.AST) -> str:
 @dataclass
 class _Module:
     stem: str
-    constants: dict[str, str] = field(default_factory=dict)   # NAME -> string value
+    constants: dict[str, object] = field(default_factory=dict)  # NAME -> scalar value
     functions: dict[str, ast.AST] = field(default_factory=dict)  # local qualname -> node
     methods_of: dict[str, set[str]] = field(default_factory=dict)  # class -> method names
     event_names: set[str] = field(default_factory=set)   # local names bound to Event
@@ -171,13 +178,12 @@ class _Module:
 def _index_module(stem: str, tree: ast.Module) -> _Module:
     mod = _Module(stem=stem)
     for node in tree.body:
-        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) \
-                and isinstance(node.value.value, str):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     mod.constants[target.id] = node.value.value
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
-                and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                and isinstance(node.value, ast.Constant):
             mod.constants[node.target.id] = node.value.value
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             mod.functions[node.name] = node
@@ -258,7 +264,7 @@ def _event_args(call: ast.Call) -> dict[str, ast.AST]:
 def _resolve_type(node: Optional[ast.AST], mod: _Module) -> str:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
-    if isinstance(node, ast.Name) and node.id in mod.constants:
+    if isinstance(node, ast.Name) and isinstance(mod.constants.get(node.id), str):
         return mod.constants[node.id]
     return DYNAMIC
 
@@ -298,13 +304,29 @@ def analyze_app(paths) -> list[EmitSite]:
     edges: dict[str, set[str]] = defaultdict(set)
     reverse: dict[str, set[str]] = defaultdict(set)
     unresolved_of: dict[str, set[str]] = defaultdict(set)
+    const_reads: dict[str, set[str]] = defaultdict(set)   # fn -> module-constant names
+    attr_reads: dict[str, set[str]] = defaultdict(set)    # method -> self.X read
+    setters: dict[tuple[str, str], set[str]] = defaultdict(set)  # (class, attr) -> methods
+    class_of: dict[str, str] = {}                          # method -> global class name
     anchors: list[tuple[str, str, ast.Call]] = []   # (global fn qualname, stem, call)
     for stem, mod in modules.items():
         for local_qualname, fn in mod.functions.items():
             caller = f"{stem}.{local_qualname}"
             class_name = local_qualname.split(".")[0] if "." in local_qualname else None
+            if class_name is not None:
+                class_of[caller] = f"{stem}.{class_name}"
             for stmt in getattr(fn, "body", []):
                 for node in ast.walk(stmt):
+                    if isinstance(node, ast.Name) and node.id in mod.constants:
+                        const_reads[caller].add(node.id)
+                    elif isinstance(node, ast.Attribute) \
+                            and isinstance(node.value, ast.Name) \
+                            and node.value.id == "self" and class_name is not None:
+                        # a store defines instance state; a load depends on it
+                        if isinstance(node.ctx, ast.Store):
+                            setters[(f"{stem}.{class_name}", node.attr)].add(caller)
+                        else:
+                            attr_reads[caller].add(node.attr)
                     if not isinstance(node, ast.Call):
                         continue
                     if _is_anchor(node, mod):
@@ -338,9 +360,26 @@ def analyze_app(paths) -> list[EmitSite]:
     slice_cache: dict[str, set[str]] = {}
 
     def slice_of(function: str) -> set[str]:
+        """Fixpoint of: callers of the seeds (they decide when/with what), their
+        callees (they compute values), and -- because emit-path state flows
+        through instance attributes (self._emit itself is one; found by the
+        mutation campaign) -- every method that ASSIGNS a self-attribute some
+        member reads, which then gets the same caller/callee treatment."""
         if function not in slice_cache:
-            entry_points = closure({function}, reverse)   # the fn + transitive callers
-            slice_cache[function] = closure(entry_points, edges)  # + everything they call
+            seeds = {function}
+            while True:
+                members = closure(closure(seeds, reverse), edges)
+                writers = set()
+                for member in members:
+                    cls = class_of.get(member)
+                    if cls is None:
+                        continue
+                    for attr in attr_reads.get(member, ()):
+                        writers |= setters.get((cls, attr), set())
+                if writers <= members:
+                    slice_cache[function] = members
+                    break
+                seeds |= writers
         return slice_cache[function]
 
     sites: list[EmitSite] = []
@@ -351,8 +390,16 @@ def analyze_app(paths) -> list[EmitSite]:
         args = _event_args(call)
         members = slice_of(caller)
         slice_functions = {qn: own_hash(qn) for qn in sorted(members)}
+        constants: dict[str, str] = {}
+        for member in members:
+            member_stem = member.split(".")[0]
+            member_consts = modules[member_stem].constants
+            for name in const_reads.get(member, ()):
+                constants[f"{member_stem}.{name}"] = repr(member_consts[name])
         fingerprint = hashlib.sha256(
-            ",".join(sorted(set(slice_functions.values()))).encode()).hexdigest()[:16]
+            (",".join(sorted(set(slice_functions.values())))
+             + "|consts:" + ",".join(f"{k}={v}" for k, v in sorted(constants.items()))
+             ).encode()).hexdigest()[:16]
         holes = sorted(set().union(*(unresolved_of.get(qn, set()) for qn in members)))
         sites.append(EmitSite(
             site_id=f"{caller}#{ordinal[caller]}",
@@ -364,6 +411,7 @@ def analyze_app(paths) -> list[EmitSite]:
             slice_functions=slice_functions,
             slice_fingerprint=fingerprint,
             unresolved_calls=holes,
+            referenced_constants=constants,
         ))
     return sorted(sites, key=lambda s: s.site_id)
 
@@ -405,6 +453,11 @@ def _describe_risk(old: EmitSite, new: EmitSite) -> str:
         parts.append("function(s) in the emit slice changed: " + ", ".join(changed))
     if gone or added:
         parts.append(f"emit-slice membership changed (-{gone or '[]'} +{added or '[]'})")
+    const_moved = sorted(
+        name for name in old.referenced_constants.keys() | new.referenced_constants.keys()
+        if old.referenced_constants.get(name) != new.referenced_constants.get(name))
+    if const_moved:
+        parts.append("module constant(s) in the emit slice changed: " + ", ".join(const_moved))
     new_holes = sorted(set(new.unresolved_calls) - set(old.unresolved_calls))
     if new_holes:
         parts.append("new unresolved call(s) in the slice: " + ", ".join(new_holes))
@@ -471,3 +524,18 @@ def affected_step_ids(site: EmitSite, entries) -> list[str]:
     app change to the policies at risk. A ``<dynamic>`` type cannot be scoped;
     the caller must report that as unscopable rather than guessing."""
     return sorted(e.step_id for e in entries if e.signature.event_type == site.event_type)
+
+
+def scope_step_ids(change: AppChange, entries) -> Optional[list[str]]:
+    """Steps at risk for a classified change, over BOTH sides: an event type
+    that changed value must alert the policies observing the OLD type (their
+    events stop arriving) as well as the new one (found by the scoping
+    experiment: scoping only the new side reported a mutated type to nobody).
+    ``None`` means unscopable (a dynamic type on either side)."""
+    sites = [s for s in (change.old, change.new) if s is not None]
+    if any(s.event_type == DYNAMIC for s in sites):
+        return None
+    out: set = set()
+    for site in sites:
+        out.update(affected_step_ids(site, entries))
+    return sorted(out)

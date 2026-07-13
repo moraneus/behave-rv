@@ -12,8 +12,8 @@ def rows():
     return {r.case_id: r for r in run_catalog()}
 
 
-def test_the_catalog_covers_all_fifteen_cases(rows):
-    assert sorted(rows, key=lambda c: int(c[1:])) == [f"E{n}" for n in range(1, 16)]
+def test_the_catalog_covers_all_seventeen_cases(rows):
+    assert sorted(rows, key=lambda c: int(c[1:])) == [f"E{n}" for n in range(1, 18)]
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.case_id)
@@ -31,8 +31,9 @@ def test_every_false_alarm_is_a_declared_by_design_conservatism(rows):
             assert row.by_design, f"{row.case_id}: undeclared false alarm"
 
 
-def test_the_by_design_family_is_exactly_e13_to_e15(rows):
-    assert [r.case_id for r in rows.values() if r.by_design] == ["E13", "E14", "E15"]
+def test_the_by_design_family_is_exactly_the_declared_one(rows):
+    assert [r.case_id for r in rows.values() if r.by_design] == \
+        ["E13", "E14", "E15", "E17"]
 
 
 def test_e10_also_surfaces_the_new_site_as_an_addition():
