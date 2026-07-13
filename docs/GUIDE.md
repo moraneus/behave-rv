@@ -2,16 +2,72 @@
 
 behave_rv watches your running application and tells you, deterministically
 and with evidence, whether the rules you wrote in plain Gherkin hold — per
-entity, live or over a recorded trace. This guide covers everything a user
-needs: exposing events, writing steps and policies, running the engine, every
-option, and how to watch what the monitor is doing while your app runs.
+entity, live or over a recorded trace. This guide assumes no familiarity with
+the library: it covers the files a monitored project has and how each is
+written, every concept and option, how to watch the monitor while your app
+runs, and three complete working examples that are committed to this repo and
+verified to run.
 
 Setup: `pip install -e .` from a clone (dependencies: `behave`, `parse`).
-Nothing else is needed — the live dashboard below is standard library only.
+Nothing else is needed — even the live web dashboard is standard library only.
 
-## 1. The five-minute quickstart
+---
 
-One complete, runnable program (committed as `examples/quickstart.py`):
+## 1. The files of a monitored project
+
+A project using behave_rv conventionally has this shape (this exact layout is
+committed and runnable at [`examples/ticketing/`](../examples/ticketing/)):
+
+```
+your_app/
+  app_service.py            your business logic, emitting events (a .py file)
+  monitoring/
+    steps.py                the monitorable surface: registered step predicates
+    policies/
+      01_resolve_after_assign.feature      one policy per .feature file
+      02_assignment_sla.feature
+      03_escalation_blocks_closing.feature
+      04_every_ticket_resolved.feature
+    catalog.json            the committed step contract (written by the CLI)
+  traces/
+    last_week.jsonl         recorded event streams (optional, for replay)
+```
+
+**Important, stated up front: there is no magic path discovery.** Unlike
+classic `behave` (which auto-discovers a `features/` directory), behave_rv
+reads exactly the files you point it at — your code calls
+`compile_feature(path.read_text(), registry)` per file, and the CLI takes
+`--steps`, `--policies`, `--catalog`, `--trace` arguments. The layout above
+is a convention that makes those one-liners, not a requirement the engine
+enforces. Nothing breaks if you place files elsewhere; you just pass the
+paths you chose.
+
+### Every file type, its rules, and who reads it
+
+| File | Extension / format | Where (convention) | Written by | Read by | Rules |
+|---|---|---|---|---|---|
+| Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** — unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
+| Steps module | `.py` | `monitoring/steps.py`, next to `policies/` | the developer (or coding agent) | your code (`import`); CLI `--steps` | expose a side-effect-free `build_registry()` factory (the CLI auto-detects it), or register at import via the module decorators; details in §3 |
+| Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; see [`STABILITY.md`](../STABILITY.md) |
+| Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `record_events(path, events)` or your own pipeline | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds |
+| Your app | `.py` (any structure) | anywhere | you | — | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
+
+Naming conventions that pay off later:
+
+- **`step_id`**: `<domain>.<event>.<what>` (e.g. `ticket.status.is`) — this is
+  the stable identity policies bind to across renames; choose it once, never
+  reuse it.
+- **event `type`**: `<domain>.<noun>` (e.g. `ticket.status`), a stable
+  identity, not a display string.
+- **feature files**: numbered prefixes (`01_`, `02_`) keep listings and diffs
+  in a stable, readable order.
+
+---
+
+## 2. The five-minute quickstart (single file)
+
+Committed as [`examples/quickstart.py`](../examples/quickstart.py); run it
+with `python examples/quickstart.py`.
 
 ```python
 from behave_rv.catalog.registry import StepRegistry
@@ -60,192 +116,337 @@ for verdict in Engine(policies, grace=0).run(source, emit_pending=True):
                               policies[0].failing_step_index))
 ```
 
-Output: `A-1` satisfied, `B-7` violated — and the violation is your own
-scenario replayed with the failing step marked `✗` and the real events that
-decided it. Run it: `python examples/quickstart.py`.
+Real output:
 
-## 2. The pieces, one by one
+```
+{'order_id': 'A-1'} satisfied
+{'order_id': 'B-7'} violated
+POLICY 'an order may only be paid after it was authorized'  ENTITY order_id=B-7  VERDICT violated @ t=3.0
+Scenario: an order may only be paid after it was authorized
+    When an order is "paid"
+✗ Then an order is "authorized" before   # violated
+Deciding events:
+  t=3.0  order.status  {'status': 'paid'}
+```
 
-### Events — what the monitor sees
+The violation is your own scenario replayed with the failing step marked and
+the real events that decided it — that is the library's reporting model
+everywhere (logs, CLI, dashboard).
 
-Everything is a normalized `Event(type, event_time, bindings, payload, source)`:
+---
 
-- `type` — a stable event-type identity (`"order.status"`), not a display name.
-- `event_time` — seconds, **from the event itself**, never receipt time. For
-  live monitoring use small, service-relative times (e.g. seconds since app
-  start), not Unix epoch — see Gotchas below.
-- `bindings` — the correlation key values (`{"order_id": "A-1"}`): how the
-  engine separates one entity from another. One key per policy (a tuple for
-  composite identity is fine).
-- `payload` — the observable fields your steps read.
+## 3. The complete example, file by file: a ticketing app
 
-### Steps — the vocabulary you expose
+Everything in this section is committed under
+[`examples/ticketing/`](../examples/ticketing/) and runs as shown.
 
-A step is a **pure predicate**: it reads an event, returns a boolean, mutates
-nothing. This is required, not enforced — impurity silently breaks
-reproducibility. Register into your own `StepRegistry` (as above, best for
-tests and tools) or use the module-level decorators
-(`from behave_rv.steps import trigger, scope, obligation`) which register into
-the process default registry — the style the CLI expects from a steps module.
+### `app_service.py` — your business logic, with taps
 
-Contract details that matter:
+```python
+EVENT_TYPE = "ticket.status"      # one stable type for the ticket lifecycle
+TERMINAL_TYPE = "ticket.closed"   # ends a ticket's life: settles its policies
 
-- the phrasing's `{placeholders}` are bound BY NAME to the function's
-  parameters after `(ctx, event, ...)` — those parameter names are contract;
-  renaming one breaks every dependent policy (and the catalog diff will tell
-  you so).
-- `ctx.bind(...)` is an optional readability declaration; dispatch actually
-  reads `event.bindings` via the decorator's declared `correlation_key`.
-- `step_id` is the stable identity that survives renames; keep it forever.
+class TicketService:
+    def __init__(self, emit, clock=time.time):
+        self._emit = emit          # injected: tests pass a list.append,
+        self._clock = clock        # live passes the real queue and clock
 
-### Policies — plain Gherkin over your steps
+    def _status(self, ticket_id, status, **payload):
+        self._emit(Event(EVENT_TYPE, self._clock(), {"ticket_id": ticket_id},
+                         {"status": status, **payload}, "ticketing"))
 
-One scenario = one policy = one entity type. The complete operator reference
-with satisfying/violating traces for all nine forms is
-[`docs/OPERATORS.md`](OPERATORS.md); the short version:
+    def open_ticket(self, tid, title): self._status(tid, "opened", title=title)
+    def assign(self, tid, agent):      self._status(tid, "assigned", agent=agent)
+    def escalate(self, tid):           self._status(tid, "escalated")
+    def resolve(self, tid):            self._status(tid, "resolved")
+    def close(self, tid):
+        self._status(tid, "closed")                       # the observable change
+        self._emit(Event(TERMINAL_TYPE, ...))             # then the terminal
+```
 
-| You want to say | You write |
-|---|---|
-| X must have happened before Y | `When ... "Y"` / `Then ... "X" before` |
-| respond within N seconds | `Then ... within "5" seconds` |
-| this must never happen | `Then ... never happens` (plus `Given` scopes, incl. `until`) |
-| eventually happens | `Then ... has happened` |
-| always true / regime rules | `always holds`, `previously`, `since` |
+What to copy from it: `emit` and `clock` are **injected** (same service runs
+live and in deterministic tests); one `_status` tap per state change and
+nothing else; `close()` emits the observable `"closed"` status *and then* the
+terminal event — policies talk about the status, the engine uses the terminal
+to settle pending obligations and free the ticket's state.
 
-Anything outside the fragment (cross-entity rules, aggregates) is refused at
-compile time with a clear message — refusal is what makes accepted policies
-trustworthy.
+### `monitoring/steps.py` — the vocabulary
 
-### The engine — options, all of them
+```python
+POLICY_DIR = Path(__file__).parent / "policies"
+
+def build_registry() -> StepRegistry:
+    registry = StepRegistry()
+
+    @registry.trigger('a ticket is "{status}"', step_id="ticket.status.is",
+                      event_type="ticket.status", correlation_key="ticket_id")
+    def ticket_is(ctx, event, status):
+        if event.type == "ticket.status" and event.payload.get("status") == status:
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    return registry
+
+def load_policies(registry):
+    return [p for path in sorted(POLICY_DIR.glob("*.feature"))
+            for p in compile_feature(path.read_text(), registry)]
+```
+
+The rules a step must obey (each is load-bearing):
+
+- **Pure predicate**: read the event, return `True`/`False`, change nothing.
+  Required, not enforced — impurity silently breaks reproducibility.
+- The phrasing's `{status}` placeholder binds **by name** to the third
+  parameter, so that parameter must be named `status`. It is contract:
+  renaming it disconnects every policy (the catalog diff will break loudly
+  if you try). The first two parameters `(ctx, event)` are positional — name
+  them anything.
+- `ctx.bind(...)` is a readability declaration; entity identity actually
+  comes from `event.bindings` via the decorator's declared `correlation_key`.
+- `build_registry()` as a side-effect-free factory is the recommended style:
+  tests get fresh isolated registries, and the CLI detects and calls it
+  automatically. (The alternative — module-level
+  `from behave_rv.steps import trigger` decorators that register at import —
+  also works and is what `examples/order_steps.py` shows.)
+
+### `monitoring/policies/*.feature` — one policy per file
+
+```gherkin
+# 01_resolve_after_assign.feature
+Feature: assignment discipline
+  Scenario: a ticket may only be resolved after it was assigned
+    When a ticket is "resolved"
+    Then a ticket is "assigned" before
+```
+
+```gherkin
+# 02_assignment_sla.feature — a wall-clock deadline
+Feature: assignment SLA
+  Scenario: an opened ticket is assigned within the window
+    When a ticket is "opened"
+    Then a ticket is "assigned" within "30" seconds
+```
+
+```gherkin
+# 03_escalation_blocks_closing.feature — an interval scope
+Feature: escalation handling
+  Scenario: an escalated ticket must not be closed until resolved
+    Given a ticket is "escalated" until a ticket is "resolved"
+    Then a ticket is "closed" never happens
+```
+
+```gherkin
+# 04_every_ticket_resolved.feature — settles at the terminal event
+Feature: resolution completeness
+  Scenario: every ticket is eventually resolved
+    Then a ticket is "resolved" has happened
+```
+
+The complete operator reference — all nine forms with satisfying and
+violating traces — is [`docs/OPERATORS.md`](OPERATORS.md). Anything outside
+the fragment (cross-entity rules, aggregates) is **refused at compile time**
+with a clear message; refusal is what makes accepted policies trustworthy.
+
+### `live_monitor.py` — run it live, with the dashboard
+
+Run: `python examples/ticketing/live_monitor.py` and open the printed URL.
+
+```python
+policies = load_policies(build_registry())
+
+start = time.time()
+source = QueueSource()                       # live: push() is thread-safe
+dashboard = Dashboard(policies)
+service = TicketService(lambda e: source.push(dashboard.tap(e)),
+                        clock=lambda: time.time() - start)   # relative times!
+
+print("monitor:", dashboard.start(port=7007))
+engine = Engine(policies, terminal_event_types={TERMINAL_TYPE}, grace=0.5)
+threading.Thread(target=lambda: engine.run(source, sink=dashboard.sink),
+                 daemon=True).start()
+
+service.open_ticket("T-1", "printer on fire")   # from any app thread
+```
+
+The wiring, in words: your app threads push into the `QueueSource`; the
+engine consumes on its own single thread; every decided verdict goes to the
+dashboard's sink (which only records under a lock); the dashboard's HTTP
+server serves snapshots from a daemon thread. Nothing blocks the app. The
+seeded traffic in the example produces, live on the page: a healthy ticket
+(all green), a resolved-without-assignment violation, and an
+escalated-then-closed violation — each rendered as the authored scenario
+with the failing step marked.
+
+### `replay_check.py` — the CI shape
+
+Run: `python examples/ticketing/replay_check.py` (exits 1 on violations).
+It records a deterministic trace (`FakeClock` — same input, same trace,
+byte for byte), replays it through the engine with `emit_pending=True`, and
+prints every verdict plus full explanations for violations. Real output ends:
+
+```
+16 verdicts, 3 violation(s)
+```
+
+with T-1 (the healthy ticket) all-satisfied, and exactly the three seeded
+faults caught: resolve-before-assign, the 30-second SLA fired by the timer,
+and the pending obligations of still-open tickets reported honestly.
+
+### The same project through the CLI
+
+```bash
+# run one policy file over a recorded trace
+python -m behave_rv --steps examples/ticketing/monitoring/steps.py \
+    --policy examples/ticketing/monitoring/policies/01_resolve_after_assign.feature \
+    --trace examples/ticketing/trace.jsonl
+
+# the stability contract (commit catalog.json; diff it in CI after changes)
+python -m behave_rv catalog save --steps examples/ticketing/monitoring/steps.py \
+    --catalog examples/ticketing/monitoring/catalog.json
+python -m behave_rv catalog diff --steps examples/ticketing/monitoring/steps.py \
+    --catalog examples/ticketing/monitoring/catalog.json \
+    --policies examples/ticketing/monitoring/policies    # exit 1 on breaks
+```
+
+---
+
+## 4. The concepts, precisely
+
+### Events
+
+`Event(type, event_time, bindings, payload, source)`:
+
+- `type` — stable event-type identity (`"ticket.status"`).
+- `event_time` — seconds, **from the event, never receipt time**. All
+  ordering, deadlines, and verdict timestamps use it.
+- `bindings` — the correlation key values (`{"ticket_id": "T-1"}`); how the
+  engine separates entities. One key per policy; a tuple for composite
+  identity is fine; cross-entity policies are refused by design.
+- `payload` — the observable fields steps read.
+- `source` — provenance label, free-form.
+
+### The engine and every option
 
 ```python
 engine = Engine(
     policies,
-    terminal_event_types={"order.done"},  # events ending an entity's life:
-                                          # settles pending obligations, frees memory
-    grace=5.0,                            # reorder window (event-time seconds);
-                                          # out-of-order events within it are sorted
-                                          # back; grace=0 = strict arrival order
-    quiescence_ttl=3600.0,                # optional: reclaim entities silent this long
+    terminal_event_types={"ticket.closed"},   # entity end-of-life: settles
+                                              # pending obligations, frees state
+    grace=5.0,             # reorder window in event-time seconds: late events
+                           # within it are sorted back into place; grace=0 means
+                           # strict arrival order (fast path, no tolerance)
+    quiescence_ttl=3600.0, # optional: reclaim entities silent this long
 )
 verdicts = engine.run(
     source,
-    emit_pending=True,   # at end of a bounded run, report still-open
-                         # obligations honestly as "pending"
-    sink=my_callable,    # OR: deliver each verdict the moment it is decided
-                         # (run then returns []); a raising sink is recorded
-                         # and never kills the monitor
+    emit_pending=True,     # bounded runs: report still-open obligations as
+                           # honest "pending" verdicts at the end
+    sink=callable_or_None, # live delivery: each verdict the moment it is
+                           # decided (run() then returns []); a raising sink is
+                           # recorded and never kills the monitor
 )
 ```
 
-Verdicts are three-valued: `satisfied`, `violated`, `pending`. A `Verdict`
-carries `policy_id`, `entity_key`, `verdict`, `trigger_event`,
-`deciding_events` (the evidence), `witnessing_trace` (recent context), `at`.
-If you run `once`/`historically`/`since` policies with no terminal event
-configured, the engine warns at startup (`NoTerminalConfiguredWarning`) that
-they may stay pending forever — that is a prompt, not an error.
+Verdicts are three-valued — `satisfied`, `violated`, `pending` — and carry
+`policy_id`, `entity_key`, `verdict`, `trigger_event`, `deciding_events`
+(the evidence), `witnessing_trace` (recent context), and `at` (event time of
+the decision). If you run `has happened` / `always holds` / `since` policies
+with no terminal configured, the engine warns once at startup
+(`NoTerminalConfiguredWarning`): they may stay pending forever — a prompt to
+configure a terminal, not an error.
 
-## 3. Feeding events: the three sources
+### The three sources
 
-- **`InProcessSource`** — your code calls `source.emit(event)` (or the
-  `emit_event(...)` convenience); the engine drains it in one bounded run.
-  Best for tests and batch checks.
-- **`QueueSource`** — the live mode. `push()` is thread-safe: your app's
-  threads push while the engine consumes on its own thread; `within`
-  deadlines fire on the wall clock even when the stream goes quiet;
-  `close()` ends the run cleanly.
+| Source | Use for | Notes |
+|---|---|---|
+| `InProcessSource` | tests, batch checks | `emit(event)`; the run drains it and ends |
+| `QueueSource` | **live monitoring** | `push()` thread-safe; `within` deadlines fire on the wall clock during quiet periods; `close()` ends the run |
+| `ReplaySource(path)` | recorded `.jsonl` traces | same pipeline as live; write traces with `record_events(path, events)` |
 
-  ```python
-  source = QueueSource()
-  threading.Thread(target=lambda: engine.run(source, sink=on_verdict),
-                   daemon=True).start()
-  source.push(event)        # from anywhere in your app
-  ```
-- **`ReplaySource("trace.jsonl")`** — re-run policies over a recorded stream
-  (write one with `record_events(path, events)`). Same pipeline as live, so
-  a policy can be tested against last week's traffic before deploying it.
+Any object with an `.events()` iterator is a source; add `live = True` plus
+`next_event(timeout)` only if its timestamps advance at wall rate.
 
-Any object with an `.events()` iterator works as a source; add `live = True`
-and a `next_event(timeout)` only if its timestamps advance at wall rate.
+---
 
-## 4. Watching the monitor while your app runs
+## 5. Watching the monitor while your app runs
 
-### The built-in web dashboard
+### The built-in web dashboard (stdlib, three lines)
 
 ```python
 from behave_rv.dashboard import Dashboard
 
-dashboard = Dashboard(policies)               # stdlib only, no extra deps
+dashboard = Dashboard(policies)              # optionally: forward=my_sink
 print("monitor at", dashboard.start(port=7007))
-
-engine.run(source, sink=dashboard.sink)       # verdicts flow to the page
+engine.run(source, sink=dashboard.sink)
 ```
 
-Open `http://127.0.0.1:7007` while the app runs: every policy with live
-per-entity verdict badges (green satisfied / red violated / "no verdicts yet"
-= pending), a violations panel where each entry is the authored scenario
-rendered with the failing step marked and the deciding events listed, and
-running counts. Optionally wrap your emits with `dashboard.tap(event)` to see
-the raw event feed alongside. Have your own sink too? Chain it:
-`Dashboard(policies, forward=my_sink)`. The page polls; nothing blocks your
-app (the sink only records under a lock, the HTTP server runs on a daemon
-thread).
+Open the URL while the app runs: every policy with live per-entity verdict
+badges (green satisfied / red violated / "no verdicts yet" = pending),
+running counts, and a violations panel where each entry is the authored
+scenario rendered with the failing step marked and the deciding events
+listed. Wrap your emits with `dashboard.tap(event)` to also see the raw
+event feed. The page polls every 1.5s; the sink only records under a lock;
+nothing blocks your app.
 
 ### Programmatic status
 
-After (or during, from your sink) a run, the engine exposes counters:
-`verdicts_delivered`, `live_instances`, `late_events` / `dropped_late`,
-`invalid_events`, `observed_types` / `observed_values` (the liveness harvest),
-`retired_keys`, and two error logs that never kill the run:
-`sink_errors` / `first_sink_error` and `predicate_errors` /
-`first_predicate_error` / `predicate_error_sources` (which policy, which step).
+On the engine, during (from your sink) or after a run: `verdicts_delivered`,
+`live_instances`, `late_events` / `dropped_late`, `invalid_events`,
+`observed_types` / `observed_values` (the liveness harvest), `retired_keys`,
+and two never-fatal error logs — `sink_errors` / `first_sink_error` and
+`predicate_errors` / `first_predicate_error` / `predicate_error_sources`
+(which policy, which step).
 
-### Sinks you can use out of the box
+### Stock sinks
 
-`JsonSink(stream)` (one JSON line per verdict), `JsonFileSink(path)`
-(appended + flushed, tail-able), `PrintSink(policies)` (violations printed as
-full explanations, everything else one compact line), or any callable.
+`JsonSink(stream)` — one JSON line per verdict; `JsonFileSink(path)` —
+appended and flushed, tail-able; `PrintSink(policies)` — violations printed
+as full explanations, everything else compact; or any callable.
 
-## 5. The command line
-
-```bash
-# run a policy over a recorded trace (verdict log + explanations + liveness)
-python -m behave_rv --steps steps.py --policy policy.feature --trace trace.jsonl
-
-# the stability workflow: keep policies alive as code changes (STABILITY.md)
-python -m behave_rv catalog save --steps steps.py --catalog catalog.json
-python -m behave_rv catalog diff --steps steps.py --catalog catalog.json \
-    --policies policies/ --trace last_week.jsonl     # exit 1 on breaks: CI gate
-```
+---
 
 ## 6. Keeping policies alive when the code changes
 
 The committed `catalog.json` is the contract between your code and your
-policies: renames absorb, contract changes break loudly against exactly the
-affected policies, app-side renames are caught by liveness against a
-representative trace, and each signature's `unresolved_calls` shows where the
-fingerprint's protection ends. Full mechanism, worked examples, and the
-measured 22-case detection table: [`STABILITY.md`](../STABILITY.md).
+policies: renames absorb silently, contract changes break loudly against
+exactly the affected policies (including helper-function changes, via the
+call-graph fingerprint), app-side renames are caught by liveness against a
+representative trace, and each signature's `unresolved_calls` shows where
+the protection ends. Run `catalog diff` in CI (exit 1 gates the merge).
+Full mechanism with worked examples and the measured detection table:
+[`STABILITY.md`](../STABILITY.md).
+
+---
 
 ## 7. Gotchas, honestly
 
-- **Event time is the clock.** Ordering, deadlines, and verdict timestamps
-  use `event_time`, never arrival time.
+- **Event time is the clock.** Ordering, deadlines, and verdicts use
+  `event_time`, never arrival time.
+- **Ordered actions need distinct timestamps.** With `grace > 0`, events with
+  EQUAL times are ordered canonically (by content), not by arrival — so two
+  actions whose order matters must not share a timestamp. Tick your clock
+  between them (the ticketing example shows this; its first draft had the
+  bug and produced spurious verdicts).
 - **Live mode wants small timestamps.** A known open issue makes wall-clock
-  deadline firing unreliable at Unix-epoch magnitudes (~1.8e9: the live
-  loop's absolute epsilon falls below float precision). Until fixed, emit
-  service-relative times in live mode — `time.time() - START` — as all three
-  demos do. Replay/batch runs are unaffected.
+  deadline firing unreliable at Unix-epoch magnitudes; in live mode emit
+  service-relative times (`time.time() - START`), as the examples and demos
+  do. Replay and batch runs are unaffected.
 - **Purity is on you.** Steps must be deterministic and side-effect free;
-  the framework expects and does not enforce it.
+  the framework expects but cannot enforce it.
 - **`pending` is honest, not stuck.** Unbounded obligations settle at the
-  entity's terminal event or report as pending at end of a bounded run.
-- **One correlation key per policy.** Cross-entity rules are refused, by
-  design; composite keys (tuples) are supported.
+  entity's terminal event, or report as `pending` when a bounded run ends.
+- **Scenario names are ids.** Duplicate names are refused at compile time;
+  keep them unique and readable — they are what you'll see in every verdict.
+- **One `Feature:` per `.feature` file.** The parser refuses multiple.
+
+---
 
 ## 8. Where to go deeper
 
-`docs/OPERATORS.md` (every operator, with traces) · `SEMANTICS.md` (formal
-trace semantics) · `STABILITY.md` (the code-change defense mechanism) ·
-`MUTATION.md` (how the suite itself is validated) · `demo/README.md` (three
-complete live demo apps with interactive boards).
+[`docs/OPERATORS.md`](OPERATORS.md) — every operator, with traces ·
+[`SEMANTICS.md`](../SEMANTICS.md) — formal trace semantics ·
+[`STABILITY.md`](../STABILITY.md) — the code-change defenses ·
+[`MUTATION.md`](../MUTATION.md) — how the suite itself is validated ·
+[`demo/README.md`](../demo/README.md) — three complete demo apps with
+interactive boards and a stability panel.
