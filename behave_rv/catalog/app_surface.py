@@ -167,6 +167,7 @@ def _norm_hash(fn: ast.AST) -> str:
 class _Module:
     stem: str
     constants: dict[str, object] = field(default_factory=dict)  # NAME -> scalar value
+    class_constants: dict[tuple[str, str], object] = field(default_factory=dict)
     functions: dict[str, ast.AST] = field(default_factory=dict)  # local qualname -> node
     methods_of: dict[str, set[str]] = field(default_factory=dict)  # class -> method names
     event_names: set[str] = field(default_factory=set)   # local names bound to Event
@@ -193,6 +194,10 @@ def _index_module(stem: str, tree: ast.Module) -> _Module:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     mod.functions[f"{node.name}.{item.name}"] = item
                     mod.methods_of[node.name].add(item.name)
+                elif isinstance(item, ast.Assign) and isinstance(item.value, ast.Constant):
+                    for target in item.targets:
+                        if isinstance(target, ast.Name):
+                            mod.class_constants[(node.name, target.id)] = item.value.value
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 local = alias.asname or alias.name
@@ -304,7 +309,8 @@ def analyze_app(paths) -> list[EmitSite]:
     edges: dict[str, set[str]] = defaultdict(set)
     reverse: dict[str, set[str]] = defaultdict(set)
     unresolved_of: dict[str, set[str]] = defaultdict(set)
-    const_reads: dict[str, set[str]] = defaultdict(set)   # fn -> module-constant names
+    const_reads: dict[str, set[str]] = defaultdict(set)   # fn -> qualified const keys
+    const_values: dict[str, str] = {}                      # qualified key -> repr(value)
     attr_reads: dict[str, set[str]] = defaultdict(set)    # method -> self.X read
     setters: dict[tuple[str, str], set[str]] = defaultdict(set)  # (class, attr) -> methods
     class_of: dict[str, str] = {}                          # method -> global class name
@@ -318,7 +324,9 @@ def analyze_app(paths) -> list[EmitSite]:
             for stmt in getattr(fn, "body", []):
                 for node in ast.walk(stmt):
                     if isinstance(node, ast.Name) and node.id in mod.constants:
-                        const_reads[caller].add(node.id)
+                        key = f"{stem}.{node.id}"
+                        const_reads[caller].add(key)
+                        const_values[key] = repr(mod.constants[node.id])
                     elif isinstance(node, ast.Attribute) \
                             and isinstance(node.value, ast.Name) \
                             and node.value.id == "self" and class_name is not None:
@@ -327,6 +335,14 @@ def analyze_app(paths) -> list[EmitSite]:
                             setters[(f"{stem}.{class_name}", node.attr)].add(caller)
                         else:
                             attr_reads[caller].add(node.attr)
+                            # a class-level constant is state too (same hole
+                            # class as module constants: no function body owns
+                            # its value)
+                            if (class_name, node.attr) in mod.class_constants:
+                                key = f"{stem}.{class_name}.{node.attr}"
+                                const_reads[caller].add(key)
+                                const_values[key] = repr(
+                                    mod.class_constants[(class_name, node.attr)])
                     if not isinstance(node, ast.Call):
                         continue
                     if _is_anchor(node, mod):
@@ -392,10 +408,8 @@ def analyze_app(paths) -> list[EmitSite]:
         slice_functions = {qn: own_hash(qn) for qn in sorted(members)}
         constants: dict[str, str] = {}
         for member in members:
-            member_stem = member.split(".")[0]
-            member_consts = modules[member_stem].constants
-            for name in const_reads.get(member, ()):
-                constants[f"{member_stem}.{name}"] = repr(member_consts[name])
+            for key in const_reads.get(member, ()):
+                constants[key] = const_values[key]
         fingerprint = hashlib.sha256(
             (",".join(sorted(set(slice_functions.values())))
              + "|consts:" + ",".join(f"{k}={v}" for k, v in sorted(constants.items()))

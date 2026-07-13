@@ -250,3 +250,15 @@ def test_constructor_wiring_is_inside_the_slice(tmp_path):
     changed = BASE.replace("        self._emit = emit\n", "")
     by_id = _statuses(_classify(tmp_path, BASE, changed))
     assert by_id["jobs_app.JobService._status#1"] == BEHAVIOR_RISK
+
+
+def test_class_level_constant_in_emission_logic_is_fingerprinted(tmp_path):
+    # the same hole class as module constants, one level down: a class
+    # attribute read as self.LIMIT has no function body owning its value
+    with_const = BASE.replace("class JobService:", "class JobService:\n    LIMIT = 2") \
+                     .replace("if label:", "if len(label) > self.LIMIT:")
+    changed = with_const.replace("LIMIT = 2", "LIMIT = 3")
+    by_id = {c.site_id: c for c in _classify(tmp_path, with_const, changed)}
+    risk = by_id["jobs_app.JobService._status#1"]
+    assert risk.status == BEHAVIOR_RISK
+    assert "jobs_app.JobService.LIMIT" in risk.detail
