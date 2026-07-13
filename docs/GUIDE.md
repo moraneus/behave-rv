@@ -50,7 +50,7 @@ paths you chose.
 |---|---|---|---|---|---|
 | Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** — unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
 | Steps module | `.py` | `monitoring/steps.py`, next to `policies/` | the developer (or coding agent) | your code (`import`); CLI `--steps` | expose a side-effect-free `build_registry()` factory (the CLI auto-detects it), or register at import via the module decorators; details in §3 |
-| Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; see [`STABILITY.md`](../STABILITY.md) |
+| Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; with `--app` it also records the app's fingerprinted emit sites (the other side of the contract, §7); see [`STABILITY.md`](../STABILITY.md) |
 | Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `TraceRecorder` (live tee), `record_events` (from a list), or any pipeline writing the format | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds; see "Recording traces" in §4 |
 | Your app | `.py` (any structure) | anywhere | you | — | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
 
@@ -360,10 +360,14 @@ to run. Plainly:
   structural fingerprint of its matching condition (helpers included). Open
   the committed example
   ([`examples/ticketing/monitoring/catalog.json`](../examples/ticketing/monitoring/catalog.json))
-  and read it: five entries, one per step.
+  and read it: five step entries, plus an `app_surface` section — the OTHER
+  side of the contract: the application's five emit sites, each with its
+  event type, keys, payload fields, and a fingerprint of the functions that
+  can reach it (§7, "Catching it BEFORE runtime").
 - **Who creates it**: you (or CI), by running
-  `python -m behave_rv catalog save --steps monitoring/steps.py --catalog monitoring/catalog.json`
-  once, and committing the result. Never hand-edit it.
+  `python -m behave_rv catalog save --steps monitoring/steps.py --catalog monitoring/catalog.json --app app_service.py`
+  once, and committing the result (drop `--app` if you only want the step
+  side). Never hand-edit it.
 - **Its role**: it is the frozen reference that `catalog diff` compares the
   CURRENT code against after every change — so a refactor that silently
   changes what a step matches (and would leave your policies dormant) is
@@ -678,15 +682,22 @@ the changed app:
   ! policy 'every ticket is eventually resolved' depends on … status='resolved' …
 ```
 
+Since the app-surface check exists (§7, "Catching it BEFORE runtime"),
+this same edit is also caught statically and earlier: `catalog diff --app`
+flags `resolve()` as a behavior-risk the moment the source changes, no trace
+needed. Liveness remains the net for causes no static check can see (a
+config value, an upstream system renaming what it sends).
+
 Read liveness warnings with its boundary in mind: it flags EVERYTHING the
 trace doesn't show, so an unrepresentative trace (one that never exercised
 replies, say) warns about those policies too. The signal you act on is the
 warning naming the value you just touched. At runtime, the dashboard's
 "⚠ no matching events observed" badge is the live form of the same signal.
 
-Full mechanism, worked examples for every path, the measured 22-case
-detection table, and the stated boundaries (calls through values, stream
-representativeness): [`STABILITY.md`](../STABILITY.md).
+Full mechanism, worked examples for every path, the measured detection
+tables (22 step-side cases, 15 app-side cases), and the stated boundaries
+(calls through values, stream representativeness, function-granularity
+conservatism): [`STABILITY.md`](../STABILITY.md).
 
 ---
 
@@ -703,6 +714,7 @@ stability feature. The division of labor, plainly:
 | App refactored, behavior preserved (same events) | nobody, correctly | verdicts identical before and after |
 | App renamed its vocabulary (values, types, fields) — behavior "same", spelling different | liveness (`--trace`) + the dashboard's unobserved badge | policies go quiet; the warning names the missing value |
 | The monitoring steps/helpers changed | the catalog diff (§6) | a break at build time, before anything runs |
+| App code on an EMIT PATH changed (a guard, a helper, an emitted value, a payload field) | `catalog diff --app` — the emit-site impact analysis | a behavior-risk or break at build time, scoped to the policies at risk, before anything runs |
 
 All outputs below are real, from replaying ONE fixed traffic script (open →
 assign → escalate → resolve → close) through modified versions of the
@@ -774,15 +786,72 @@ shows the unobserved badge. (A dropped tap watched only by quiet-style
 `never` policies would NOT self-report at runtime — that is what the
 liveness layer is for.)
 
+#### Catching it BEFORE runtime: `catalog diff --app`
+
+Everything above happens at runtime or against a recorded trace. Since the
+catalog became two-sided, there is also a purely static net: save the catalog
+with your app files once (`catalog save --steps … --catalog … --app
+app_service.py`) and every later `catalog diff --app` compares the
+application's *emit sites* — every `Event(...)` construction, its event type,
+binding keys and payload fields, plus a fingerprint of every function that
+can participate in reaching it (the emitting function, its callers, their
+callees) — against the committed version. App code is never imported; the
+analysis is AST-only.
+
+A real example. Someone "cleans up" `assign()` in the ticketing service:
+
+```python
+def assign(self, ticket_id: str, agent: str) -> None:
+    if agent != "oncall":                                # new guard
+        self._status(ticket_id, "assigned", agent=agent)
+```
+
+No step changed, no trace needed — the diff answers immediately:
+
+```
+# app surface diff (5 emit site(s))
+  app_service.TicketService._status#1: behavior-risk
+  ...
+
+# APP BEHAVIOR RISKS (1) — logic on an emit path changed
+  ! app_service.TicketService._status#1 (event 'ticket.status')
+      function(s) in the emit slice changed: app_service.TicketService.assign
+      policies at risk: a ticket may only be resolved after it was assigned,
+      an escalated ticket must not be closed until resolved, an opened ticket
+      is assigned within the window, every ticket is eventually resolved,
+      the on-call agent only receives urgent tickets
+
+ok: no breaks (1 app behavior risk(s) above)
+```
+
+Three levels, by severity: an **interface break** (an emitted event type,
+binding key, or payload field changed, or an emission was deleted) exits 1
+and gates CI exactly like a step break; a **behavior risk** (the logic
+deciding *when or what* is emitted changed) warns by default and gates under
+`--fail-on-app-risk`; a **new emit site** surfaces as an addition nothing
+observes yet. Renames of locals, parameters, classes, and docstring/comment
+edits are absorbed silently; renaming a function on an emit path flags
+conservatively, because callable identity pins emission order.
+
+Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
+code structure, so behavior driven by runtime data (config, database
+contents, request payloads) is invisible to it, and its conservatisms are
+measured and declared (the 15-case E-series in
+[`STABILITY.md`](../STABILITY.md), plus a replay of this repo's own git
+history: 9 historical app changes, every classification correct). It is the
+earliest net, not the last one — the runtime layers above remain the ground
+truth.
+
 #### The honest boundary: the monitor never "knows" the code changed
 
 Be precise about what the runtime layer is: it verifies **executions, not
-programs**. Nothing analyzes your application's source (the catalog covers
-STEP code only, on purpose), and a violation is a statement about this
-execution, not a diagnosis that code changed — the monitor cannot tell "the
-code changed" apart from "the code was always wrong and this input finally
-hit it." Detection of an app change is therefore conditional on three things
-stacking:
+programs**. At runtime nothing analyzes your application's source, and a
+violation is a statement about this execution, not a diagnosis that code
+changed — the monitor cannot tell "the code changed" apart from "the code was
+always wrong and this input finally hit it." (The `--app` check above is the
+build-time complement: it does read source, and says "may affect", never
+"violated".) Runtime detection of an app change is therefore conditional on
+three things stacking:
 
 1. **Observability** — the change's effects must reach the event stream. A
    corrupted internal calculation no emitted field carries is invisible.
@@ -796,11 +865,14 @@ stacking:
    escalates; until then the policy is pending — honestly undecided, not
    "verified safe."
 
-The practical answer to the exercise gap: **supply the exercise yourself**.
-Run a fixed scripted traffic set through every build (the `replay_check.py`
-pattern, exit-coded for CI) — then any behavior change on a covered path
-surfaces as a verdict change at build time, before live traffic finds it.
-That is the closest thing to "knowing the app changed" that an
+Two build-time nets close most of the exercise gap. `catalog diff --app`
+flags emit-path code changes with zero traffic, at the price of "may affect"
+rather than "did affect". And **supplying the exercise yourself** — a fixed
+scripted traffic set through every build (the `replay_check.py` pattern,
+exit-coded for CI) — turns any behavior change on a covered path into a
+verdict change before live traffic finds it. Static analysis for the code-
+visible causes, scripted replay for the behavioral ground truth: together
+they are the closest thing to "knowing the app changed" that an
 execution-verifier can honestly offer.
 
 ---

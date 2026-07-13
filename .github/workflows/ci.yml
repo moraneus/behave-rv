@@ -57,3 +57,13 @@ jobs:
             --steps demo/order_service/steps.py \
             --catalog demo/order_service/catalog.json \
             --policies demo/order_service/policies
+      # the two-sided contract: steps AND the app's emit sites (Path D);
+      # --fail-on-app-risk because the example app is itself under contract
+      - name: Diff the ticketing example, both sides of the boundary
+        run: |
+          python -m behave_rv catalog diff \
+            --steps examples/ticketing/monitoring/steps.py \
+            --catalog examples/ticketing/monitoring/catalog.json \
+            --policies examples/ticketing/monitoring/policies \
+            --app examples/ticketing/app_service.py \
+            --fail-on-app-risk

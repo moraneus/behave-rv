@@ -49,6 +49,18 @@ resolves against any registered phrasing refuses to compile, loudly. The
 when the diff also shows changed or removed steps, that combination is itself
 a break.
 
+**Path D — the app surface (build time, static, over the APPLICATION).**
+Paths A–C guard the monitoring code and the stream. Path D guards the other
+side of the event boundary: `catalog save --app` fingerprints every
+`Event(...)` construction site in the application's source — its emitted
+interface (event type, binding keys, payload fields) and a
+function-granularity slice of everything that can participate in reaching it
+— and `catalog diff --app` classifies every later change: an interface break
+gates CI, a behavior risk warns (or gates under `--fail-on-app-risk`), both
+scoped through event type → steps → `used_step_ids` to the exact policies at
+risk. App code is never imported. Full mechanism, measured table, and
+boundaries below ("The app side of the boundary").
+
 ## Worked examples — real input, real output
 
 All output below is pasted from the tool (paths shortened). The step under
@@ -195,12 +207,13 @@ what the resolver covers.
 ## The workflow
 
 ```bash
-# once, committed next to the code (the interface contract)
-python -m behave_rv catalog save --steps app/steps.py --catalog catalog.json
+# once, committed next to the code (the interface contract, BOTH sides)
+python -m behave_rv catalog save --steps app/steps.py --catalog catalog.json \
+    --app app/service.py
 
 # after every code change (or as a CI job; exits 1 on breaks)
 python -m behave_rv catalog diff --steps app/steps.py --catalog catalog.json \
-    --policies policies/ --trace last_week.jsonl
+    --policies policies/ --app app/service.py --trace last_week.jsonl
 ```
 
 (`last_week.jsonl` is a stream you recorded earlier — a `TraceRecorder` tee
@@ -262,6 +275,173 @@ the one remaining blind spot is C4b (calls through values) and it is
 asserted as such with its weaker protection visible in `unresolved_calls`,
 and the conservative probes alarm 4/4 by design.
 
+## The app side of the boundary: emit-site impact analysis (Path D)
+
+Everything above protects against the MONITORING code drifting. The
+symmetric failure is the APPLICATION drifting: a guard added before an
+emission, a helper reworked two calls deep, an emitted value renamed — the
+steps are untouched, `catalog diff` truthfully says `unchanged`, and the
+first signal is a runtime violation (if traffic exercises the path) or
+silence (if it does not). Path D closes that window statically.
+
+### The algorithm, and where it comes from
+
+The in-process exposure convention makes every emission a syntactically
+visible anchor: an `Event(...)` construction whose type is a literal or a
+module constant. For each anchor the analyzer (pure AST — application code
+is never imported) extracts the **emitted interface** (event type, binding
+keys, payload keys; `<dynamic>`/`<splat>` markers where the source cannot be
+resolved) and computes a **function-granularity backward slice**: the
+emitting function, its transitive callers (they decide when it runs and with
+what arguments), and the transitive callees of all of those (they compute
+the values). Each slice member is hashed with the same version-stable
+alpha-normalization the step fingerprint uses, and the committed catalog's
+`app_surface` section is the reference the next diff compares against.
+
+The lineage is three classic results, each deliberately modified:
+
+- **Interprocedural program slicing** (Ferrante–Ottenstein–Warren PDGs;
+  Horwitz–Reps–Binkley SDG slicing), reduced from statement-level slices
+  with context-sensitive summary edges to function-granularity,
+  context-insensitive closure over the call graph. Precision is lost only
+  toward over-approximation — extra warnings, never missed ones — which is
+  the direction this tool is allowed to be wrong in.
+- **Change impact analysis** (Ren et al.'s Chianti), with runtime
+  verification policies in the role Chianti gives regression tests: a
+  changed slice maps through event type → catalog steps → `used_step_ids`
+  to the policies at risk.
+- **The catalog's own rename-vs-break discipline**, with one app-side
+  tightening: called-function names are preserved in the hash (occurrence-
+  order canonicalization would absorb a REORDER of two emitting calls, and
+  emission order is contract — a `before` policy hangs on it). Locals,
+  parameters, class names, comments, and docstrings absorb; renaming a
+  function on an emit path flags conservatively as a risk, never as a
+  removal-level break.
+
+### Worked example 8 — an app logic change, caught statically and scoped
+
+The steps are untouched. Someone "cleans up" `assign()` in the ticketing
+example:
+
+```python
+def assign(self, ticket_id: str, agent: str) -> None:
+    if agent != "oncall":                                # new guard
+        self._status(ticket_id, "assigned", agent=agent)
+```
+
+`catalog diff --app app_service.py` (real output; the step diff above it
+says `unchanged` five times):
+
+```
+# app surface diff (5 emit site(s))
+  app_service.TicketService._status#1: behavior-risk
+  app_service.TicketService.agent_reply#1: unchanged
+  app_service.TicketService.close#1: unchanged
+  app_service.TicketService.customer_reply#1: unchanged
+  app_service.TicketService.set_priority#1: unchanged
+
+# APP BEHAVIOR RISKS (1) — logic on an emit path changed
+  ! app_service.TicketService._status#1 (event 'ticket.status')
+      function(s) in the emit slice changed: app_service.TicketService.assign
+      policies at risk: a ticket may only be resolved after it was assigned,
+      an escalated ticket must not be closed until resolved, an opened
+      ticket is assigned within the window, every ticket is eventually
+      resolved, the on-call agent only receives urgent tickets
+
+ok: no breaks (1 app behavior risk(s) above)
+```
+
+A risk warns and exits 0 by default; `--fail-on-app-risk` promotes it to a
+CI gate. Note the precision: only the `ticket.status` site flags, and only
+the changed function is named.
+
+### Worked example 9 — the app renames a payload field (the break level)
+
+The same edit as worked example 2, but on the APP side:
+`{"status": status, ...}` becomes `{"state": status, ...}` in the service.
+Real output:
+
+```
+# APP BREAKS (1) — the emitted interface changed
+  ✗ app_service.TicketService._status#1 (event 'ticket.status')
+      payload_fields ['<splat>', 'status'] -> ['<splat>', 'state']
+      policies at risk: a ticket may only be resolved after it was assigned,
+      an escalated ticket must not be closed until resolved, an opened
+      ticket is assigned within the window, every ticket is eventually
+      resolved, the on-call agent only receives urgent tickets
+
+FAIL: 1 break(s)
+```
+
+Exit code 1 — the emitted interface is contract, exactly like a step
+signature. (`<splat>` is the declared marker for `**payload` forwarding:
+keys added by callers flow through caller hashes in the slice instead.)
+
+### The measured table (E-series)
+
+Fifteen realistic APP changes against a fixed baseline service. Ground truth
+is verified per run by executing the same scripted traffic through baseline
+and variant and comparing the emitted event STREAM (with the policy verdict
+set checked alongside — E10 shows the layering: the stream changed, verdicts
+did not, and it is still caught). Reproduce with
+`python -m tests.stability_app_surface` (asserted permanently in
+`tests/test_stability_app_surface.py`). Measured 2026-07-13:
+
+```
+case  change                                                   stream   verdicts  detected  outcome
+E1    comment and docstring edited                             same     same      silent    CORRECT
+E2    local variable renamed in an emit path                   same     same      silent    CORRECT
+E3    the service class renamed                                same     same      silent    CORRECT
+E4    guard before an emission tightened                       changed  changed   risk      CORRECT
+E5    helper logic changed two calls deep                      changed  changed   risk      CORRECT
+E6    an emitted status value renamed (vocabulary drift)       changed  changed   risk      CORRECT
+E7    a payload field renamed                                  changed  changed   break     CORRECT
+E8    the event type constant changed                          changed  changed   break     CORRECT
+E9    an emission deleted                                      changed  changed   break     CORRECT
+E10   a new emission added inside an existing method           changed  same      risk      CORRECT
+E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
+E12   a function outside every emit slice changed              same     same      silent    CORRECT
+E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
+E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
+
+15 cases: 12 correct, 3 false alarm(s) (all by design), 0 miss(es)
+```
+
+Every stream change is caught (0 misses), every no-op stays silent except
+the three DECLARED conservatisms (E13–E15), which are asserted to be exactly
+that family and nothing more.
+
+### Replayed against this repository's own history
+
+The honest flag-rate question — "will this nag me on every commit?" —
+measured on every historical change to an app file in this repo
+(`python -m tests.measure_app_history`, 2026-07-13):
+
+```
+service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos
+service.py       19a1ebe  silent                 GitHub Actions CI: test matrix py3.10-3.14 …
+service.py       2049b69  silent                 Documentation accuracy pass: seven reviewer-identified …
+service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos
+service.py       376dc44  added                  Interactive todo board: user-driven events …
+app.py           4b22945  silent                 Redesign the todo board as a modern app …
+app.py           376dc44  silent                 Interactive todo board: user-driven events …
+app_service.py   b0dbf4f  behavior-risk          Guide: what happens when the APP's logic changes …
+app_service.py   45f8b7a  added                  Ticketing example grown to five steps …
+
+9 historical app-file changes: 5 flagged, 4 silent
+```
+
+All nine classifications match what the commits actually did: the five flags
+are real emission changes (new sites, and the `close()` timestamp fix — the
+one genuine app-behavior bug fix in this repo's history, which this check
+would have surfaced before runtime); the four silents are a lint reflow, a
+docstring edit, and two changes to a file with no emit sites. The docstring
+case initially flagged — a false alarm this measurement itself found, fixed
+by stripping docstrings from the normalization (they cannot change emission
+behavior). Small N, honestly stated; the method is committed and rerunnable
+as history grows.
+
 ## Residual limitations (the honest bottom line)
 
 1. **Calls through values** (C4b): resolution covers same-module and
@@ -279,6 +459,18 @@ and the conservative probes alarm 4/4 by design.
    including splitting a helper) alarm. That is a cost paid deliberately,
    and the break message routes it to a glance rather than an
    investigation.
+4. **App-side granularity** (Path D): the slice is function-granularity, so
+   ANY edit to a function in an emit slice flags, including refactors that
+   preserve behavior (E13–E14) — the same deliberate cost as (3). Statement-
+   level slicing would tighten this and can be added behind the same
+   interface.
+5. **App-side staticness** (Path D): the analyzer reads code structure only.
+   Behavior driven by runtime data (config, database contents, request
+   payloads) has no static signature; emissions not constructed as a
+   recognizable `behave_rv` `Event` are outside the analysis (a target
+   yielding zero anchors warns rather than passing silently); dynamic
+   constructs degrade to declared `<dynamic>`/`unresolved` markers, and a
+   type becoming dynamic is itself surfaced as a break (E15).
 
 See the live demonstration: `python -m demo.order_service.app`, then
 `http://127.0.0.1:5001/stability`.
