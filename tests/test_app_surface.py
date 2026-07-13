@@ -262,3 +262,25 @@ def test_class_level_constant_in_emission_logic_is_fingerprinted(tmp_path):
     risk = by_id["jobs_app.JobService._status#1"]
     assert risk.status == BEHAVIOR_RISK
     assert "jobs_app.JobService.LIMIT" in risk.detail
+
+
+def test_decorator_body_is_part_of_the_emit_slice(tmp_path):
+    # found by curated case E21: a decorator wraps the function and can change
+    # what it emits, so its body joins the hash and the slice (verified as a
+    # real pre-fix miss: detection was silent before decorators were kept)
+    with_decorator = BASE.replace(
+        "def helper_value(name):",
+        "def audited(fn):\n"
+        "    def wrapper(*args, **kwargs):\n"
+        "        return fn(*args, **kwargs)\n"
+        "    return wrapper\n"
+        "\n"
+        "\n"
+        "def helper_value(name):").replace(
+        "    def start(self, job_id, name):",
+        "    @audited\n    def start(self, job_id, name):")
+    changed = with_decorator.replace("        return fn(*args, **kwargs)",
+                                     "        return None")
+    by_id = {c.site_id: c for c in _classify(tmp_path, with_decorator, changed)}
+    assert by_id["jobs_app.JobService._status#1"].status == BEHAVIOR_RISK
+    assert "jobs_app.audited" in by_id["jobs_app.JobService._status#1"].detail

@@ -2,7 +2,12 @@
 analyzer, measured adversarially (RQ1-RQ3 of docs/APP_SURFACE_EVALUATION.md).
 
 Every syntactic mutant a deterministic operator set can produce is applied to
-each subject application, one at a time. For every mutant:
+each subject application, one at a time. Subjects: the E-series baseline
+service (jobs), the ticketing example, a module-constant probe, and the three
+demonstration services (order, session, todo) with their full real policy
+sets. Operators: string/numeric/boolean constant perturbation, comparison and
+boolean-operator swaps, condition negation, guard removal (condition forced
+true), positional-argument swap, and statement deletion. For every mutant:
 
 * ground truth -- the mutant is exec'd (experiment only; the analyzer never
   imports app code) and a fixed scripted traffic runs through it; the emitted
@@ -48,12 +53,14 @@ from behave_rv.events.sources.inprocess import InProcessSource
 
 from tests.stability_app_surface import (
     APP_BASELINE as JOBS_SOURCE,
+    APP_HELPER as JOBS_HELPER,
     POLICIES as JOBS_POLICIES,
     _FakeClock,
     build_registry as build_jobs_registry,
     run_traffic as run_jobs_traffic,
 )
 from behave_rv.compile.compiler import compile_feature
+from behave_rv.events.event import Event
 
 ROOT = Path(__file__).resolve().parents[1]
 FLAGGING = (BEHAVIOR_RISK, INTERFACE_BREAK, APP_REMOVED, APP_ADDED)
@@ -141,6 +148,25 @@ def run_probe_traffic(service, clock):
         clock.tick(1.0)
 
 
+def run_demo_traffic(service, clock):
+    """Drive every seeded flow and bug of a demonstration service, one entity
+    per method, in sorted (deterministic) order."""
+    methods = sorted(m for m in dir(service) if m.startswith(("flow_", "bug_")))
+    for index, name in enumerate(methods):
+        getattr(service, name)(f"E{index + 1}")
+        clock.tick(120.0)          # separate the entities in event time
+
+
+def _demo_subject(name, module_dir, entity_key, terminal):
+    import importlib
+    steps = importlib.import_module(f"demo.{module_dir}.steps")
+    registry = steps.build_registry()
+    policies = steps.load_policies(registry)
+    return Subject(name, (ROOT / "demo" / module_dir / "service.py").read_text(),
+                   run_demo_traffic, policies, registry.entries(), entity_key,
+                   terminal, ctor_extra=lambda clock: {"sleep": clock.tick})
+
+
 def _ticketing_policies():
     steps_path = ROOT / "examples/ticketing/monitoring/steps.py"
     spec = importlib.util.spec_from_file_location("exp_ticketing_steps", steps_path)
@@ -158,8 +184,10 @@ class Subject:
     traffic: object
     policies: list
     entries: list
-    entity_key: str
+    entity_key: str            # informational; verdict grouping uses the full key map
     terminal: set
+    ctor_extra: object = None  # extra constructor kwargs, e.g. an injected sleep
+    extra_files: dict = None   # additional app modules, name -> source (held fixed)
 
 
 def subjects() -> list[Subject]:
@@ -168,12 +196,16 @@ def subjects() -> list[Subject]:
     ticketing_policies, ticketing_registry = _ticketing_policies()
     return [
         Subject("jobs", JOBS_SOURCE, run_jobs_traffic,
-                jobs_policies, jobs_registry.entries(), "job_id", {"job.done"}),
+                jobs_policies, jobs_registry.entries(), "job_id", {"job.done"},
+                extra_files={"jobs_pricing.py": JOBS_HELPER}),
         Subject("ticketing",
                 (ROOT / "examples/ticketing/app_service.py").read_text(),
                 run_ticketing_traffic, ticketing_policies,
                 ticketing_registry.entries(), "ticket_id", {"ticket.closed"}),
         Subject("probe", PROBE_SOURCE, run_probe_traffic, [], [], "sensor_id", set()),
+        _demo_subject("order", "order_service", "order_id", {"order.done"}),
+        _demo_subject("session", "session_service", "user_id", {"session.end"}),
+        _demo_subject("todo", "todo_app", "task_id", set()),
     ]
 
 
@@ -215,7 +247,11 @@ def generate_mutants(source: str):
                 clone, nodes = clone_nodes()
                 nodes[index].value = node.value + "MUT"
                 yield f"str@{node.lineno}:{node.value[:14]!r}", ast.unparse(clone)
-            elif isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+            elif isinstance(node.value, bool):
+                clone, nodes = clone_nodes()
+                nodes[index].value = not node.value
+                yield f"boolconst@{node.lineno}", ast.unparse(clone)
+            elif isinstance(node.value, (int, float)):
                 clone, nodes = clone_nodes()
                 nodes[index].value = node.value + 1
                 yield f"num@{node.lineno}:{node.value}", ast.unparse(clone)
@@ -233,6 +269,15 @@ def generate_mutants(source: str):
             clone, nodes = clone_nodes()
             nodes[index].test = ast.UnaryOp(op=ast.Not(), operand=nodes[index].test)
             yield f"negif@{node.lineno}", ast.unparse(clone)
+            clone, nodes = clone_nodes()   # guard removal: the branch always runs
+            nodes[index].test = ast.Constant(value=True)
+            yield f"unguard@{node.lineno}", ast.unparse(clone)
+        elif isinstance(node, ast.Call) and len(node.args) >= 2 \
+                and not any(isinstance(a, ast.Starred) for a in node.args[:2]):
+            clone, nodes = clone_nodes()
+            args = nodes[index].args
+            args[0], args[1] = args[1], args[0]
+            yield f"argswap@{node.lineno}", ast.unparse(clone)
 
     # statement deletion (replace with pass), skipping defs/imports/docstrings
     all_nodes = list(ast.walk(tree))
@@ -259,14 +304,30 @@ def generate_mutants(source: str):
 
 def observe(subject: Subject, app_source: str):
     """(stream, verdicts_by_policy, crashed). Stream includes ALL Event fields."""
-    namespace = {"__name__": "exp_mutant"}
-    exec(compile(app_source, "<exp_mutant>", "exec"), namespace)   # noqa: S102
+    import types
+    injected = {}
+    for filename, source_text in (subject.extra_files or {}).items():
+        module_name = filename[:-3]
+        module = types.ModuleType(module_name)
+        exec(compile(source_text, f"<{module_name}>", "exec"), module.__dict__)  # noqa: S102
+        injected[module_name] = sys.modules.get(module_name)
+        sys.modules[module_name] = module
+    try:
+        namespace = {"__name__": "exp_mutant"}
+        exec(compile(app_source, "<exp_mutant>", "exec"), namespace)   # noqa: S102
+    finally:
+        for module_name, previous in injected.items():
+            if previous is not None:
+                sys.modules[module_name] = previous
+            else:
+                sys.modules.pop(module_name, None)
     service_cls = next(v for v in namespace.values()
                        if isinstance(v, type)
                        and getattr(v, "__module__", "") == "exp_mutant")
     clock = _FakeClock()
     events = []
-    service = service_cls(events.append, clock=clock)
+    extra = subject.ctor_extra(clock) if subject.ctor_extra else {}
+    service = service_cls(events.append, clock=clock, **extra)
     crashed = False
     try:
         subject.traffic(service, clock)
@@ -279,23 +340,31 @@ def observe(subject: Subject, app_source: str):
         source = InProcessSource()
         for event in events:
             source.emit(event)
-        engine = Engine(subject.policies, terminal_event_types=subject.terminal)
+        # a synthetic final tick (not part of the compared stream) lets armed
+        # deadlines decide, so bounded-response policies contribute verdicts
+        source.emit(Event("exp.clock.tick", clock.now + 3600.0, {}, {}, "exp"))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", NoTerminalConfiguredWarning)
+            engine = Engine(subject.policies, terminal_event_types=subject.terminal)
             for v in engine.run(source, emit_pending=True):
                 verdicts_by_policy.setdefault(v.policy_id, set()).add(
-                    (v.entity_key.get(subject.entity_key, "?"), v.verdict))
+                    (tuple(sorted(v.entity_key.items())), v.verdict))
     return stream, verdicts_by_policy, crashed
 
 
-def detect(old_source: str, new_source: str):
+def detect(old_source: str, new_source: str, extra_files: dict = None):
     with tempfile.TemporaryDirectory() as tmp:
         old_dir, new_dir = Path(tmp) / "old", Path(tmp) / "new"
         old_dir.mkdir(), new_dir.mkdir()
         (old_dir / "app.py").write_text(old_source)
         (new_dir / "app.py").write_text(new_source)
-        return classify_app_changes(analyze_app([old_dir / "app.py"]),
-                                    analyze_app([new_dir / "app.py"]))
+        old_paths, new_paths = [old_dir / "app.py"], [new_dir / "app.py"]
+        for filename, source_text in (extra_files or {}).items():
+            (old_dir / filename).write_text(source_text)   # mutants touch only
+            (new_dir / filename).write_text(source_text)   # the main module
+            old_paths.append(old_dir / filename)
+            new_paths.append(new_dir / filename)
+        return classify_app_changes(analyze_app(old_paths), analyze_app(new_paths))
 
 
 def reported_policies(changes, subject: Subject):
@@ -324,6 +393,7 @@ class SubjectResult:
     crashed: int = 0
     tp: int = 0
     misses: list = None
+    alarm_labels: list = None
     alarms: int = 0
     tn: int = 0
     scoped_ok: int = 0
@@ -335,13 +405,13 @@ def run_subject(subject: Subject) -> SubjectResult:
     baseline = ast.unparse(ast.parse(subject.source))
     base_stream, base_verdicts, base_crash = observe(subject, baseline)
     assert not base_crash, f"{subject.name}: baseline traffic crashed"
-    result = SubjectResult(subject.name, misses=[], scoped_bad=[])
+    result = SubjectResult(subject.name, misses=[], alarm_labels=[], scoped_bad=[])
     for label, mutant in generate_mutants(subject.source):
         result.total += 1
         stream, verdicts, crashed = observe(subject, mutant)
         changed = crashed or stream != base_stream
         result.crashed += crashed
-        changes = detect(baseline, mutant)
+        changes = detect(baseline, mutant, subject.extra_files)
         flagged = any(c.status in FLAGGING for c in changes)
         if changed and flagged:
             result.tp += 1
@@ -349,6 +419,7 @@ def run_subject(subject: Subject) -> SubjectResult:
             result.misses.append(label)
         elif flagged:
             result.alarms += 1
+            result.alarm_labels.append(label)
         else:
             result.tn += 1
         if subject.policies and not crashed and verdicts != base_verdicts:
@@ -363,10 +434,26 @@ def run_subject(subject: Subject) -> SubjectResult:
     return result
 
 
-def main() -> int:
+def main(argv=None) -> int:
+    import argparse
+    import json
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", help="write the full machine-readable results here")
+    args = parser.parse_args(argv)
+    results = []
     any_miss = False
     for subject in subjects():
         r = run_subject(subject)
+        results.append({
+            "subject": r.name, "mutants": r.total, "crashed": r.crashed,
+            "stream_changed_flagged": r.tp, "missed": sorted(r.misses),
+            "stream_same_flagged": r.alarms,
+            "stream_same_flagged_labels": sorted(r.alarm_labels),
+            "stream_same_silent": r.tn,
+            "verdict_changing": r.verdict_changing,
+            "scoping_sound": r.scoped_ok,
+            "scoping_unsound": sorted(label for label, _ in r.scoped_bad),
+        })
         print(f"\n== {r.name}: {r.total} mutants "
               f"({r.crashed} crash-at-traffic, counted as stream-changing)")
         print(f"   stream changed & flagged (TP): {r.tp}")
@@ -381,6 +468,16 @@ def main() -> int:
             for label, missing in r.scoped_bad:
                 print(f"     ✗ {label}: affected-but-unreported {missing}")
         any_miss = any_miss or bool(r.misses) or bool(r.scoped_bad)
+    total = sum(r["mutants"] for r in results)
+    print(f"\n== total: {total} mutants across {len(results)} subjects, "
+          f"{sum(len(r['missed']) for r in results)} missed, "
+          f"{sum(len(r['scoping_unsound']) for r in results)} unsound scopings")
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps(
+            {"experiment": "app_mutation", "subjects": results,
+             "total_mutants": total}, indent=1, sort_keys=True) + "\n")
+        print(f"results written to {args.out}")
     return 1 if any_miss else 0
 
 

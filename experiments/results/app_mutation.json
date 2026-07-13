@@ -1,0 +1,119 @@
+{
+ "experiment": "app_mutation",
+ "subjects": [
+  {
+   "crashed": 13,
+   "missed": [],
+   "mutants": 64,
+   "scoping_sound": 39,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 60,
+   "stream_same_flagged": 2,
+   "stream_same_flagged_labels": [
+    "num@65:10",
+    "unguard@61"
+   ],
+   "stream_same_silent": 2,
+   "subject": "jobs",
+   "verdict_changing": 39
+  },
+  {
+   "crashed": 6,
+   "missed": [],
+   "mutants": 52,
+   "scoping_sound": 36,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 52,
+   "stream_same_flagged": 0,
+   "stream_same_flagged_labels": [],
+   "stream_same_silent": 0,
+   "subject": "ticketing",
+   "verdict_changing": 36
+  },
+  {
+   "crashed": 4,
+   "missed": [],
+   "mutants": 16,
+   "scoping_sound": 0,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 16,
+   "stream_same_flagged": 0,
+   "stream_same_flagged_labels": [],
+   "stream_same_silent": 0,
+   "subject": "probe",
+   "verdict_changing": 0
+  },
+  {
+   "crashed": 6,
+   "missed": [],
+   "mutants": 133,
+   "scoping_sound": 66,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 86,
+   "stream_same_flagged": 6,
+   "stream_same_flagged_labels": [
+    "argswap@40",
+    "del@40",
+    "del@46",
+    "str@40:'order_id'",
+    "str@41:'order-service'",
+    "str@41:'status'"
+   ],
+   "stream_same_silent": 41,
+   "subject": "order",
+   "verdict_changing": 66
+  },
+  {
+   "crashed": 11,
+   "missed": [],
+   "mutants": 179,
+   "scoping_sound": 83,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 116,
+   "stream_same_flagged": 18,
+   "stream_same_flagged_labels": [
+    "argswap@61",
+    "argswap@69",
+    "argswap@71",
+    "del@43",
+    "del@61",
+    "del@68",
+    "del@69",
+    "del@70",
+    "del@71",
+    "del@72",
+    "del@77",
+    "negif@70",
+    "str@61:'user_id'",
+    "str@62:'session-servic'",
+    "str@62:'status'",
+    "str@69:'login_fail'",
+    "str@71:'locked'",
+    "unguard@70"
+   ],
+   "stream_same_silent": 45,
+   "subject": "session",
+   "verdict_changing": 83
+  },
+  {
+   "crashed": 6,
+   "missed": [],
+   "mutants": 175,
+   "scoping_sound": 90,
+   "scoping_unsound": [],
+   "stream_changed_flagged": 113,
+   "stream_same_flagged": 5,
+   "stream_same_flagged_labels": [
+    "argswap@41",
+    "del@41",
+    "str@41:'task_id'",
+    "str@42:'status'",
+    "str@42:'todo-app'"
+   ],
+   "stream_same_silent": 57,
+   "subject": "todo",
+   "verdict_changing": 90
+  }
+ ],
+ "total_mutants": 619
+}

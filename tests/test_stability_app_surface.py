@@ -12,8 +12,8 @@ def rows():
     return {r.case_id: r for r in run_catalog()}
 
 
-def test_the_catalog_covers_all_seventeen_cases(rows):
-    assert sorted(rows, key=lambda c: int(c[1:])) == [f"E{n}" for n in range(1, 18)]
+def test_the_catalog_covers_all_twenty_two_cases(rows):
+    assert sorted(rows, key=lambda c: int(c[1:])) == [f"E{n}" for n in range(1, 23)]
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.case_id)

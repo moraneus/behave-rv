@@ -51,6 +51,8 @@ from behave_rv.events.sources.inprocess import InProcessSource
 APP_BASELINE = '''
 from behave_rv.events.event import Event
 
+from jobs_pricing import discount_label
+
 STATUS = "job.status"
 DONE = "job.done"
 MIN_LEN = 0
@@ -62,6 +64,12 @@ def clean_name(name):
 
 def normalize(name):
     return name.strip()
+
+
+def audited(fn):
+    def wrapper(*args, **kwargs):
+        return fn(*args, **kwargs)
+    return wrapper
 
 
 def audit_label(count):
@@ -82,12 +90,39 @@ class JobService:
         if len(title) > MIN_LEN:
             self._status(job_id, "queued")
 
+    @audited
     def start(self, job_id):
         self._status(job_id, "started")
 
     def finish(self, job_id):
         self._status(job_id, "finished")
         self._emit(Event(DONE, self._clock() + 1e-3, {"job_id": job_id}, {}, "jobs"))
+
+    def bulk_close(self, job_ids):
+        for job_id in job_ids:
+            self._status(job_id, "finished")
+
+    def ingest(self, job_id, raw):
+        try:
+            size = int(raw)
+        except ValueError:
+            self._status(job_id, "rejected")
+            return
+        if size > MIN_LEN:
+            self._status(job_id, "queued")
+
+    def classify(self, job_id, size):
+        label = "big" if size > 10 else "small"
+        self._status(job_id, label)
+
+    def price(self, job_id, amount):
+        self._status(job_id, discount_label(amount))
+'''
+
+# the second application module: cross-module emission logic (case E22)
+APP_HELPER = '''
+def discount_label(amount):
+    return "discounted" if amount > 100 else "full_price"
 '''
 
 POLICIES = """
@@ -165,21 +200,49 @@ def run_traffic(service, clock) -> None:
     service.submit("J5", "x")            # length 1: on MIN_LEN's boundary (E16)
     clock.tick()
     service.start("J5")
+    clock.tick()
+    service.bulk_close(["J6", "J7"])     # loop emission (E19)
+    clock.tick()
+    service.ingest("J8", "not-a-number")  # exception path (E18)
+    clock.tick()
+    service.ingest("J9", "9")
+    clock.tick()
+    service.classify("JA", 12)           # ternary boundary (E20)
+    clock.tick()
+    service.classify("JB", 3)
+    clock.tick()
+    service.price("JC", 150)             # cross-module helper (E22)
+    clock.tick()
+    service.price("JD", 80)              # between the old and new thresholds
 
 
-def observe(app_source: str) -> tuple[list, set]:
+def observe(app_source: str, helper_source: str = None) -> tuple[list, set]:
     """Ground truth: exec the app source (harness only -- the ANALYZER never
     imports app code), run the scripted traffic, and return both the emitted
-    stream (canonical tuples) and the policy verdict set."""
-    namespace = {"__name__": "e_variant"}
-    exec(compile(app_source, "<e_variant>", "exec"), namespace)   # noqa: S102
-    service_cls = next(v for v in namespace.values()
-                       if isinstance(v, type)
-                       and getattr(v, "__module__", "") == "e_variant")
-    clock = _FakeClock()
-    events = []
-    service = service_cls(events.append, clock=clock)
-    run_traffic(service, clock)
+    stream (canonical tuples) and the policy verdict set. The pricing helper
+    module is materialised in sys.modules so the cross-module import works."""
+    import sys
+    import types
+    helper = types.ModuleType("jobs_pricing")
+    exec(compile(helper_source or APP_HELPER, "<e_helper>", "exec"),
+         helper.__dict__)   # noqa: S102
+    previous = sys.modules.get("jobs_pricing")
+    sys.modules["jobs_pricing"] = helper
+    try:
+        namespace = {"__name__": "e_variant"}
+        exec(compile(app_source, "<e_variant>", "exec"), namespace)   # noqa: S102
+        service_cls = next(v for v in namespace.values()
+                           if isinstance(v, type)
+                           and getattr(v, "__module__", "") == "e_variant")
+        clock = _FakeClock()
+        events = []
+        service = service_cls(events.append, clock=clock)
+        run_traffic(service, clock)
+    finally:
+        if previous is not None:
+            sys.modules["jobs_pricing"] = previous
+        else:
+            sys.modules.pop("jobs_pricing", None)
     stream = [(e.type, e.event_time, tuple(sorted(e.bindings.items())),
                tuple(sorted(e.payload.items()))) for e in events]
     source = InProcessSource()
@@ -191,22 +254,28 @@ def observe(app_source: str) -> tuple[list, set]:
     return stream, {(v.policy_id, v.entity_key["job_id"], v.verdict) for v in verdicts}
 
 
-def change_statuses(old_source: str, new_source: str) -> set:
-    """The classifier's per-site statuses across the two sources."""
+def change_statuses(old_source: str, new_source: str,
+                    old_helper: str = None, new_helper: str = None) -> set:
+    """The classifier's per-site statuses across the two versions -- both
+    application modules on each side (the app spans two files since E22)."""
     with tempfile.TemporaryDirectory() as tmp:
         old_dir, new_dir = Path(tmp) / "old", Path(tmp) / "new"
         old_dir.mkdir(), new_dir.mkdir()
-        (old_dir / "app.py").write_text(old_source)     # same file name: the
-        (new_dir / "app.py").write_text(new_source)     # file is edited in place
-        changes = classify_app_changes(analyze_app([old_dir / "app.py"]),
-                                       analyze_app([new_dir / "app.py"]))
+        (old_dir / "app.py").write_text(old_source)     # same file names: the
+        (new_dir / "app.py").write_text(new_source)     # files are edited in place
+        (old_dir / "jobs_pricing.py").write_text(old_helper or APP_HELPER)
+        (new_dir / "jobs_pricing.py").write_text(new_helper or old_helper or APP_HELPER)
+        changes = classify_app_changes(
+            analyze_app([old_dir / "app.py", old_dir / "jobs_pricing.py"]),
+            analyze_app([new_dir / "app.py", new_dir / "jobs_pricing.py"]))
     return {c.status for c in changes}
 
 
-def detection_level(old_source: str, new_source: str) -> str:
+def detection_level(old_source: str, new_source: str,
+                    old_helper: str = None, new_helper: str = None) -> str:
     """Reduce the per-site statuses: the strongest signal wins
     (break > risk > suggestion > silent)."""
-    statuses = change_statuses(old_source, new_source)
+    statuses = change_statuses(old_source, new_source, old_helper, new_helper)
     if statuses & {INTERFACE_BREAK, APP_REMOVED}:
         return "break"
     if BEHAVIOR_RISK in statuses:
@@ -231,10 +300,11 @@ def _replace(old: str, new: str) -> Callable[[str], str]:
 class Case:
     case_id: str
     title: str
-    transform: Callable[[str], str]
-    expect: str                    # "silent" | "risk" | "break" | "suggestion"
-    stream_changes: bool           # ground truth (emitted events), verified per run
-    verdicts_change: bool          # secondary truth (policy impact), verified too
+    transform: Callable[[str], str] = None      # edit to the main module
+    transform_helper: Callable[[str], str] = None  # edit to the pricing module
+    expect: str = "silent"         # "silent" | "risk" | "break" | "suggestion"
+    stream_changes: bool = False   # ground truth (emitted events), verified per run
+    verdicts_change: bool = False  # secondary truth (policy impact), verified too
     by_design: str = ""            # note for expected false alarms
 
 
@@ -320,6 +390,23 @@ CASES = [
          by_design="emit-path state flows through instance attributes, so the "
                    "constructor joins every slice of its class; attribute "
                    "dependencies are approximated at method granularity"),
+    Case("E18", "the status emitted on an exception path changes",
+         _replace('self._status(job_id, "rejected")',
+                  'self._status(job_id, "quarantined")'),
+         expect="risk", stream_changes=True, verdicts_change=False),
+    Case("E19", "a loop emission processes fewer items",
+         _replace("for job_id in job_ids:", "for job_id in job_ids[:1]:"),
+         expect="risk", stream_changes=True, verdicts_change=True),
+    Case("E20", "a ternary guard on the emitted value moves",
+         _replace('"big" if size > 10 else "small"',
+                  '"big" if size > 20 else "small"'),
+         expect="risk", stream_changes=True, verdicts_change=False),
+    Case("E21", "a decorator on an emit-path method changes behavior",
+         _replace("        return fn(*args, **kwargs)", "        return None"),
+         expect="risk", stream_changes=True, verdicts_change=True),
+    Case("E22", "emission logic changes in a SECOND module",
+         transform_helper=_replace("amount > 100", "amount > 50"),
+         expect="risk", stream_changes=True, verdicts_change=False),
 ]
 
 
@@ -343,10 +430,13 @@ def run_catalog() -> list[Row]:
     baseline_stream, baseline_verdicts = observe(APP_BASELINE)
     rows: list[Row] = []
     for case in CASES:
-        variant = case.transform(APP_BASELINE)
-        assert variant != APP_BASELINE, f"{case.case_id}: transform was a no-op"
+        variant = case.transform(APP_BASELINE) if case.transform else APP_BASELINE
+        helper = (case.transform_helper(APP_HELPER)
+                  if case.transform_helper else APP_HELPER)
+        assert (variant, helper) != (APP_BASELINE, APP_HELPER), \
+            f"{case.case_id}: transform was a no-op"
 
-        stream, verdicts = observe(variant)
+        stream, verdicts = observe(variant, helper)
         stream_changed = stream != baseline_stream
         verdicts_changed = verdicts != baseline_verdicts
         for name, declared, measured in (
@@ -357,7 +447,7 @@ def run_catalog() -> list[Row]:
                     f"{case.case_id}: declared ground truth says {name}="
                     f"{declared}, but the replayed traffic says {measured}")
 
-        detected = detection_level(APP_BASELINE, variant)
+        detected = detection_level(APP_BASELINE, variant, APP_HELPER, helper)
         if stream_changed and detected == "silent":
             outcome = "MISS"
         elif stream_changed:

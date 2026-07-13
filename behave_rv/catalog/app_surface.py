@@ -123,15 +123,24 @@ class EmitSite:
 
 
 class _AppAlpha(_Alpha):
-    """Step-side alpha normalization, with one app-side tightening: the NAME of
-    a called function is preserved rather than canonicalized. Occurrence-order
-    canonical names would absorb a REORDER of two distinct calls -- harmless
-    for pure step predicates, but app calls emit, and emission order is
-    contract (a ``before`` policy hangs on it). The cost is deliberate and
-    conservative: renaming a function on an emit path flags as behavior-risk
-    instead of absorbing (local/parameter/class renames still absorb)."""
+    """Step-side alpha normalization, with two app-side tightenings. First,
+    the NAME of a called function is preserved rather than canonicalized:
+    occurrence-order canonical names would absorb a REORDER of two distinct
+    calls -- harmless for pure step predicates, but app calls emit, and
+    emission order is contract (a ``before`` policy hangs on it). The cost is
+    deliberate and conservative: renaming a function on an emit path flags as
+    behavior-risk instead of absorbing (local/parameter/class renames still
+    absorb). Second, DECORATORS are kept in the hash: the step-side normalizer
+    strips them as registration boilerplate, but an app-side decorator wraps
+    the function and can change what it emits (found by curated case E21)."""
 
-    visit_AsyncFunctionDef = _Alpha.visit_FunctionDef
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        decorators = list(node.decorator_list)
+        node = super().visit_FunctionDef(node)   # strips decorators, renames args
+        node.decorator_list = decorators         # behavior-bearing: restore verbatim
+        return node
+
+    visit_AsyncFunctionDef = visit_FunctionDef
 
     def visit_Call(self, node: ast.Call):
         preserved = node.func.id if isinstance(node.func, ast.Name) else None
@@ -354,6 +363,19 @@ def analyze_app(paths) -> list[EmitSite]:
                         reverse[resolved].add(caller)
                     elif hole is not None:
                         unresolved_of[caller].add(hole)
+            # decorators wrap the function, so their bodies join its slice;
+            # unresolvable decorators are declared holes like any other call
+            for decorator in getattr(fn, "decorator_list", []):
+                target = decorator.func if isinstance(decorator, ast.Call) else decorator
+                if isinstance(target, ast.Name):
+                    if target.id in mod.functions:
+                        resolved = f"{stem}.{target.id}"
+                        edges[caller].add(resolved)
+                        reverse[resolved].add(caller)
+                    elif target.id not in _BUILTIN_NAMES:
+                        unresolved_of[caller].add(f"@{target.id}")
+                else:
+                    unresolved_of[caller].add(f"@{ast.unparse(target)}")
 
     all_functions = {f"{stem}.{qn}": fn
                      for stem, mod in modules.items() for qn, fn in mod.functions.items()}
