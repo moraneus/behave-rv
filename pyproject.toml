@@ -35,6 +35,12 @@ include = ["behave_rv*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # Intentional and asserted by tests/test_terminal_warning.py (pytest.warns
+    # captures regardless of this filter); silenced suite-wide so the warning
+    # summary only ever shows the UNEXPECTED.
+    "ignore::behave_rv.engine.loop.NoTerminalConfiguredWarning",
+]
 
 [tool.ruff]
 target-version = "py310"

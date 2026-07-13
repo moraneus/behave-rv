@@ -203,6 +203,10 @@ python -m behave_rv catalog diff --steps app/steps.py --catalog catalog.json \
     --policies policies/ --trace last_week.jsonl
 ```
 
+(`last_week.jsonl` is a stream you recorded earlier — a `TraceRecorder` tee
+on a live app's emit chain, or `record_events` from a script; see the usage
+guide's "Recording traces".)
+
 The catalog lives in the repository and is reviewed like any interface
 change: an INTENDED contract change is a regenerated `catalog.json` in the
 same commit, and the diff output names every policy the change affects.

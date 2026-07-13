@@ -50,3 +50,4 @@ htmlcov/
 mutants/
 demo/perf/traces/*_100k.jsonl
 examples/ticketing/trace.jsonl
+examples/ticketing/live_session.jsonl

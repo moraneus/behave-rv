@@ -32,7 +32,7 @@ your_app/
       06_oncall_gets_urgent_only.feature
     catalog.json            the committed step contract (CLI-generated; see §3)
   traces/
-    last_week.jsonl         recorded event streams (optional, for replay)
+    last_week.jsonl         recorded event streams (made by TraceRecorder; §4)
 ```
 
 **Important, stated up front: there is no magic path discovery.** Unlike
@@ -51,7 +51,7 @@ paths you chose.
 | Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** — unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
 | Steps module | `.py` | `monitoring/steps.py`, next to `policies/` | the developer (or coding agent) | your code (`import`); CLI `--steps` | expose a side-effect-free `build_registry()` factory (the CLI auto-detects it), or register at import via the module decorators; details in §3 |
 | Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; see [`STABILITY.md`](../STABILITY.md) |
-| Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `record_events(path, events)` or your own pipeline | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds |
+| Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `TraceRecorder` (live tee), `record_events` (from a list), or any pipeline writing the format | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds; see "Recording traces" in §4 |
 | Your app | `.py` (any structure) | anywhere | you | — | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
 
 Naming conventions that pay off later:
@@ -447,6 +447,34 @@ configure a terminal, not an error.
 Any object with an `.events()` iterator is a source; add `live = True` plus
 `next_event(timeout)` only if its timestamps advance at wall rate.
 
+### Recording traces (where `.jsonl` files come from)
+
+A trace file never appears by itself — something must record it. Three ways:
+
+- **From a live app**: `TraceRecorder` is a pass-through tee you compose into
+  your emit chain (exactly like `dashboard.tap`) — every event is appended,
+  flushed, replayable:
+
+  ```python
+  from behave_rv.events.sources.replay import TraceRecorder
+
+  recorder = TraceRecorder("traces/2026-07-13.jsonl")
+  service = TicketService(lambda e: source.push(recorder(e)))
+  # ... app runs; later:
+  recorder.close()
+  ```
+
+  The ticketing example does exactly this — running `live_monitor.py` leaves
+  a `live_session.jsonl` you can feed straight back to a replay or to
+  `catalog diff --trace`.
+- **From a list** (tests, generators): `record_events(path, events)`.
+- **From any pipeline** that writes the JSONL shape (one serialized `Event`
+  per line) — e.g. an export from your event bus.
+
+So when this guide says "against `last_week.jsonl`", that file is simply a
+recording you made earlier by one of these routes, kept because yesterday's
+real traffic is the most honest thing to test a policy against.
+
 ---
 
 ## 5. Watching the monitor while your app runs
@@ -461,7 +489,10 @@ print("monitor at", dashboard.start(port=7007))
 engine.run(source, sink=dashboard.sink)
 ```
 
-Open the URL while the app runs: every policy with live per-entity verdict
+![the live dashboard: green stability strip, per-entity verdicts, explained violations](images/dashboard-live.png)
+
+Open the URL while the app runs (the screenshot above is the ticketing
+example, mid-run): every policy with live per-entity verdict
 badges (green satisfied / red violated / "no verdicts yet" = pending),
 running counts, and a violations panel where each entry is the authored
 scenario rendered with the failing step marked and the deciding events
@@ -523,13 +554,18 @@ layers answer it, each with a concrete command or surface:
    (this repo's own CI runs this on every push). Renames pass silently;
    real contract moves break loudly.
 2. **Liveness against real traffic — add `--trace last_week.jsonl`** to the
-   same command: warns per policy when a value or event type it depends on
-   never appears in a representative stream — the check that catches
-   app-side renames the static diff honestly cannot see.
+   same command (the trace being a stream you recorded earlier with
+   `TraceRecorder` or `record_events` — see "Recording traces" in §4): warns
+   per policy when a value or event type it depends on never appears in a
+   representative stream — the check that catches app-side renames the
+   static diff honestly cannot see.
 3. **The dashboard, live.** Pass `registry=` and `catalog=` and the page
    carries a stability strip (green: in sync; red: the broken policies with
    details) plus per-policy "⚠ no matching events observed" badges driven by
-   the actual event flow. So yes — the web monitor now shows it.
+   the actual event flow. So yes — the web monitor shows it. This is what a
+   broken contract looks like on the page:
+
+   ![the stability strip reporting a break, naming the policy and the contract diff](images/dashboard-breaks.png)
 
 ### Worked examples: which changes break policies, and which don't
 

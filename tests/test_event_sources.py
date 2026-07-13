@@ -104,3 +104,28 @@ def test_emit_record_replay_round_trip(tmp_path):
         _event(status="shipped", t=2.0),
         _event(status="cancelled", t=3.0),
     ]
+
+
+def test_trace_recorder_tees_a_live_stream_into_a_replayable_file(tmp_path):
+    """Where trace files come from: the recorder passes events through
+    unchanged while appending them in the exact format ReplaySource reads
+    (and record_events writes)."""
+    from behave_rv.events.event import Event
+    from behave_rv.events.sources.replay import (ReplaySource, TraceRecorder,
+                                                 record_events)
+
+    events = [Event("t", 1.0, {"k": "A"}, {"status": "x"}, "app"),
+              Event("t", 2.0, {"k": "A"}, {"status": "y"}, "app")]
+
+    recorded = tmp_path / "live.jsonl"
+    recorder = TraceRecorder(recorded)
+    passed_through = [recorder(e) for e in events]
+    recorder.close()
+    assert passed_through == events                      # a true tee
+
+    replayed = list(ReplaySource(recorded).events())
+    assert replayed == events
+
+    reference = tmp_path / "batch.jsonl"
+    record_events(reference, events)
+    assert recorded.read_bytes() == reference.read_bytes()   # identical format

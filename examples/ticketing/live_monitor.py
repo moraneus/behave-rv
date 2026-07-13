@@ -29,6 +29,7 @@ from monitoring.steps import build_registry, load_policies           # noqa: E40
 
 from behave_rv.dashboard import Dashboard                            # noqa: E402
 from behave_rv.engine.loop import Engine                             # noqa: E402
+from behave_rv.events.sources.replay import TraceRecorder            # noqa: E402
 from behave_rv.events.sources.subscription import QueueSource        # noqa: E402
 
 
@@ -48,7 +49,11 @@ def main() -> int:
     # policy could be silently dead (the same check as `catalog diff`)
     dashboard = Dashboard(policies, registry=registry,
                           catalog=Path(__file__).parent / "monitoring/catalog.json")
-    service = TicketService(lambda e: source.push(dashboard.tap(e)),
+    # the recorder tees every emitted event into a replayable trace -- THIS is
+    # where files like traces/live_session.jsonl come from (feed it later to
+    # replay runs or to `catalog diff --trace` liveness checks)
+    recorder = TraceRecorder(Path(__file__).parent / "live_session.jsonl")
+    service = TicketService(lambda e: source.push(dashboard.tap(recorder(e))),
                             clock=lambda: time.time() - start)
 
     print("monitor:", dashboard.start(port=7007))
@@ -96,6 +101,7 @@ def main() -> int:
     source.close()
     engine_thread.join(timeout=5)
     dashboard.stop()
+    recorder.close()
     print(f"done: {engine.verdicts_delivered} verdicts delivered "
           f"({dashboard.state()['counts']['violations']} violations)")
     return 0
