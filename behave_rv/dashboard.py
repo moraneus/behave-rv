@@ -35,7 +35,10 @@ from behave_rv.verdict.explain import explain_verdict, safe_value
 
 
 class Dashboard:
-    def __init__(self, policies, *, forward=None, history: int = 300):
+    def __init__(self, policies, *, forward=None, history: int = 300,
+                 registry=None, catalog=None):
+        policies = list(policies)
+        self._policies = policies
         self._by_id = {p.policy_id: p for p in policies}
         self._policy_order = [p.policy_id for p in policies]
         self._forward = forward
@@ -43,9 +46,40 @@ class Dashboard:
         self._status: dict = {}                 # (policy_id, entity) -> cell
         self._violations: deque = deque(maxlen=history)
         self._events: deque = deque(maxlen=history)
+        self._observed_types: set = set()       # event types seen via tap()
         self._counts = {"events": 0, "verdicts": 0, "violations": 0}
         self._server = None
         self._thread = None
+        # Optional stability check: pass the registry the policies were
+        # compiled against plus the committed catalog path, and the dashboard
+        # runs the contract diff once at construction (code cannot change
+        # inside a running process) and displays the result -- so "could a
+        # policy be silently dead?" is answered on the same page as the
+        # verdicts. Same mechanism as `python -m behave_rv catalog diff`.
+        self._stability = None
+        if registry is not None and catalog is not None:
+            self._stability = self._check_stability(registry, catalog)
+
+    def _check_stability(self, registry, catalog_path) -> dict:
+        from behave_rv.catalog.diff import classify_changes
+        from behave_rv.catalog.store import load_catalog
+        from behave_rv.notify.channel import notifications, uses_from_policies
+
+        try:
+            committed = load_catalog(catalog_path)
+        except (FileNotFoundError, ValueError) as exc:
+            return {"status": "error", "detail": str(exc), "breaks": []}
+        current = registry.entries()
+        notes = notifications(committed, current,
+                              uses_from_policies(self._policies))
+        changes = classify_changes(committed, current)
+        return {
+            "status": "breaks" if notes.breaks else "ok",
+            "statuses": {c.step_id: c.status for c in changes},
+            "breaks": [{"policy": b.policy_id, "step": b.step_id,
+                        "detail": b.detail} for b in notes.breaks],
+            "detail": None,
+        }
 
     # -- the write side: called from the engine's / the app's thread ---------
 
@@ -73,9 +107,12 @@ class Dashboard:
 
     def tap(self, event):
         """Optional event hook: record and return the event unchanged, so it
-        composes with any emit chain (``source.push(dashboard.tap(event))``)."""
+        composes with any emit chain (``source.push(dashboard.tap(event))``).
+        Tapping also powers the per-policy "no matching events observed"
+        warning -- the runtime half of silent-failure visibility."""
         with self._lock:
             self._counts["events"] += 1
+            self._observed_types.add(event.type)
             self._events.appendleft({
                 "t": round(event.event_time, 3),
                 "type": safe_value(event.type),
@@ -95,9 +132,20 @@ class Dashboard:
                     per_policy[pid].append(cell)
             for cells in per_policy.values():
                 cells.sort(key=lambda c: c["entity"])
+            # a policy is "unobserved" when events ARE flowing but none of
+            # its event types has appeared -- the runtime smell of a policy
+            # disconnected from the stream (see STABILITY.md)
+            unobserved = {
+                p.policy_id
+                for p in self._policies
+                if self._counts["events"] > 0
+                and self._observed_types.isdisjoint(p.event_types)
+            }
             return {
                 "counts": dict(self._counts),
-                "policies": [{"policy": pid, "cells": per_policy[pid]}
+                "stability": self._stability,
+                "policies": [{"policy": pid, "cells": per_policy[pid],
+                              "unobserved": pid in unobserved}
                              for pid in self._policy_order],
                 "violations": list(self._violations),
                 "events": list(self._events),
@@ -191,6 +239,14 @@ _PAGE = """<!doctype html>
   #events .tm { color:var(--muted); }
   #events:empty::after { content:"No events tapped (optional: feed dashboard.tap).";
                          color:var(--muted); }
+  #stability { margin:12px 24px 0; border-radius:10px; padding:9px 14px;
+               font-size:12.5px; font-weight:550; border:1px solid; display:none; }
+  #stability.ok { display:block; background:#dcfce7; border-color:#86efac; color:#14532d; }
+  #stability.breaks, #stability.error { display:block; background:#fee2e2;
+               border-color:#fca5a5; color:#7f1d1d; }
+  #stability pre { font:11px/1.5 ui-monospace,monospace; white-space:pre-wrap; margin-top:6px; }
+  .stale { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px;
+           font-size:10.5px; font-weight:700; background:#fef3c7; color:#92400e; }
 </style>
 </head>
 <body>
@@ -198,6 +254,7 @@ _PAGE = """<!doctype html>
   <h1>behave_rv live monitor</h1><span>polls every 1.5s</span>
   <div id="stats"></div>
 </header>
+<div id="stability"></div>
 <main>
   <div>
     <div class="panel"><h2>Policies · per-entity verdicts</h2><div id="policies"></div></div>
@@ -213,6 +270,27 @@ async function refresh() {
     `<span>events <b>${s.counts.events}</b></span>` +
     `<span>verdicts <b>${s.counts.verdicts}</b></span>` +
     `<span>violations <b>${s.counts.violations}</b></span>`;
+  const strip = document.getElementById('stability');
+  if (s.stability) {
+    strip.className = s.stability.status;
+    if (s.stability.status === 'ok') {
+      strip.textContent = 'contract check: catalog in sync — no policy can be '
+        + 'silently broken by a step change (checked at startup)';
+    } else if (s.stability.status === 'error') {
+      strip.textContent = 'contract check FAILED to run: ' + s.stability.detail;
+    } else {
+      strip.textContent = '';
+      const head = document.createElement('div');
+      head.textContent = `contract check: ${s.stability.breaks.length} BREAK(S) — `
+        + 'these policies may be silently dead; regenerate the catalog only if '
+        + 'the contract change was intended';
+      strip.appendChild(head);
+      const pre = document.createElement('pre');
+      pre.textContent = s.stability.breaks
+        .map(b => `\u2717 ${b.policy}  via ${b.step}\\n   ${b.detail}`).join('\\n');
+      strip.appendChild(pre);
+    }
+  }
   const policies = document.getElementById('policies');
   policies.textContent = '';
   for (const p of s.policies) {
@@ -220,6 +298,12 @@ async function refresh() {
     d.className = 'policy';
     const name = document.createElement('div');
     name.className = 'name'; name.textContent = p.policy;
+    if (p.unobserved) {
+      const w = document.createElement('span');
+      w.className = 'stale';
+      w.textContent = '\u26a0 no matching events observed';
+      name.appendChild(w);
+    }
     d.appendChild(name);
     if (!p.cells.length) {
       const n = document.createElement('span');

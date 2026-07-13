@@ -38,12 +38,16 @@ def main() -> int:
                         help="how long to keep serving before shutting down")
     args = parser.parse_args()
 
-    policies = load_policies(build_registry())
+    registry = build_registry()
+    policies = load_policies(registry)
 
     # live-mode convention: service-relative event times (see guide Gotchas)
     start = time.time()
     source = QueueSource()
-    dashboard = Dashboard(policies)
+    # registry + catalog wire the stability strip: the page states whether any
+    # policy could be silently dead (the same check as `catalog diff`)
+    dashboard = Dashboard(policies, registry=registry,
+                          catalog=Path(__file__).parent / "monitoring/catalog.json")
     service = TicketService(lambda e: source.push(dashboard.tap(e)),
                             clock=lambda: time.time() - start)
 

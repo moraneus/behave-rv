@@ -469,6 +469,24 @@ listed. Wrap your emits with `dashboard.tap(event)` to also see the raw
 event feed. The page polls every 1.5s; the sink only records under a lock;
 nothing blocks your app.
 
+Two additions answer "could a policy be silently dead?" on the same page:
+
+```python
+dashboard = Dashboard(policies, registry=registry,
+                      catalog="monitoring/catalog.json")
+```
+
+- **The stability strip**: with `registry` and `catalog` given, the dashboard
+  runs the contract diff once at startup (code cannot change inside a running
+  process) — a green strip says "catalog in sync — no policy can be silently
+  broken by a step change"; a red strip names every broken policy with its
+  contract diff, exactly like `catalog diff`.
+- **The unobserved warning**: if events are flowing (via `tap`) but NONE of a
+  policy's event types has appeared, the policy gets an amber
+  "⚠ no matching events observed" badge — the runtime smell of a policy
+  disconnected from the stream (an app-side rename the static check cannot
+  see). It clears the moment a matching event arrives.
+
 ### Programmatic status
 
 On the engine, during (from your sink) or after a run: `verdicts_delivered`,
@@ -486,16 +504,36 @@ as full explanations, everything else compact; or any callable.
 
 ---
 
-## 6. Keeping policies alive when the code changes
+## 6. "How do I KNOW nothing silently broke?"
 
-The committed `catalog.json` is the contract between your code and your
-policies: renames absorb silently, contract changes break loudly against
-exactly the affected policies (including helper-function changes, via the
-call-graph fingerprint), app-side renames are caught by liveness against a
-representative trace, and each signature's `unresolved_calls` shows where
-the protection ends. Run `catalog diff` in CI (exit 1 gates the merge).
-Full mechanism with worked examples and the measured detection table:
-[`STABILITY.md`](../STABILITY.md).
+The failure this library is built to prevent: code changes, a policy stops
+matching, and it looks healthy precisely because it stopped working. Three
+layers answer it, each with a concrete command or surface:
+
+1. **The validation flag and report — `catalog diff`.** After any code
+   change (or as a CI job):
+
+   ```bash
+   python -m behave_rv catalog diff --steps monitoring/steps.py \
+       --catalog monitoring/catalog.json --policies monitoring/policies
+   ```
+
+   Exit `0` = no policy can be silently broken by a step change; exit `1` =
+   the printed report names each broken policy with the exact contract diff
+   (this repo's own CI runs this on every push). Renames pass silently;
+   real contract moves break loudly.
+2. **Liveness against real traffic — add `--trace last_week.jsonl`** to the
+   same command: warns per policy when a value or event type it depends on
+   never appears in a representative stream — the check that catches
+   app-side renames the static diff honestly cannot see.
+3. **The dashboard, live.** Pass `registry=` and `catalog=` and the page
+   carries a stability strip (green: in sync; red: the broken policies with
+   details) plus per-policy "⚠ no matching events observed" badges driven by
+   the actual event flow. So yes — the web monitor now shows it.
+
+Full mechanism, worked examples for every path, the measured 22-case
+detection table, and the stated boundaries (calls through values, stream
+representativeness): [`STABILITY.md`](../STABILITY.md).
 
 ---
 

@@ -78,3 +78,59 @@ def test_dashboard_unknown_path_is_404():
             assert exc.code == 404
     finally:
         dashboard.stop()
+
+
+def test_dashboard_stability_strip_reports_in_sync(tmp_path):
+    from behave_rv.catalog.store import save_catalog
+
+    registry = basic_registry()
+    policies = compile_feature(BEFORE_POLICY, registry)
+    catalog = tmp_path / "catalog.json"
+    save_catalog(catalog, registry.entries())
+
+    dashboard = Dashboard(policies, registry=registry, catalog=catalog)
+    stability = dashboard.state()["stability"]
+    assert stability["status"] == "ok"
+    assert stability["breaks"] == []
+    assert stability["statuses"] == {"order.status.is": "unchanged"}
+
+
+def test_dashboard_stability_strip_names_silently_broken_policies(tmp_path):
+    from behave_rv.catalog.registry import StepRegistry
+    from behave_rv.catalog.store import save_catalog
+
+    baseline = basic_registry()
+    catalog = tmp_path / "catalog.json"
+    save_catalog(catalog, baseline.entries())
+
+    # the code changed: the step now reads a renamed payload field
+    changed = StepRegistry()
+
+    @changed.trigger('an order is "{status}"', step_id="order.status.is",
+                     event_type="order.status", correlation_key="order_id")
+    def order_is(ctx, event, status):
+        if event.type == "order.status" and event.payload.get("state") == status:
+            ctx.bind(order_id=event.bindings["order_id"])
+            return True
+        return False
+
+    policies = compile_feature(BEFORE_POLICY, changed)
+    dashboard = Dashboard(policies, registry=changed, catalog=catalog)
+    stability = dashboard.state()["stability"]
+    assert stability["status"] == "breaks"
+    assert stability["breaks"][0]["policy"] == "paid after authorized"
+    assert "'state': 'any'" in stability["breaks"][0]["detail"]
+
+
+def test_dashboard_flags_policies_with_no_matching_events():
+    policies = compile_feature(BEFORE_POLICY, basic_registry())
+    dashboard = Dashboard(policies)
+    # events flow, but never the policy's event type: the runtime smell of a
+    # policy disconnected from the stream
+    dashboard.tap(Event("something.else", 1.0, {"order_id": "A"}, {}, "t"))
+    (policy,) = dashboard.state()["policies"]
+    assert policy["unobserved"] is True
+    # one matching event clears the warning
+    dashboard.tap(ev(2.0, "paid"))
+    (policy,) = dashboard.state()["policies"]
+    assert policy["unobserved"] is False
