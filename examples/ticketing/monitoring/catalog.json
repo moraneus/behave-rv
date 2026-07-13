@@ -1,0 +1,137 @@
+{
+  "catalog_format_version": 2,
+  "entries": [
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "a ticket is \"{status}\"",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "90204a6b0f646498",
+        "correlation_key": [
+          "ticket_id"
+        ],
+        "event_type": "ticket.status",
+        "helper_hashes": {},
+        "payload_fields": {
+          "status": "any"
+        },
+        "referenced_fields": [
+          "status"
+        ],
+        "trigger_condition": "a ticket is \"{status}\"",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get"
+        ]
+      },
+      "step_id": "ticket.status.is",
+      "version": 1
+    },
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "a ticket is assigned to \"{agent}\"",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "9158dd0c7451e643",
+        "correlation_key": [
+          "ticket_id"
+        ],
+        "event_type": "ticket.status",
+        "helper_hashes": {},
+        "payload_fields": {
+          "agent": "any",
+          "status": "any"
+        },
+        "referenced_fields": [
+          "agent"
+        ],
+        "trigger_condition": "a ticket is assigned to \"{agent}\"",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get"
+        ]
+      },
+      "step_id": "ticket.assigned.to",
+      "version": 1
+    },
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "a ticket priority is \"{level}\"",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "42f71ce2ddade6a1",
+        "correlation_key": [
+          "ticket_id"
+        ],
+        "event_type": "ticket.priority",
+        "helper_hashes": {},
+        "payload_fields": {
+          "level": "any"
+        },
+        "referenced_fields": [
+          "level"
+        ],
+        "trigger_condition": "a ticket priority is \"{level}\"",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get"
+        ]
+      },
+      "step_id": "ticket.priority.is",
+      "version": 1
+    },
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "a customer reply arrives",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "3fe30f9e54f2a391",
+        "correlation_key": [
+          "ticket_id"
+        ],
+        "event_type": "ticket.reply",
+        "helper_hashes": {},
+        "payload_fields": {
+          "direction": "any"
+        },
+        "referenced_fields": [],
+        "trigger_condition": "a customer reply arrives",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get"
+        ]
+      },
+      "step_id": "ticket.reply.inbound",
+      "version": 1
+    },
+    {
+      "kind": "trigger",
+      "observed": false,
+      "phrasing": "an agent reply is sent",
+      "provenance": "llm",
+      "signature": {
+        "condition_fingerprint": "4f1138196997a4ca",
+        "correlation_key": [
+          "ticket_id"
+        ],
+        "event_type": "ticket.reply",
+        "helper_hashes": {},
+        "payload_fields": {
+          "direction": "any"
+        },
+        "referenced_fields": [],
+        "trigger_condition": "an agent reply is sent",
+        "unresolved_calls": [
+          "ctx.bind",
+          "get"
+        ]
+      },
+      "step_id": "ticket.reply.outbound",
+      "version": 1
+    }
+  ]
+}

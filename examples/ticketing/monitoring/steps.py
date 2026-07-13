@@ -26,10 +26,52 @@ POLICY_DIR = Path(__file__).parent / "policies"
 def build_registry() -> StepRegistry:
     registry = StepRegistry()
 
+    # 1. the lifecycle step: matches any status by value
     @registry.trigger('a ticket is "{status}"', step_id="ticket.status.is",
                       event_type="ticket.status", correlation_key="ticket_id")
     def ticket_is(ctx, event, status):
         if event.type == "ticket.status" and event.payload.get("status") == status:
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    # 2. a SECOND step over the SAME event type, reading a different field --
+    # perfectly fine: steps are conditions, not one-per-event-type. (This is
+    # also why break notifications scope by step, not by event type.)
+    @registry.trigger('a ticket is assigned to "{agent}"',
+                      step_id="ticket.assigned.to",
+                      event_type="ticket.status", correlation_key="ticket_id")
+    def ticket_assigned_to(ctx, event, agent):
+        if event.type == "ticket.status" \
+                and event.payload.get("status") == "assigned" \
+                and event.payload.get("agent") == agent:
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    # 3. a step over its own event type
+    @registry.trigger('a ticket priority is "{level}"',
+                      step_id="ticket.priority.is",
+                      event_type="ticket.priority", correlation_key="ticket_id")
+    def ticket_priority_is(ctx, event, level):
+        if event.type == "ticket.priority" and event.payload.get("level") == level:
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    # 4 + 5. steps with NO placeholder: the phrasing is the whole condition
+    @registry.trigger('a customer reply arrives', step_id="ticket.reply.inbound",
+                      event_type="ticket.reply", correlation_key="ticket_id")
+    def customer_reply_arrives(ctx, event):
+        if event.type == "ticket.reply" and event.payload.get("direction") == "inbound":
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    @registry.trigger('an agent reply is sent', step_id="ticket.reply.outbound",
+                      event_type="ticket.reply", correlation_key="ticket_id")
+    def agent_reply_sent(ctx, event):
+        if event.type == "ticket.reply" and event.payload.get("direction") == "outbound":
             ctx.bind(ticket_id=event.bindings["ticket_id"])
             return True
         return False

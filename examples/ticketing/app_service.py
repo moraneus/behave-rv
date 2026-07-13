@@ -21,7 +21,9 @@ import time
 
 from behave_rv.events.event import Event
 
-EVENT_TYPE = "ticket.status"      # one stable type for the ticket lifecycle
+EVENT_TYPE = "ticket.status"      # the ticket lifecycle
+PRIORITY_TYPE = "ticket.priority"  # priority changes
+REPLY_TYPE = "ticket.reply"       # the conversation (direction: inbound/outbound)
 TERMINAL_TYPE = "ticket.closed"   # ends a ticket's life: settles its policies
 
 
@@ -48,6 +50,18 @@ class TicketService:
 
     def resolve(self, ticket_id: str) -> None:
         self._status(ticket_id, "resolved")
+
+    def set_priority(self, ticket_id: str, level: str) -> None:
+        self._emit(Event(PRIORITY_TYPE, self._clock(), {"ticket_id": ticket_id},
+                         {"level": level}, "ticketing"))
+
+    def customer_reply(self, ticket_id: str) -> None:
+        self._emit(Event(REPLY_TYPE, self._clock(), {"ticket_id": ticket_id},
+                         {"direction": "inbound"}, "ticketing"))
+
+    def agent_reply(self, ticket_id: str) -> None:
+        self._emit(Event(REPLY_TYPE, self._clock(), {"ticket_id": ticket_id},
+                         {"direction": "outbound"}, "ticketing"))
 
     def close(self, ticket_id: str) -> None:
         # the observable state change first (policies can talk about it)...

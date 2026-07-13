@@ -45,23 +45,64 @@ def simulate_traffic(path: Path) -> None:
     # NOTE the clock.tick between every ordered action: with equal event
     # times the engine orders canonically (not by arrival), so actions whose
     # order matters must carry distinct timestamps -- see the guide's Gotchas.
+
+    # T-1, fully healthy: assigned in time, conversation answered in time,
+    # resolved before closing
     service.open_ticket("T-1", "printer on fire")
     clock.tick(5.0)
     service.assign("T-1", "dana")
-    clock.tick(5.0)
+    clock.tick(2.0)
+    service.customer_reply("T-1")
+    clock.tick(10.0)
+    service.agent_reply("T-1")
+    clock.tick(3.0)
     service.resolve("T-1")
     clock.tick(0.5)
     service.close("T-1")
 
+    # T-2: resolved without ever being assigned -> violates policy 01
     clock.tick(0.5)
-    service.open_ticket("T-2", "cannot log in")     # never assigned...
+    service.open_ticket("T-2", "cannot log in")
     clock.tick(1.0)
-    service.resolve("T-2")                          # ...but resolved: violation
+    service.resolve("T-2")
 
+    # T-3: assigned too late -> the 30s assignment SLA (02) fires on the timer
     clock.tick(0.5)
-    service.open_ticket("T-3", "slow dashboard")    # assigned too late:
-    clock.tick(45.0)                                # the 30s SLA timer fires
+    service.open_ticket("T-3", "slow dashboard")
+    clock.tick(45.0)
     service.assign("T-3", "omer")
+
+    # T-4: urgent first, then the on-call agent -> policy 06 satisfied,
+    # escalation resolved before closing -> policy 03 satisfied
+    clock.tick(0.5)
+    service.open_ticket("T-4", "database down")
+    clock.tick(1.0)
+    service.set_priority("T-4", "urgent")
+    clock.tick(1.0)
+    service.assign("T-4", "oncall")
+    clock.tick(1.0)
+    service.escalate("T-4")
+    clock.tick(2.0)
+    service.resolve("T-4")
+    clock.tick(0.5)
+    service.close("T-4")
+
+    # T-5: the on-call agent gets a ticket that was NEVER urgent -> violates 06
+    clock.tick(0.5)
+    service.open_ticket("T-5", "typo on homepage")
+    clock.tick(1.0)
+    service.assign("T-5", "oncall")
+
+    # T-6: a customer reply that is never answered -> the 60s reply SLA (05)
+    # fires once event time moves past the deadline
+    clock.tick(0.5)
+    service.open_ticket("T-6", "feature question")
+    clock.tick(1.0)
+    service.assign("T-6", "lee")
+    clock.tick(1.0)
+    service.customer_reply("T-6")
+    clock.tick(90.0)
+    service.resolve("T-6")
 
     record_events(path, events)
 

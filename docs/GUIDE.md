@@ -28,7 +28,9 @@ your_app/
       02_assignment_sla.feature
       03_escalation_blocks_closing.feature
       04_every_ticket_resolved.feature
-    catalog.json            the committed step contract (written by the CLI)
+      05_reply_sla.feature
+      06_oncall_gets_urgent_only.feature
+    catalog.json            the committed step contract (CLI-generated; see §3)
   traces/
     last_week.jsonl         recorded event streams (optional, for replay)
 ```
@@ -170,7 +172,7 @@ nothing else; `close()` emits the observable `"closed"` status *and then* the
 terminal event — policies talk about the status, the engine uses the terminal
 to settle pending obligations and free the ticket's state.
 
-### `monitoring/steps.py` — the vocabulary
+### `monitoring/steps.py` — the vocabulary (five steps)
 
 ```python
 POLICY_DIR = Path(__file__).parent / "policies"
@@ -178,6 +180,7 @@ POLICY_DIR = Path(__file__).parent / "policies"
 def build_registry() -> StepRegistry:
     registry = StepRegistry()
 
+    # 1. the lifecycle step: matches any status by value
     @registry.trigger('a ticket is "{status}"', step_id="ticket.status.is",
                       event_type="ticket.status", correlation_key="ticket_id")
     def ticket_is(ctx, event, status):
@@ -186,12 +189,44 @@ def build_registry() -> StepRegistry:
             return True
         return False
 
+    # 2. a SECOND step over the SAME event type, reading a different field
+    @registry.trigger('a ticket is assigned to "{agent}"',
+                      step_id="ticket.assigned.to",
+                      event_type="ticket.status", correlation_key="ticket_id")
+    def ticket_assigned_to(ctx, event, agent):
+        if event.type == "ticket.status" \
+                and event.payload.get("status") == "assigned" \
+                and event.payload.get("agent") == agent:
+            ctx.bind(ticket_id=event.bindings["ticket_id"])
+            return True
+        return False
+
+    # 3. a step over its own event type
+    @registry.trigger('a ticket priority is "{level}"',
+                      step_id="ticket.priority.is",
+                      event_type="ticket.priority", correlation_key="ticket_id")
+    def ticket_priority_is(ctx, event, level): ...
+
+    # 4 + 5. steps with NO placeholder: the phrasing IS the whole condition
+    @registry.trigger('a customer reply arrives', step_id="ticket.reply.inbound",
+                      event_type="ticket.reply", correlation_key="ticket_id")
+    def customer_reply_arrives(ctx, event): ...
+
+    @registry.trigger('an agent reply is sent', step_id="ticket.reply.outbound",
+                      event_type="ticket.reply", correlation_key="ticket_id")
+    def agent_reply_sent(ctx, event): ...
+
     return registry
 
 def load_policies(registry):
     return [p for path in sorted(POLICY_DIR.glob("*.feature"))
             for p in compile_feature(path.read_text(), registry)]
 ```
+
+(Step bodies 3–5 abbreviated here; the committed file has them in full.)
+Notice step 2: several steps may observe the SAME event type with different
+conditions — steps are predicates, not one-per-event. Steps 4 and 5 have no
+placeholder at all: the phrasing is the entire condition.
 
 The rules a step must obey (each is load-bearing):
 
@@ -243,6 +278,22 @@ Feature: resolution completeness
     Then a ticket is "resolved" has happened
 ```
 
+```gherkin
+# 05_reply_sla.feature — a deadline between the two no-placeholder steps
+Feature: conversation SLA
+  Scenario: a customer reply is answered within the window
+    When a customer reply arrives
+    Then an agent reply is sent within "60" seconds
+```
+
+```gherkin
+# 06_oncall_gets_urgent_only.feature — mixes two steps and two event types
+Feature: on-call discipline
+  Scenario: the on-call agent only receives urgent tickets
+    When a ticket is assigned to "oncall"
+    Then a ticket priority is "urgent" before
+```
+
 The complete operator reference — all nine forms with satisfying and
 violating traces — is [`docs/OPERATORS.md`](OPERATORS.md). Anything outside
 the fragment (cross-entity rules, aggregates) is **refused at compile time**
@@ -274,9 +325,10 @@ engine consumes on its own single thread; every decided verdict goes to the
 dashboard's sink (which only records under a lock); the dashboard's HTTP
 server serves snapshots from a daemon thread. Nothing blocks the app. The
 seeded traffic in the example produces, live on the page: a healthy ticket
-(all green), a resolved-without-assignment violation, and an
-escalated-then-closed violation — each rendered as the authored scenario
-with the failing step marked.
+with a full answered conversation (all green), a resolved-without-assignment
+violation, an escalated-then-closed violation, and the on-call agent handed
+a never-urgent ticket — each rendered as the authored scenario with the
+failing step marked.
 
 ### `replay_check.py` — the CI shape
 
@@ -286,12 +338,42 @@ byte for byte), replays it through the engine with `emit_pending=True`, and
 prints every verdict plus full explanations for violations. Real output ends:
 
 ```
-16 verdicts, 3 violation(s)
+41 verdicts, 5 violation(s)
 ```
 
-with T-1 (the healthy ticket) all-satisfied, and exactly the three seeded
-faults caught: resolve-before-assign, the 30-second SLA fired by the timer,
-and the pending obligations of still-open tickets reported honestly.
+Six tickets: the two healthy ones (T-1 with a full answered conversation,
+T-4 the urgent/on-call/escalation path) end fully satisfied, and exactly the
+five seeded faults are caught — resolve-before-assign, two assignment-SLA
+timer firings, the on-call agent given a never-urgent ticket, and a customer
+reply never answered (the 60s reply SLA) — with still-open obligations
+reported honestly as pending. The suite pins this output
+(`tests/test_examples.py`), so the guide cannot drift from reality.
+
+### `monitoring/catalog.json` — what it is, who creates it, when you need it
+
+You will not find this file until you create it, because **it is generated,
+not written**: it is NOT part of your code and the monitor does NOT need it
+to run. Plainly:
+
+- **What it is**: a JSON snapshot of every registered step's *contract* — the
+  event type it observes, its correlation key, the fields it reads, and a
+  structural fingerprint of its matching condition (helpers included). Open
+  the committed example
+  ([`examples/ticketing/monitoring/catalog.json`](../examples/ticketing/monitoring/catalog.json))
+  and read it: five entries, one per step.
+- **Who creates it**: you (or CI), by running
+  `python -m behave_rv catalog save --steps monitoring/steps.py --catalog monitoring/catalog.json`
+  once, and committing the result. Never hand-edit it.
+- **Its role**: it is the frozen reference that `catalog diff` compares the
+  CURRENT code against after every change — so a refactor that silently
+  changes what a step matches (and would leave your policies dormant) is
+  reported as a break naming the affected policies, while harmless renames
+  pass silently. It exists purely for that safety check; skip it and
+  everything still runs, you just lose the drift protection.
+- **When it changes**: only when you intend a contract change — regenerate
+  with the same `save` command and commit the diff alongside the code
+  change, like any interface change. Full mechanism:
+  [`STABILITY.md`](../STABILITY.md).
 
 ### The same project through the CLI
 
@@ -301,12 +383,10 @@ python -m behave_rv --steps examples/ticketing/monitoring/steps.py \
     --policy examples/ticketing/monitoring/policies/01_resolve_after_assign.feature \
     --trace examples/ticketing/trace.jsonl
 
-# the stability contract (commit catalog.json; diff it in CI after changes)
-python -m behave_rv catalog save --steps examples/ticketing/monitoring/steps.py \
-    --catalog examples/ticketing/monitoring/catalog.json
+# the stability check against the COMMITTED catalog (exit 1 on breaks = CI gate)
 python -m behave_rv catalog diff --steps examples/ticketing/monitoring/steps.py \
     --catalog examples/ticketing/monitoring/catalog.json \
-    --policies examples/ticketing/monitoring/policies    # exit 1 on breaks
+    --policies examples/ticketing/monitoring/policies
 ```
 
 ---

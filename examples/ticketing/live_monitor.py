@@ -54,24 +54,34 @@ def main() -> int:
     engine_thread.start()
 
     def traffic():
-        # a healthy ticket...
+        # a healthy ticket with a full conversation...
         service.open_ticket("T-1", "printer on fire")
         time.sleep(0.3)
         service.assign("T-1", "dana")
-        time.sleep(0.3)
+        time.sleep(0.2)
+        service.customer_reply("T-1")
+        time.sleep(0.2)
+        service.agent_reply("T-1")
+        time.sleep(0.2)
         service.resolve("T-1")
+        time.sleep(0.1)
         service.close("T-1")
         # ...a seeded bug: resolved without ever being assigned
         service.open_ticket("T-2", "cannot log in")
         time.sleep(0.3)
         service.resolve("T-2")
-        # ...and an escalated ticket closed before resolution (the until rule)
+        # ...an escalated ticket closed before resolution (the until rule)
         service.open_ticket("T-3", "data loss")
         time.sleep(0.2)
         service.assign("T-3", "omer")
+        time.sleep(0.1)
         service.escalate("T-3")
         time.sleep(0.2)
         service.close("T-3")
+        # ...and the on-call agent handed a non-urgent ticket (policy 06)
+        service.open_ticket("T-4", "typo on homepage")
+        time.sleep(0.2)
+        service.assign("T-4", "oncall")
 
     threading.Thread(target=traffic, daemon=True).start()
 
