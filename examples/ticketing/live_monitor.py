@@ -45,10 +45,13 @@ def main() -> int:
     # live-mode convention: service-relative event times (see guide Gotchas)
     start = time.time()
     source = QueueSource()
-    # registry + catalog wire the stability strip: the page states whether any
-    # policy could be silently dead (the same check as `catalog diff`)
+    # registry + catalog + app wire the stability strip on BOTH sides of the
+    # boundary: step contracts AND the app's emit sites -- so a core-code
+    # change that can affect the monitor shows on the page before any verdict
+    # does (the same check as `catalog diff --app`)
     dashboard = Dashboard(policies, registry=registry,
-                          catalog=Path(__file__).parent / "monitoring/catalog.json")
+                          catalog=Path(__file__).parent / "monitoring/catalog.json",
+                          app=[Path(__file__).parent / "app_service.py"])
     # the recorder tees every emitted event into a replayable trace -- THIS is
     # where files like traces/live_session.jsonl come from (feed it later to
     # replay runs or to `catalog diff --trace` liveness checks)

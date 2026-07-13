@@ -553,3 +553,29 @@ def scope_step_ids(change: AppChange, entries) -> Optional[list[str]]:
     for site in sites:
         out.update(affected_step_ids(site, entries))
     return sorted(out)
+
+
+def policies_at_risk(change: AppChange, entries,
+                     policies) -> Optional[tuple[list[str], list[str]]]:
+    """(directly at-risk policy ids, deadline-coupled policy ids) for one
+    classified change, given the compiled policies. Direct = a used step
+    observes an affected event type (both sides). Coupled = the policy carries
+    a bounded-response deadline and shares the site's correlation key --
+    deadline firing is driven by event-time advancement, so any change to the
+    entity's event flow can move its verdict (found by the scoping
+    experiment). ``None`` means unscopable (dynamic event type).
+
+    The single scoping definition shared by the CLI, the dashboard's
+    stability strip, and the mutation experiment, so they cannot drift."""
+    step_ids = scope_step_ids(change, entries)
+    if step_ids is None:
+        return None
+    wanted = set(step_ids)
+    direct = {p.policy_id for p in policies
+              if wanted & set(getattr(p, "used_step_ids", ()) or ())}
+    site = change.new or change.old
+    keys = frozenset(k for k in site.binding_keys if not k.startswith("<"))
+    coupled = {p.policy_id for p in policies
+               if getattr(p, "has_deadline", False)
+               and frozenset(p.correlation_key) == keys} - direct
+    return sorted(direct), sorted(coupled)

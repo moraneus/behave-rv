@@ -41,7 +41,7 @@ from behave_rv.catalog.app_surface import (
     INTERFACE_BREAK,
     analyze_app,
     classify_app_changes,
-    scope_step_ids,
+    policies_at_risk,
 )
 from behave_rv.engine.loop import Engine, NoTerminalConfiguredWarning
 from behave_rv.events.sources.inprocess import InProcessSource
@@ -299,25 +299,17 @@ def detect(old_source: str, new_source: str):
 
 
 def reported_policies(changes, subject: Subject):
-    """Mirrors the CLI's scoping: steps over BOTH sides of each flagged change,
-    plus deadline policies sharing the entity (event-time coupling)."""
-    users_of: dict[str, set] = {}
-    for policy in subject.policies:
-        for step_id in policy.used_step_ids:
-            users_of.setdefault(step_id, set()).add(policy.policy_id)
+    """The production scoping (shared by the CLI and the dashboard), reduced
+    to the flat set this experiment compares against ground truth."""
     out: set = set()
     for change in changes:
         if change.status not in FLAGGING:
             continue
-        step_ids = scope_step_ids(change, subject.entries)
-        if step_ids is None:
+        scoped = policies_at_risk(change, subject.entries, subject.policies)
+        if scoped is None:
             return {p.policy_id for p in subject.policies}   # conservative: all
-        for step_id in step_ids:
-            out |= users_of.get(step_id, set())
-        site = change.new or change.old
-        keys = frozenset(k for k in site.binding_keys if not k.startswith("<"))
-        out |= {p.policy_id for p in subject.policies
-                if p.has_deadline and frozenset(p.correlation_key) == keys}
+        direct, coupled = scoped
+        out |= set(direct) | set(coupled)
     return out
 
 

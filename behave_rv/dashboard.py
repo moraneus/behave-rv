@@ -36,7 +36,7 @@ from behave_rv.verdict.explain import explain_verdict, safe_value
 
 class Dashboard:
     def __init__(self, policies, *, forward=None, history: int = 300,
-                 registry=None, catalog=None):
+                 registry=None, catalog=None, app=None):
         policies = list(policies)
         self._policies = policies
         self._by_id = {p.policy_id: p for p in policies}
@@ -55,12 +55,16 @@ class Dashboard:
         # runs the contract diff once at construction (code cannot change
         # inside a running process) and displays the result -- so "could a
         # policy be silently dead?" is answered on the same page as the
-        # verdicts. Same mechanism as `python -m behave_rv catalog diff`.
+        # verdicts. With ``app=`` (the application's .py files/dirs) the check
+        # covers BOTH sides of the event boundary: step contracts AND the
+        # app's emit sites, so a core-code change that can move what the
+        # monitor observes shows on the page before any verdict does. Same
+        # mechanism as `python -m behave_rv catalog diff [--app ...]`.
         self._stability = None
         if registry is not None and catalog is not None:
-            self._stability = self._check_stability(registry, catalog)
+            self._stability = self._check_stability(registry, catalog, app)
 
-    def _check_stability(self, registry, catalog_path) -> dict:
+    def _check_stability(self, registry, catalog_path, app_paths) -> dict:
         from behave_rv.catalog.diff import classify_changes
         from behave_rv.catalog.store import load_catalog
         from behave_rv.notify.channel import notifications, uses_from_policies
@@ -68,18 +72,66 @@ class Dashboard:
         try:
             committed = load_catalog(catalog_path)
         except (FileNotFoundError, ValueError) as exc:
-            return {"status": "error", "detail": str(exc), "breaks": []}
+            return {"status": "error", "detail": str(exc), "breaks": [], "app": None}
         current = registry.entries()
         notes = notifications(committed, current,
                               uses_from_policies(self._policies))
         changes = classify_changes(committed, current)
-        return {
+        result = {
             "status": "breaks" if notes.breaks else "ok",
             "statuses": {c.step_id: c.status for c in changes},
             "breaks": [{"policy": b.policy_id, "step": b.step_id,
                         "detail": b.detail} for b in notes.breaks],
             "detail": None,
+            "app": self._check_app_surface(catalog_path, app_paths, current)
+                   if app_paths else None,
         }
+        app = result["app"]
+        if app and app.get("checked"):
+            if app["breaks"]:
+                result["status"] = "breaks"
+            elif app["risks"] and result["status"] == "ok":
+                result["status"] = "risks"
+        return result
+
+    def _check_app_surface(self, catalog_path, app_paths, entries) -> dict:
+        """The app side of the contract: diff the application's CURRENT emit
+        sites against the committed app_surface, scoped to the running
+        policies -- so a core-code change that can move what the monitor
+        observes is shown on the page, not only in the CLI."""
+        from behave_rv.catalog.app_surface import (
+            APP_REMOVED, BEHAVIOR_RISK, INTERFACE_BREAK,
+            analyze_app, classify_app_changes, policies_at_risk,
+        )
+        from behave_rv.catalog.store import load_app_surface
+
+        committed_sites = load_app_surface(catalog_path)
+        if committed_sites is None:
+            return {"checked": False,
+                    "detail": "catalog has no app_surface section; run "
+                              "'catalog save --app ...' to enable this check"}
+        changes = classify_app_changes(committed_sites, analyze_app(app_paths))
+        breaks, risks = [], []
+        for change in changes:
+            bucket = {INTERFACE_BREAK: breaks, APP_REMOVED: breaks,
+                      BEHAVIOR_RISK: risks}.get(change.status)
+            if bucket is None:
+                continue
+            site = change.new or change.old
+            scoped = policies_at_risk(change, entries, self._policies)
+            if scoped is None:
+                affected = ["(dynamic event type — review ALL policies)"]
+            else:
+                direct, coupled = scoped
+                affected = direct + [f"{pid} (event-time coupling)"
+                                     for pid in coupled]
+            bucket.append({"site": change.site_id,
+                           "event": site.event_type,
+                           "detail": change.detail,
+                           "policies": affected})
+        return {"checked": True,
+                "statuses": {c.site_id: c.status for c in changes},
+                "breaks": breaks, "risks": risks, "detail": None}
 
     # -- the write side: called from the engine's / the app's thread ---------
 
@@ -244,6 +296,8 @@ _PAGE = """<!doctype html>
   #stability.ok { display:block; background:#dcfce7; border-color:#86efac; color:#14532d; }
   #stability.breaks, #stability.error { display:block; background:#fee2e2;
                border-color:#fca5a5; color:#7f1d1d; }
+  #stability.risks { display:block; background:#fef3c7; border-color:#fcd34d;
+               color:#78350f; }
   #stability pre { font:11px/1.5 ui-monospace,monospace; white-space:pre-wrap; margin-top:6px; }
   .stale { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px;
            font-size:10.5px; font-weight:700; background:#fef3c7; color:#92400e; }
@@ -273,21 +327,41 @@ async function refresh() {
   const strip = document.getElementById('stability');
   if (s.stability) {
     strip.className = s.stability.status;
+    const app = s.stability.app;
+    const appLine = a =>
+      `${a.site} (event '${a.event}')\\n   ${a.detail}\\n   policies at risk: `
+      + (a.policies.length ? a.policies.join(', ') : 'none compiled observes it');
     if (s.stability.status === 'ok') {
-      strip.textContent = 'contract check: catalog in sync — no policy can be '
-        + 'silently broken by a step change (checked at startup)';
+      strip.textContent = 'contract check: catalog in sync'
+        + (app && app.checked
+           ? ' on both sides \u2014 steps AND the app emit sites'
+           : ' \u2014 no policy can be silently broken by a step change')
+        + ' (checked at startup)'
+        + (app && !app.checked ? ' \u00b7 app side not enabled: ' + app.detail : '');
     } else if (s.stability.status === 'error') {
       strip.textContent = 'contract check FAILED to run: ' + s.stability.detail;
     } else {
       strip.textContent = '';
+      const stepBreaks = s.stability.breaks;
+      const appBreaks = app && app.checked ? app.breaks : [];
+      const appRisks = app && app.checked ? app.risks : [];
       const head = document.createElement('div');
-      head.textContent = `contract check: ${s.stability.breaks.length} BREAK(S) — `
-        + 'these policies may be silently dead; regenerate the catalog only if '
-        + 'the contract change was intended';
+      head.textContent = 'contract check: '
+        + (stepBreaks.length + appBreaks.length
+           ? `${stepBreaks.length + appBreaks.length} BREAK(S)`
+             + (appRisks.length ? ` + ${appRisks.length} app behavior risk(s)` : '')
+             + ' \u2014 these policies may be silently dead or wrong; regenerate'
+             + ' the catalog only if the change was intended'
+           : `${appRisks.length} APP BEHAVIOR RISK(S) \u2014 core-code logic on`
+             + ' an emit path changed; the named policies may be affected before'
+             + ' any verdict shows it');
       strip.appendChild(head);
+      const lines = []
+        .concat(stepBreaks.map(b => `\u2717 ${b.policy}  via ${b.step}\\n   ${b.detail}`))
+        .concat(appBreaks.map(a => '\u2717 ' + appLine(a)))
+        .concat(appRisks.map(a => '! ' + appLine(a)));
       const pre = document.createElement('pre');
-      pre.textContent = s.stability.breaks
-        .map(b => `\u2717 ${b.policy}  via ${b.step}\\n   ${b.detail}`).join('\\n');
+      pre.textContent = lines.join('\\n');
       strip.appendChild(pre);
     }
   }

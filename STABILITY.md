@@ -58,8 +58,10 @@ function-granularity slice of everything that can participate in reaching it
 — and `catalog diff --app` classifies every later change: an interface break
 gates CI, a behavior risk warns (or gates under `--fail-on-app-risk`), both
 scoped through event type → steps → `used_step_ids` to the exact policies at
-risk. App code is never imported. Full mechanism, measured table, and
-boundaries below ("The app side of the boundary").
+risk. App code is never imported. The dashboard's stability strip runs the
+same two-sided check at startup when given `app=` (amber for app behavior
+risks, red for breaks). Full mechanism, measured table, and boundaries below
+("The app side of the boundary").
 
 ## Worked examples — real input, real output
 

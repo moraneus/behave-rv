@@ -508,14 +508,22 @@ Two additions answer "could a policy be silently dead?" on the same page:
 
 ```python
 dashboard = Dashboard(policies, registry=registry,
-                      catalog="monitoring/catalog.json")
+                      catalog="monitoring/catalog.json",
+                      app=["app_service.py"])        # optional: the app side too
 ```
 
 - **The stability strip**: with `registry` and `catalog` given, the dashboard
   runs the contract diff once at startup (code cannot change inside a running
   process) — a green strip says "catalog in sync — no policy can be silently
   broken by a step change"; a red strip names every broken policy with its
-  contract diff, exactly like `catalog diff`.
+  contract diff, exactly like `catalog diff`. With `app=` (the application's
+  .py files) the strip covers BOTH sides of the boundary: a core-code change
+  on an emit path shows as an amber APP BEHAVIOR RISK naming the changed
+  function and the policies at risk — before any verdict moves — and an
+  app-side interface change (a renamed payload field, a deleted emission)
+  shows red, exactly like `catalog diff --app`:
+
+  ![the stability strip reporting an app behavior risk: the changed function and the policies at risk](images/dashboard-app-risk.png)
 - **The unobserved warning**: if events are flowing (via `tap`) but NONE of a
   policy's event types has appeared, the policy gets an amber
   "⚠ no matching events observed" badge — the runtime smell of a policy
@@ -563,11 +571,14 @@ layers answer it, each with a concrete command or surface:
    per policy when a value or event type it depends on never appears in a
    representative stream — the check that catches app-side renames the
    static diff honestly cannot see.
-3. **The dashboard, live.** Pass `registry=` and `catalog=` and the page
-   carries a stability strip (green: in sync; red: the broken policies with
-   details) plus per-policy "⚠ no matching events observed" badges driven by
-   the actual event flow. So yes — the web monitor shows it. This is what a
-   broken contract looks like on the page:
+3. **The dashboard, live.** Pass `registry=` and `catalog=` (and `app=` for
+   the application side, §5) and the page carries a stability strip — green:
+   in sync on both sides; amber: an app behavior risk naming the changed
+   function and the policies at risk; red: the broken policies with details —
+   plus per-policy "⚠ no matching events observed" badges driven by the
+   actual event flow. So yes — the web monitor shows it, including core-code
+   changes that can affect the monitor. This is what a broken contract looks
+   like on the page:
 
    ![the stability strip reporting a break, naming the policy and the contract diff](images/dashboard-breaks.png)
 
