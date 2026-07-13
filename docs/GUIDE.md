@@ -774,14 +774,34 @@ shows the unobserved badge. (A dropped tap watched only by quiet-style
 `never` policies would NOT self-report at runtime — that is what the
 liveness layer is for.)
 
-#### The honest boundary
+#### The honest boundary: the monitor never "knows" the code changed
 
-The monitor sees events, not code. A logic change whose effects never reach
-the event stream — a corrupted internal calculation that no emitted field
-carries, a skipped side effect nothing reports — is invisible to any policy.
-That is why the exposure convention is **over-expose**: emit state
-transitions, status enums, and boundary crossings generously (an unused tap
-is cheap; a missing one is a policy nobody can ever write).
+Be precise about what the runtime layer is: it verifies **executions, not
+programs**. Nothing analyzes your application's source (the catalog covers
+STEP code only, on purpose), and a violation is a statement about this
+execution, not a diagnosis that code changed — the monitor cannot tell "the
+code changed" apart from "the code was always wrong and this input finally
+hit it." Detection of an app change is therefore conditional on three things
+stacking:
+
+1. **Observability** — the change's effects must reach the event stream. A
+   corrupted internal calculation no emitted field carries is invisible.
+   Compensation: the over-expose convention (emit state transitions, status
+   enums, boundary crossings generously — an unused tap is cheap, a missing
+   one is a policy nobody can ever write).
+2. **Coverage** — some policy must constrain the changed behavior. No rule,
+   no signal.
+3. **Exercise** — the violating situation must actually occur in observed
+   traffic. A bug on the escalation path is silent until something
+   escalates; until then the policy is pending — honestly undecided, not
+   "verified safe."
+
+The practical answer to the exercise gap: **supply the exercise yourself**.
+Run a fixed scripted traffic set through every build (the `replay_check.py`
+pattern, exit-coded for CI) — then any behavior change on a covered path
+surfaces as a verdict change at build time, before live traffic finds it.
+That is the closest thing to "knowing the app changed" that an
+execution-verifier can honestly offer.
 
 ---
 
