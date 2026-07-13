@@ -293,10 +293,18 @@ is never imported) extracts the **emitted interface** (event type, binding
 keys, payload keys; `<dynamic>`/`<splat>` markers where the source cannot be
 resolved) and computes a **function-granularity backward slice**: the
 emitting function, its transitive callers (they decide when it runs and with
-what arguments), and the transitive callees of all of those (they compute
-the values). Each slice member is hashed with the same version-stable
-alpha-normalization the step fingerprint uses, and the committed catalog's
-`app_surface` section is the reference the next diff compares against.
+what arguments), the transitive callees of all of those (they compute the
+values), and every method assigning an instance attribute a member reads
+(emit-path state flows through attributes -- `self._emit` itself is one).
+The slice also carries the values of module- and class-level constants its
+members reference (a `LIMIT = 10` participating in emission logic lives
+outside every function body). Each slice member is hashed with the same
+version-stable alpha-normalization the step fingerprint uses, and the
+committed catalog's `app_surface` section is the reference the next diff
+compares against. The attribute and constant rules were not designed in:
+they are holes the mutation campaign found and closed with regression tests
+(the full campaign is in
+[docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md)).
 
 The lineage is three classic results, each deliberately modified:
 
@@ -379,11 +387,11 @@ keys added by callers flow through caller hashes in the slice instead.)
 
 ### The measured table (E-series)
 
-Fifteen realistic APP changes against a fixed baseline service. Ground truth
-is verified per run by executing the same scripted traffic through baseline
-and variant and comparing the emitted event STREAM (with the policy verdict
-set checked alongside — E10 shows the layering: the stream changed, verdicts
-did not, and it is still caught). Reproduce with
+Seventeen realistic APP changes against a fixed baseline service. Ground
+truth is verified per run by executing the same scripted traffic through
+baseline and variant and comparing the emitted event STREAM (with the policy
+verdict set checked alongside -- E10 shows the layering: the stream changed,
+verdicts did not, and it is still caught). Reproduce with
 `python -m tests.stability_app_surface` (asserted permanently in
 `tests/test_stability_app_surface.py`). Measured 2026-07-13:
 
@@ -404,13 +412,19 @@ E12   a function outside every emit slice changed              same     same    
 E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
 E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
 E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
+E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
+E17   a benign attribute added in the constructor              same     same      risk      FALSE ALARM  (by design: emit-path state flows through instance attributes, so the constructor joins every slice of its class; attribute dependencies are approximated at method granularity)
 
-15 cases: 12 correct, 3 false alarm(s) (all by design), 0 miss(es)
+17 cases: 13 correct, 4 false alarm(s) (all by design), 0 miss(es)
 ```
 
 Every stream change is caught (0 misses), every no-op stays silent except
-the three DECLARED conservatisms (E13–E15), which are asserted to be exactly
-that family and nothing more.
+the four DECLARED conservatisms (E13-E15 and E17, the constructor rule),
+which are asserted to be exactly that family and nothing more. The E-series
+is the curated benchmark; the adversarial one -- an 83-mutant campaign with
+executed ground truth, which found and drove the closure of four
+detection/scoping holes -- is reported with full honesty in
+[docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md).
 
 ### Replayed against this repository's own history
 
@@ -461,9 +475,12 @@ as history grows.
    investigation.
 4. **App-side granularity** (Path D): the slice is function-granularity, so
    ANY edit to a function in an emit slice flags, including refactors that
-   preserve behavior (E13–E14) — the same deliberate cost as (3). Statement-
-   level slicing would tighten this and can be added behind the same
-   interface.
+   preserve behavior (E13–E14) and constructor edits (E17) — the same
+   deliberate cost as (3). Statement-level slicing would tighten this and
+   can be added behind the same interface. In emission-dense service
+   modules the slice union covers the whole file, so expect most edits
+   there to flag something; the discriminating value is the per-site
+   scoping, not binary silence (measured in the evaluation's RQ6).
 5. **App-side staticness** (Path D): the analyzer reads code structure only.
    Behavior driven by runtime data (config, database contents, request
    payloads) has no static signature; emissions not constructed as a

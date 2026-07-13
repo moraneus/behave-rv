@@ -793,10 +793,11 @@ catalog became two-sided, there is also a purely static net: save the catalog
 with your app files once (`catalog save --steps … --catalog … --app
 app_service.py`) and every later `catalog diff --app` compares the
 application's *emit sites* — every `Event(...)` construction, its event type,
-binding keys and payload fields, plus a fingerprint of every function that
-can participate in reaching it (the emitting function, its callers, their
-callees) — against the committed version. App code is never imported; the
-analysis is AST-only.
+binding keys and payload fields, plus a fingerprint of everything that can
+participate in reaching it (the emitting function, its callers, their
+callees, the constructor and other methods writing the instance state it
+reads, and the module/class constants it references) — against the committed
+version. App code is never imported; the analysis is AST-only.
 
 A real example. Someone "cleans up" `assign()` in the ticketing service:
 
@@ -836,9 +837,11 @@ conservatively, because callable identity pins emission order.
 Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
 code structure, so behavior driven by runtime data (config, database
 contents, request payloads) is invisible to it, and its conservatisms are
-measured and declared (the 15-case E-series in
-[`STABILITY.md`](../STABILITY.md), plus a replay of this repo's own git
-history: 9 historical app changes, every classification correct). It is the
+measured and declared (the 17-case E-series in
+[`STABILITY.md`](../STABILITY.md), an 83-mutant adversarial campaign with
+zero misses, and a replay of this repo's own git history with every
+classification correct — full honest results in
+[`APP_SURFACE_EVALUATION.md`](APP_SURFACE_EVALUATION.md)). It is the
 earliest net, not the last one — the runtime layers above remain the ground
 truth.
 
