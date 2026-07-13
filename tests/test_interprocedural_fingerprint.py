@@ -1,5 +1,5 @@
 """The call-graph fingerprint: directed tests for the C4 fix
-(the C4 fix; see STABILITY.md)."""
+(the C4 fix; see docs/STABILITY.md)."""
 
 import json
 

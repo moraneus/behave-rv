@@ -50,7 +50,7 @@ paths you chose.
 |---|---|---|---|---|---|
 | Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** — unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
 | Steps module | `.py` | `monitoring/steps.py`, next to `policies/` | the developer (or coding agent) | your code (`import`); CLI `--steps` | expose a side-effect-free `build_registry()` factory (the CLI auto-detects it), or register at import via the module decorators; details in §3 |
-| Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; with `--app` it also records the app's fingerprinted emit sites (the other side of the contract, §7); see [`STABILITY.md`](../STABILITY.md) |
+| Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; with `--app` it also records the app's fingerprinted emit sites (the other side of the contract, §7); see [`STABILITY.md`](STABILITY.md) |
 | Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `TraceRecorder` (live tee), `record_events` (from a list), or any pipeline writing the format | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds; see "Recording traces" in §4 |
 | Your app | `.py` (any structure) | anywhere | you | — | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
 
@@ -377,7 +377,7 @@ to run. Plainly:
 - **When it changes**: only when you intend a contract change — regenerate
   with the same `save` command and commit the diff alongside the code
   change, like any interface change. Full mechanism:
-  [`STABILITY.md`](../STABILITY.md).
+  [`STABILITY.md`](STABILITY.md).
 
 ### The same project through the CLI
 
@@ -708,7 +708,7 @@ warning naming the value you just touched. At runtime, the dashboard's
 Full mechanism, worked examples for every path, the measured detection
 tables (22 step-side cases, 22 app-side categories), and the stated boundaries
 (calls through values, stream representativeness, function-granularity
-conservatism): [`STABILITY.md`](../STABILITY.md).
+conservatism): [`STABILITY.md`](STABILITY.md).
 
 ---
 
@@ -849,10 +849,10 @@ Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
 code structure, so behavior driven by runtime data (config, database
 contents, request payloads) is invisible to it, and its conservatisms are
 measured and declared (the 22-category E-series in
-[`STABILITY.md`](../STABILITY.md), a 619-mutant adversarial campaign across
+[`STABILITY.md`](STABILITY.md), a 619-mutant adversarial campaign across
 six applications with zero misses, and a replay of this repo's own git
 history with every classification correct — the complete record is
-[`EXPERIMENTS.md`](../EXPERIMENTS.md)). It is the
+[`EXPERIMENTS.md`](EXPERIMENTS.md)). It is the
 earliest net, not the last one — the runtime layers above remain the ground
 truth.
 
@@ -917,8 +917,8 @@ execution-verifier can honestly offer.
 ## 9. Where to go deeper
 
 [`docs/OPERATORS.md`](OPERATORS.md) — every operator, with traces ·
-[`SEMANTICS.md`](../SEMANTICS.md) — formal trace semantics ·
-[`STABILITY.md`](../STABILITY.md) — the code-change defenses ·
-[`MUTATION.md`](../MUTATION.md) — how the suite itself is validated ·
+[`SEMANTICS.md`](SEMANTICS.md) — formal trace semantics ·
+[`STABILITY.md`](STABILITY.md) — the code-change defenses ·
+[`MUTATION.md`](MUTATION.md) — how the suite itself is validated ·
 [`demo/README.md`](../demo/README.md) — three complete demo apps with
 interactive boards and a stability panel.

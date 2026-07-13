@@ -10,7 +10,7 @@ and run over the recorded trace in replay mode. There is no Python policy
 construction in the path -- the policy is the .feature file. Output: the verdict
 log as JSON lines, followed by a rendered counterexample for every violation.
 
-The specification-stability workflow (see STABILITY.md):
+The specification-stability workflow (see docs/STABILITY.md):
 
     python -m behave_rv catalog save --steps <steps.py> --catalog catalog.json \\
         [--app <app.py-or-dir> ...]

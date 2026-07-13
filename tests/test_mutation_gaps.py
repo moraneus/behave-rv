@@ -1,4 +1,4 @@
-"""Tests added by the mutation-testing triage (see MUTATION.md).
+"""Tests added by the mutation-testing triage (see docs/MUTATION.md).
 
 Each test kills one or more surviving mutants from the mutmut campaign; the
 mutant ids appear in the comments. These are real suite gaps the campaign
@@ -374,7 +374,7 @@ Feature: f
 
 
 def test_within_response_exactly_at_the_deadline_loses_the_tie():
-    # pins the documented boundary (SEMANTICS.md "Deadline boundary"): a
+    # pins the documented boundary (docs/SEMANTICS.md "Deadline boundary"): a
     # response exactly at trigger_time + seconds is too late; the timeout wins
     # the tie because due deadlines fire before the event is dispatched. (This
     # is also why WithinMonitor.on_event's own <=/<' at equality is engine-

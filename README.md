@@ -120,7 +120,7 @@ self-contained and takes no `When` (its own predicate is the forbidden event).
 The complete authoring reference, with satisfying and violating traces for
 every form, is [`docs/OPERATORS.md`](docs/OPERATORS.md).
 
-| Operator | Authorable phrasing | Meaning (see `SEMANTICS.md`) |
+| Operator | Authorable phrasing | Meaning (see `docs/SEMANTICS.md`) |
 | --- | --- | --- |
 | `never` | `Then <predicate> never happens` (no `When`) | The named event must never occur for this entity. Violated the first time it does; otherwise pending. |
 | scoped `never` | `Given <predicate>` (latching) or `Given <predicate> until <predicate>` (interval), then `Then <predicate> never happens` | The obligation is active only while the `Given` scope is open. The two-line form latches (once open, open forever); the `until` form closes the scope at the named event and may reopen. Violated at the first forbidden event inside an open scope; satisfied at a terminal event otherwise, including when the scope never opened. |
@@ -229,7 +229,7 @@ behave-rv/
                             policies, committed two-sided catalog, live + CI
                             entry points (walked through in docs/GUIDE.md)
   tests/                    unit and property based tests
-  SEMANTICS.md              the operator semantics, in trace terms
+  docs/                     guides, semantics, stability, experiments
   LICENSE
   NOTICE
   pyproject.toml
@@ -409,10 +409,10 @@ emit-site impact analysis (`catalog save/diff --app`) flags it at build time
 and names the policies at risk, before any runtime violation. **The complete
 mechanism -- all four defense paths with real worked examples, the CLI
 workflow, and the measured detection tables (22 step-side cases, 22 app-side
-categories) -- is documented in [`STABILITY.md`](STABILITY.md); the complete
+categories) -- is documented in [`docs/STABILITY.md`](docs/STABILITY.md); the complete
 record of every experiment with full results (including the 619-mutant
 adversarial campaign with executed ground truth and zero misses) is
-[`EXPERIMENTS.md`](EXPERIMENTS.md), with the app-side capability's deep
+[`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md), with the app-side capability's deep
 evaluation in
 [`docs/APP_SURFACE_EVALUATION.md`](docs/APP_SURFACE_EVALUATION.md).**
 
@@ -461,7 +461,7 @@ same `step_id` and run identically.
 ## Semantics and correctness
 
 The meaning of each operator is specified in trace terms in
-[`SEMANTICS.md`](SEMANTICS.md), independently of the implementation. That
+[`docs/SEMANTICS.md`](docs/SEMANTICS.md), independently of the implementation. That
 specification covers `never`, `before`, and `within`, the correlation key scoping,
 the event time reordering contract, the late event admission rules, and the
 interaction of terminal retirement and quiescence reclamation with reordering.
@@ -469,9 +469,9 @@ interaction of terminal retirement and quiescence reclamation with reordering.
 The implementation is validated against that specification by property based tests
 (Hypothesis) that check the engine's verdict against an independent oracle across
 large generated input spaces, including adversarial event orderings, plus two
-real mutation-testing campaigns: one over the engine (see `MUTATION.md`: 1873
+real mutation-testing campaigns: one over the engine (see `docs/MUTATION.md`: 1873
 mutants, 89.9% killed, every survivor classified) and one over the app-surface
-analyzer (see `EXPERIMENTS.md`: 619 mutants across six applications with
+analyzer (see `docs/EXPERIMENTS.md`: 619 mutants across six applications with
 executed stream-level ground truth, zero misses after a hardening pass the
 campaigns themselves drove). The full test suite is 337 core tests (395 with
 the demo suites) at the time of writing. This is strong evidence over the tested space, not

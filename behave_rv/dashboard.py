@@ -186,7 +186,7 @@ class Dashboard:
                 cells.sort(key=lambda c: c["entity"])
             # a policy is "unobserved" when events ARE flowing but none of
             # its event types has appeared -- the runtime smell of a policy
-            # disconnected from the stream (see STABILITY.md)
+            # disconnected from the stream (see docs/STABILITY.md)
             unobserved = {
                 p.policy_id
                 for p in self._policies

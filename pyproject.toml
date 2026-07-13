@@ -51,7 +51,7 @@ line-length = 100
 select = ["E", "W", "F"]
 
 [tool.mutmut]
-# Real mutation-testing campaign (see MUTATION.md). Mutates the core package
+# Real mutation-testing campaign (see docs/MUTATION.md). Mutates the core package
 # only; tests are the kill signal. Stubs and unchanged-vendor markers are out
 # of scope: expose/ is an unimplemented design stub, vendor_behave/ is a
 # docstring-only boundary marker.

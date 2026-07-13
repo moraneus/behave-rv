@@ -2,7 +2,7 @@
 
 Seven `Then` operators plus two `Given` scope forms. `until` is not a
 standalone operator: it exists only inside the `Given ... until ...` scope.
-This page is the authoring reference; [`../SEMANTICS.md`](../SEMANTICS.md)
+This page is the authoring reference; [`SEMANTICS.md`](SEMANTICS.md)
 states the same semantics in formal trace terms, and the examples below are
 live in the [demos](../demo/README.md).
 

@@ -10,7 +10,7 @@ a code change that MAY alter when or what the app emits is surfaced at build
 time, scoped to the policies observing that event type, before any violation
 occurs at runtime.
 
-Lineage and the deliberate modifications (see STABILITY.md for the measured
+Lineage and the deliberate modifications (see docs/STABILITY.md for the measured
 E-series):
 
 * Backward program slicing from an output statement (Ferrante-Ottenstein-

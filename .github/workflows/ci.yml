@@ -36,7 +36,7 @@ jobs:
       # [tool.ruff.lint] in pyproject selects E, W (pycodestyle = PEP 8) and F
       # (pyflakes), line length 100. A formatter (black / ruff format) is
       # deliberately NOT enforced: the codebase predates one, and adopting it
-      # would be a ~60-file mechanical churn -- see the CI commit message.
+      # would be a large mechanical churn with no behavioural gain.
       - name: Lint
         run: ruff check behave_rv tests demo
 
@@ -50,7 +50,7 @@ jobs:
           python-version: "3.12"
       - name: Install package
         run: python -m pip install -e .
-      # exits 1 on contract breaks against the committed catalog (STABILITY.md)
+      # exits 1 on contract breaks against the committed catalog (docs/STABILITY.md)
       - name: Diff the committed step catalog against the code
         run: |
           python -m behave_rv catalog diff \

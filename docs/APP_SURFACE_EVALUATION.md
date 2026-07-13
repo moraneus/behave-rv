@@ -35,7 +35,7 @@ grown twice: the baseline subject gained new emission shapes with the
 curated categories, and the three demonstration services joined as subjects
 with their full real policy sets; a fifth defect — decorators stripped from
 hashes — was found by curated case E21 and fixed the same way; the complete
-per-experiment record is EXPERIMENTS.md at the repository root). We consider the found-then-fixed trajectory
+per-experiment record is [EXPERIMENTS.md](EXPERIMENTS.md)). We consider the found-then-fixed trajectory
 itself part of the result: it demonstrates what the method's blind spots look
 like and that they are discoverable by systematic testing rather than by
 production incidents.
@@ -47,7 +47,7 @@ application's author renames a payload field, tightens a guard before an
 emission, or reworks a helper two calls deep; no step definition changed, no
 test fails, and the policy that depended on the old behavior either fires a
 late violation in production or — worse — goes quiet while looking deployed
-and healthy. The step-side catalog (the companion capability, STABILITY.md
+and healthy. The step-side catalog (the companion capability, [STABILITY.md](STABILITY.md)
 paths A–C) protects the *monitoring* code; it truthfully reports `unchanged`
 when only the *application* moved. Prior to this work, application drift was
 caught by exactly two nets, both requiring execution: replaying scripted

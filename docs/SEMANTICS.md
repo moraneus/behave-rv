@@ -435,8 +435,8 @@ late-dropped event never refreshes it). Two properties are guaranteed and tested
 reclamation is **arrival-invariant** and **deterministic** — two arrival orders that
 admit the same set reclaim the same keys and produce the same verdicts.
 
-What is **deliberately not** guaranteed (recorded here because this round surfaced
-it, rather than inferring correctness from the code):
+What is **deliberately not** guaranteed (recorded explicitly, rather than
+leaving correctness to be inferred from the code):
 
 - **Exact reclaim timing is implementation-defined.** Reclamation is driven by a
   lazy timer queue: a TTL timer is scheduled at `last_activity + ttl` on each

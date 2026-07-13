@@ -2,7 +2,7 @@
 
 For every commit that modified one of the demo/example application files, the
 parent and child versions are extracted (``git show``), analyzed, and
-classified -- the honest flag-rate measurement quoted in STABILITY.md. Rerun
+classified -- the honest flag-rate measurement quoted in docs/STABILITY.md. Rerun
 it any time with:
 
     python -m tests.measure_app_history

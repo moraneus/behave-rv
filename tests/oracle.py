@@ -1,7 +1,7 @@
 """An independent, deliberately simple oracle for the operator verdicts.
 
 It computes the verdict per correlation key by direct definition straight from
-SEMANTICS.md, over the whole trace. It shares NO evaluation code with the engine:
+docs/SEMANTICS.md, over the whole trace. It shares NO evaluation code with the engine:
 it imports only the Event data type and re-derives everything (canonical ordering,
 the operator state machines, the global clock horizon) by hand. Its independence
 is the point -- if it shared a bug with the engine, the check would prove nothing.
@@ -160,7 +160,7 @@ def oracle_verdicts(trace: list[Event], policy: dict) -> dict:
 
 
 def admit(arrival_events: list[Event], grace: float):
-    """Model the engine's late-drop admission, by definition (SEMANTICS.md).
+    """Model the engine's late-drop admission, by definition (docs/SEMANTICS.md).
 
     Single pass in ARRIVAL order with a global watermark = max_seen - grace. An
     event whose event_time is below the watermark is dropped as late (and does not

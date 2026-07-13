@@ -228,8 +228,7 @@ same commit, and the diff output names every policy the change affects.
 The artifact is stable across interpreter versions (the fingerprint uses a
 version-stable AST serialization; verified byte-identical under CPython
 3.10, 3.13, and 3.14) and across processes, so a catalog written on one
-machine gates truthfully on another -- this task's fresh-clone check caught
-and fixed the version dependence.
+machine gates truthfully on another.
 
 ## The measured table
 
@@ -306,7 +305,7 @@ committed catalog's `app_surface` section is the reference the next diff
 compares against. The attribute and constant rules were not designed in:
 they are holes the mutation campaign found and closed with regression tests
 (the full campaign is in
-[docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md)).
+[APP_SURFACE_EVALUATION.md](APP_SURFACE_EVALUATION.md)).
 
 The lineage is three classic results, each deliberately modified:
 
@@ -432,7 +431,7 @@ is the curated benchmark; the adversarial one -- a 619-mutant campaign
 over six applications with executed ground truth, which found and drove the
 closure of five detection/scoping holes -- is reported in full in
 [EXPERIMENTS.md](EXPERIMENTS.md) and
-[docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md).
+[APP_SURFACE_EVALUATION.md](APP_SURFACE_EVALUATION.md).
 
 ### Replayed against this repository's own history
 

@@ -9,7 +9,7 @@
 # results there (see experiments/README.md). Deterministic experiments must
 # reproduce their committed artifacts byte for byte; this script stops on the
 # first failure, so a clean run IS the reproduction. The one long campaign
-# NOT included is the engine's mutmut run (~hours; see MUTATION.md).
+# NOT included is the engine's mutmut run (~hours; see docs/MUTATION.md).
 set -euo pipefail
 cd "$(dirname "$0")"
 

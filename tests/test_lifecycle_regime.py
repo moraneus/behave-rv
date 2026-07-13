@@ -1,7 +1,7 @@
 """Property-based tests for terminal retirement and quiescence reclamation crossing
 the reordering seam.
 
-Findings this round (see SEMANTICS.md): terminal retirement is fully consistent
+Findings this round (see docs/SEMANTICS.md): terminal retirement is fully consistent
 with the canonical verdict, so it is asserted EXACTLY against the oracle. Quiescence
 TTL is best-effort, timer-driven GC whose exact timing is implementation-defined; it
 is guaranteed only to be arrival-invariant and deterministic, which is what is

@@ -36,7 +36,7 @@ Two pages, one engine:
   and affected policies, the value rename with the silent failure and the
   liveness alarm side by side, and the helper change as the documented blind
   spot. Backed by `stability.py` (tested in `test_stability_panel.py`);
-  nothing is mocked. See `STABILITY.md` at the repo root.
+  nothing is mocked. See `docs/STABILITY.md`.
 
 ## Policies
 

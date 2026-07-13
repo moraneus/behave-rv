@@ -1,8 +1,8 @@
 # Experiments: what was measured, how, and the full results
 
-This is the complete record of every experiment behind behave_rv's published
-numbers, in the same order as the paper's evaluation section. Three
-principles hold throughout:
+This is the complete record of every experiment behind behave_rv's measured
+claims, ordered from semantic correctness through change detection to cost.
+Three principles hold throughout:
 
 1. **Ground truth is executed, never assumed.** Whenever an experiment asks
    "did behavior change?", the changed program is actually run under fixed
@@ -10,7 +10,7 @@ principles hold throughout:
    it asks "was the verdict right?", an independent oracle or a replayed
    verdict set supplies the answer.
 2. **Everything is deterministic and committed.** Each experiment has its own
-   script under [`experiments/`](experiments/) and writes its results there.
+   script under [`experiments/`](../experiments/) and writes its results there.
    The logic-level artifacts are byte-identical across reruns, so
    `git diff` after a rerun is itself the regression check; the expectations
    are additionally pinned in the pytest suite, so a regression fails CI.
@@ -24,7 +24,7 @@ Reproduce everything with `./run_experiments.sh` (add `--with-tests`,
 
 ---
 
-## What is a "mutant"? (the idea behind Experiments 4 and 5)
+## What is a "mutant"? (the idea behind the mutation campaign)
 
 Hand-picked test cases only probe the failures their author imagined. A
 **mutant** removes the author: a program mechanically applies one small,
@@ -71,7 +71,7 @@ cover.
 
 ---
 
-## Experiment 1 — semantic conformance (paper §6.1)
+## Experiment 1 — semantic conformance
 
 **Question.** When the engine says `satisfied`/`violated`/`pending`, is that
 the answer the formal semantics demands?
@@ -94,9 +94,10 @@ experiments/run_semantic_conformance.sh   → experiments/results/semantic_confo
 
 The engine implementation was additionally hardened by a separate
 1,873-mutant campaign over the engine code itself (89.9% killed, every
-survivor classified — see [MUTATION.md](MUTATION.md)).
+survivor classified); the full campaign record, including every
+survivor's classification, is [MUTATION.md](MUTATION.md).
 
-## Experiment 2 — predicate-side stability (paper §6.2, Table 2)
+## Experiment 2 — predicate-side stability
 
 **Question.** When the *monitoring* code changes, does the catalogue tell
 harmless edits apart from policy-breaking ones — and what does the machinery
@@ -125,7 +126,7 @@ alarms are structural refactorings the fingerprint cannot prove equivalent.
 experiments/run_predicate_stability.sh    → experiments/results/predicate_stability.{txt,json}
 ```
 
-## Experiment 3 — application-side curated catalogue (paper §6.3, Table 3 row 1)
+## Experiment 3 — application-side curated catalogue
 
 **Question.** For each *category* of realistic application edit, does the
 emit-site analyser do the intended thing — including the intended silences
@@ -156,7 +157,7 @@ function's slice.
 experiments/run_app_curated.sh            → experiments/results/app_curated.{txt,json}
 ```
 
-## Experiment 4 — the adversarial mutation campaign (paper §6.3, Table 3)
+## Experiment 4 — the adversarial mutation campaign
 
 **Question.** Is there *any* small application edit that changes observable
 behavior but slips past the analyser silently?
@@ -207,7 +208,7 @@ independent field evidence.
 experiments/run_app_mutation.sh           → experiments/results/app_mutation.{txt,json}
 ```
 
-## Experiment 5 — policy scoping (paper §6.3)
+## Experiment 5 — policy scoping
 
 **Question.** When the analyser warns, does it name every policy whose
 verdict could actually move?
@@ -222,7 +223,7 @@ event types of a changed site and the conservative event-time coupling rule
 for deadline policies — the rule this experiment itself forced into
 existence.
 
-## Experiment 6 — git-history replay (repository check; not a paper table)
+## Experiment 6 — git-history replay
 
 **Question.** Does the analyser nag on the ordinary commits of real
 development?
@@ -237,7 +238,7 @@ measurement and fixed. Small N, honestly stated; grows with history.
 experiments/run_history_replay.sh         → experiments/results/history_replay.txt
 ```
 
-## Experiment 7 — static-analysis cost and coverage (paper §6.3, cost paragraph)
+## Experiment 7 — static-analysis cost and coverage
 
 **Result.** The four real services analyse in 2.6–6.5 ms with at most
 0.5 MB peak allocation; a synthetic surface of 1,400 functions and 200 emit
@@ -253,7 +254,7 @@ silence. Timing varies by machine; the artifact records the platform.
 experiments/run_analysis_cost.sh          → experiments/results/analysis_cost.txt
 ```
 
-## Experiment 8 — engine runtime performance (paper §6.4, Table 4)
+## Experiment 8 — engine runtime performance
 
 **Question.** What does monitoring cost at runtime?
 

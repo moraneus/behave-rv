@@ -270,7 +270,7 @@ def apply_change(change_id: str) -> dict:
                      "carries the expected values, and the policy is silently "
                      "dormant. This is the documented residual boundary -- and the "
                      "signature's unresolved_calls names the call site the "
-                     "fingerprint cannot see (see STABILITY.md).",
+                     "fingerprint cannot see (see docs/STABILITY.md).",
     }
 
     unresolved = sorted(set(

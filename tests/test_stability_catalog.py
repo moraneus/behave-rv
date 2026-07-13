@@ -50,7 +50,7 @@ def test_c4_helper_changes_are_now_detected_by_the_call_graph_fingerprint():
     # This test previously asserted C4 as the documented MISS, xfail-style,
     # with the promise that a mechanism catching it must update docs and test
     # together. That happened: the interprocedural fingerprint
-    # (see STABILITY.md) resolves same-module and
+    # (see docs/STABILITY.md) resolves same-module and
     # same-package calls, so the helper's body change moves the caller's
     # fingerprint and the diff breaks. The new documented boundary is C4b
     # (calls through values), asserted below.
@@ -66,7 +66,7 @@ def test_family_d_false_alarm_rate_is_recorded():
                     if OUTCOMES[cid].classification == "FALSE ALARM"]
     # conservative by design: all four structural refactors (D4: splitting a
     # helper changes the reachable set) trip the fingerprint; the rate is
-    # stated in STABILITY.md, not hidden
+    # stated in docs/STABILITY.md, not hidden
     assert false_alarms == ["D1", "D2", "D3", "D4"]
     for cid in false_alarms:
         assert OUTCOMES[cid].behavior_changed is False

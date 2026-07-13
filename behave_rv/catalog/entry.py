@@ -22,7 +22,7 @@ class StepSignature:
     referenced_fields: set[str]      # the subset a specification can actually bind or read
     correlation_key: tuple[str, ...]  # one key, possibly a tuple for composite identity
     condition_fingerprint: str = ""  # rename-invariant fingerprint of the match condition
-    # call-graph coverage (see STABILITY.md):
+    # call-graph coverage (see docs/STABILITY.md):
     # per-helper normalized-AST hashes for every statically reachable helper
     # (names for diff messages only; the fingerprint hashes body identities),
     # and the call sites the resolver could NOT follow -- the visible boundary

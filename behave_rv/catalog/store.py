@@ -16,7 +16,7 @@ from behave_rv.catalog.app_surface import EmitSite
 from behave_rv.catalog.entry import CatalogEntry
 
 # v2 (2026-07-12): signatures gained helper_hashes and unresolved_calls, and
-# the fingerprint algorithm covers the reachable call graph (see STABILITY.md).
+# the fingerprint algorithm covers the reachable call graph (see docs/STABILITY.md).
 # v3 (2026-07-13): an optional app_surface section records the application's
 # fingerprinted emit sites; step entries are unchanged, so v2 catalogs remain
 # readable (their app surface is simply absent). v1 catalogs are refused with
