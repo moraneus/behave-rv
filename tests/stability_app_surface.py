@@ -461,7 +461,12 @@ def run_catalog() -> list[Row]:
     return rows
 
 
-def main() -> int:
+def main(argv=None) -> int:
+    import argparse
+    import json
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", help="write machine-readable results here")
+    args = parser.parse_args(argv)
     rows = run_catalog()
     width = max(len(r.title) for r in rows)
     print(f"{'case':5} {'change':{width}} {'stream':8} {'verdicts':9} {'detected':9} outcome")
@@ -475,6 +480,19 @@ def main() -> int:
     false_alarms = [r for r in rows if r.outcome == "FALSE ALARM"]
     print(f"\n{len(rows)} cases: {len(rows) - len(misses) - len(false_alarms)} correct, "
           f"{len(false_alarms)} false alarm(s) (all by design), {len(misses)} miss(es)")
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps({
+            "experiment": "app_curated",
+            "cases": [{"case": r.case_id, "title": r.title,
+                       "stream_changed": r.stream_changed,
+                       "verdicts_changed": r.verdicts_changed,
+                       "detected": r.detected, "outcome": r.outcome,
+                       "by_design": r.by_design} for r in rows],
+            "correct": len(rows) - len(misses) - len(false_alarms),
+            "false_alarms": len(false_alarms), "misses": len(misses),
+        }, indent=1, sort_keys=True) + "\n")
+        print(f"results written to {args.out}")
     return 1 if misses else 0
 
 

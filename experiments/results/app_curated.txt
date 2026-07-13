@@ -1,0 +1,26 @@
+case  change                                                   stream   verdicts  detected  outcome
+E1    comment and docstring edited                             same     same      silent    CORRECT
+E2    local variable renamed in an emit path                   same     same      silent    CORRECT
+E3    the service class renamed                                same     same      silent    CORRECT
+E4    guard before an emission tightened                       changed  changed   risk      CORRECT
+E5    helper logic changed two calls deep                      changed  changed   risk      CORRECT
+E6    an emitted status value renamed (vocabulary drift)       changed  changed   risk      CORRECT
+E7    a payload field renamed                                  changed  changed   break     CORRECT
+E8    the event type constant changed                          changed  changed   break     CORRECT
+E9    an emission deleted                                      changed  changed   break     CORRECT
+E10   a new emission added inside an existing method           changed  same      risk      CORRECT
+E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
+E12   a function outside every emit slice changed              same     same      silent    CORRECT
+E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
+E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
+E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
+E17   a benign attribute added in the constructor              same     same      risk      FALSE ALARM  (by design: emit-path state flows through instance attributes, so the constructor joins every slice of its class; attribute dependencies are approximated at method granularity)
+E18   the status emitted on an exception path changes          changed  same      risk      CORRECT
+E19   a loop emission processes fewer items                    changed  changed   risk      CORRECT
+E20   a ternary guard on the emitted value moves               changed  same      risk      CORRECT
+E21   a decorator on an emit-path method changes behavior      changed  changed   risk      CORRECT
+E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
+
+22 cases: 18 correct, 4 false alarm(s) (all by design), 0 miss(es)
+results written to experiments/results/app_curated.json

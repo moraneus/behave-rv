@@ -821,12 +821,39 @@ def render_table(outcomes: list[Outcome]) -> str:
     return "\n".join(lines)
 
 
-if __name__ == "__main__":
+def main(argv=None) -> int:
+    import argparse
+    import json
+    from pathlib import Path
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", help="write machine-readable results here")
+    args = parser.parse_args(argv)
     outcomes = run_catalog()
     print(render_table(outcomes))
     print()
     print(f"{'method':20} {'detected':9} {'missed':7} {'silent':7} false-alarms")
-    for name, row in (("raw-definition diff", raw_baseline_row(outcomes)),
-                      ("behave_rv", behave_rv_row(outcomes))):
+    rows = {"raw_definition_diff": raw_baseline_row(outcomes),
+            "behave_rv": behave_rv_row(outcomes)}
+    for name, row in (("raw-definition diff", rows["raw_definition_diff"]),
+                      ("behave_rv", rows["behave_rv"])):
         print(f"{name:20} {row['detected']:>9} {row['missed']:>7} "
               f"{row['silent']:>7} {row['false_alarms']:>12}")
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(json.dumps({
+            "experiment": "predicate_stability",
+            "cases": [{"case": o.case.case_id, "family": o.case.family,
+                       "behavior_changed": o.behavior_changed,
+                       "diff_status": o.diff_status,
+                       "breaks": len(o.diff_breaks),
+                       "liveness_warnings": len(o.liveness),
+                       "classification": o.classification}
+                      for o in outcomes],
+            "table": rows,
+        }, indent=1, sort_keys=True) + "\n")
+        print(f"results written to {args.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

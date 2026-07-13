@@ -1,0 +1,206 @@
+{
+ "cases": [
+  {
+   "by_design": "",
+   "case": "E1",
+   "detected": "silent",
+   "outcome": "CORRECT",
+   "stream_changed": false,
+   "title": "comment and docstring edited",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E2",
+   "detected": "silent",
+   "outcome": "CORRECT",
+   "stream_changed": false,
+   "title": "local variable renamed in an emit path",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E3",
+   "detected": "silent",
+   "outcome": "CORRECT",
+   "stream_changed": false,
+   "title": "the service class renamed",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E4",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "guard before an emission tightened",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E5",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "helper logic changed two calls deep",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E6",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "an emitted status value renamed (vocabulary drift)",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E7",
+   "detected": "break",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a payload field renamed",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E8",
+   "detected": "break",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "the event type constant changed",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E9",
+   "detected": "break",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "an emission deleted",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E10",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a new emission added inside an existing method",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E11",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "the terminal emission moved before the status it follows",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E12",
+   "detected": "silent",
+   "outcome": "CORRECT",
+   "stream_changed": false,
+   "title": "a function outside every emit slice changed",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "callable identity is emission-order contract; cannot be proven representational, so it flags",
+   "case": "E13",
+   "detected": "risk",
+   "outcome": "FALSE ALARM",
+   "stream_changed": false,
+   "title": "a function on an emit path renamed (pure)",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "slice membership changed; structural fingerprints cannot prove the refactor equivalent",
+   "case": "E14",
+   "detected": "risk",
+   "outcome": "FALSE ALARM",
+   "stream_changed": false,
+   "title": "extract-method refactor inside an emit slice",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "the type is no longer statically analyzable; losing the check must surface, not silently degrade",
+   "case": "E15",
+   "detected": "break",
+   "outcome": "FALSE ALARM",
+   "stream_changed": false,
+   "title": "the event type becomes computed instead of a constant",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E16",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a module-level constant used in emission logic changes",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "emit-path state flows through instance attributes, so the constructor joins every slice of its class; attribute dependencies are approximated at method granularity",
+   "case": "E17",
+   "detected": "risk",
+   "outcome": "FALSE ALARM",
+   "stream_changed": false,
+   "title": "a benign attribute added in the constructor",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E18",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "the status emitted on an exception path changes",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E19",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a loop emission processes fewer items",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E20",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a ternary guard on the emitted value moves",
+   "verdicts_changed": false
+  },
+  {
+   "by_design": "",
+   "case": "E21",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "a decorator on an emit-path method changes behavior",
+   "verdicts_changed": true
+  },
+  {
+   "by_design": "",
+   "case": "E22",
+   "detected": "risk",
+   "outcome": "CORRECT",
+   "stream_changed": true,
+   "title": "emission logic changes in a SECOND module",
+   "verdicts_changed": false
+  }
+ ],
+ "correct": 18,
+ "experiment": "app_curated",
+ "false_alarms": 4,
+ "misses": 0
+}

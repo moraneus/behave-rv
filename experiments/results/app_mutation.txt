@@ -1,0 +1,44 @@
+
+== jobs: 64 mutants (13 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 60
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 2
+   stream same & silent (TN): 2
+   scoping on 39 verdict-changing mutants: 39 sound, 0 unsound
+
+== ticketing: 52 mutants (6 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 52
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 0
+   stream same & silent (TN): 0
+   scoping on 36 verdict-changing mutants: 36 sound, 0 unsound
+
+== probe: 16 mutants (4 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 16
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 0
+   stream same & silent (TN): 0
+
+== order: 133 mutants (6 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 86
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 6
+   stream same & silent (TN): 41
+   scoping on 66 verdict-changing mutants: 66 sound, 0 unsound
+
+== session: 179 mutants (11 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 116
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 18
+   stream same & silent (TN): 45
+   scoping on 83 verdict-changing mutants: 83 sound, 0 unsound
+
+== todo: 175 mutants (6 crash-at-traffic, counted as stream-changing)
+   stream changed & flagged (TP): 113
+   stream changed & silent (MISS): 0
+   stream same & flagged (upper-bound alarms): 5
+   stream same & silent (TN): 57
+   scoping on 90 verdict-changing mutants: 90 sound, 0 unsound
+
+== total: 619 mutants across 6 subjects, 0 missed, 0 unsound scopings
+results written to experiments/results/app_mutation.json

@@ -1,0 +1,217 @@
+{
+ "cases": [
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A1",
+   "classification": "CORRECT (silent)",
+   "diff_status": "unchanged",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A2",
+   "classification": "CORRECT (silent)",
+   "diff_status": "unchanged",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A3",
+   "classification": "CORRECT (silent)",
+   "diff_status": "renamed",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A4",
+   "classification": "CORRECT (silent)",
+   "diff_status": "unchanged",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B1",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B2",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "break",
+   "liveness_warnings": 11
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B3",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B4",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B5",
+   "classification": "CORRECT (diff)",
+   "diff_status": "removed",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 1,
+   "case": "B6",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed,unchanged",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "B7",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "break",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 0,
+   "case": "C1",
+   "classification": "CORRECT (liveness)",
+   "diff_status": "unchanged",
+   "family": "disconnect",
+   "liveness_warnings": 3
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 0,
+   "case": "C2",
+   "classification": "CORRECT (liveness)",
+   "diff_status": "unchanged",
+   "family": "disconnect",
+   "liveness_warnings": 11
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 0,
+   "case": "C3",
+   "classification": "CORRECT (liveness)",
+   "diff_status": "unchanged",
+   "family": "disconnect",
+   "liveness_warnings": 17
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 11,
+   "case": "C4",
+   "classification": "CORRECT (diff)",
+   "diff_status": "changed",
+   "family": "disconnect",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A5",
+   "classification": "CORRECT (silent)",
+   "diff_status": "unchanged",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 0,
+   "case": "A6",
+   "classification": "CORRECT (silent)",
+   "diff_status": "unchanged",
+   "family": "absorb",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": true,
+   "breaks": 0,
+   "case": "C4b",
+   "classification": "MISS (documented)",
+   "diff_status": "unchanged",
+   "family": "disconnect",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 11,
+   "case": "D4",
+   "classification": "FALSE ALARM",
+   "diff_status": "changed",
+   "family": "conservative",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 11,
+   "case": "D1",
+   "classification": "FALSE ALARM",
+   "diff_status": "changed",
+   "family": "conservative",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 11,
+   "case": "D2",
+   "classification": "FALSE ALARM",
+   "diff_status": "changed",
+   "family": "conservative",
+   "liveness_warnings": 0
+  },
+  {
+   "behavior_changed": false,
+   "breaks": 11,
+   "case": "D3",
+   "classification": "FALSE ALARM",
+   "diff_status": "changed",
+   "family": "conservative",
+   "liveness_warnings": 0
+  }
+ ],
+ "experiment": "predicate_stability",
+ "table": {
+  "behave_rv": {
+   "detected": 11,
+   "false_alarms": 4,
+   "missed": 1,
+   "silent": 6
+  },
+  "raw_definition_diff": {
+   "detected": 7,
+   "false_alarms": 8,
+   "missed": 5,
+   "silent": 2
+  }
+ }
+}

@@ -1,0 +1,31 @@
+case behavior?  diff                   liveness  classification             description
+--------------------------------------------------------------------------------------------------------------
+A1   False      unchanged(0 brk)       0         CORRECT (silent)           rename the step function
+A2   False      unchanged(0 brk)       0         CORRECT (silent)           rename internal variables in the predicate
+A3   False      renamed(0 brk)         0         CORRECT (silent)           change the phrasing, old wording retained as alias
+A4   False      unchanged(0 brk)       0         CORRECT (silent)           reformat the predicate body
+B1   True       changed(11 brk)        0         CORRECT (diff)             rename the payload field the predicate reads
+B2   True       changed(11 brk)        11        CORRECT (diff)             change the declared event type
+B3   True       changed(11 brk)        0         CORRECT (diff)             change the correlation key
+B4   True       changed(11 brk)        0         CORRECT (diff)             tighten the guard inside the predicate body
+B5   True       removed(11 brk)+refusal 0         CORRECT (diff)             delete the step entirely
+B6   True       changed,unchanged(1 brk) 0         CORRECT (diff)             two steps share an event type; change one; scope check
+B7   True       changed(11 brk)        0         CORRECT (diff)             rename the placeholder-bound parameter (phrasing kept)
+C1   True       unchanged(0 brk)       3         CORRECT (liveness)         app emits "PAID" instead of "paid", step untouched
+C2   True       unchanged(0 brk)       11        CORRECT (liveness)         app emits a different event type, step untouched
+C3   True       unchanged(0 brk)       17        CORRECT (liveness)         app carries the value under a different field name
+C4   True       changed(11 brk)        0         CORRECT (diff)             predicate delegates to a helper; the helper changes
+A5   False      unchanged(0 brk)       0         CORRECT (silent)           rename a helper (call site updated), body identical
+A6   False      unchanged(0 brk)       0         CORRECT (silent)           reorder two helper definitions, no call/body changes
+C4b  True       unchanged(0 brk)       0         MISS (documented)          helper change behind an unresolvable (value) call
+D4   False      changed(11 brk)        0         FALSE ALARM                split one helper into two, behavior preserved
+D1   False      changed(11 brk)        0         FALSE ALARM                introduce a temporary variable in the predicate
+D2   False      changed(11 brk)        0         FALSE ALARM                reorder commutative boolean operands
+D3   False      changed(11 brk)        0         FALSE ALARM                extract unchanged logic into a helper
+--------------------------------------------------------------------------------------------------------------
+false alarms in conservative probes: 4/4
+
+method               detected  missed  silent  false-alarms
+raw-definition diff          7       5       2            8
+behave_rv                   11       1       6            4
+results written to experiments/results/predicate_stability.json

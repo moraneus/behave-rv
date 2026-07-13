@@ -1,0 +1,24 @@
+# platform: Darwin arm64, CPython 3.13.12
+subject                             funcs  sites  median ms   peak MB
+ticketing/app_service.py                       5        2.7       0.2
+order_service/service.py                       3        4.8       0.4
+session_service/service.py                     3        6.3       0.5
+todo_app/service.py                            3        5.0       0.5
+synthetic C=5 D=4                      35      5        6.7       0.5
+synthetic C=20 D=4                    140     20       27.0       2.2
+synthetic C=50 D=4                    350     50       66.0       5.7
+synthetic C=100 D=4                   700    100      132.4      11.4
+synthetic C=200 D=4                  1400    200      264.2      22.9
+synthetic C=50 D=2                    250     50       45.6       4.1
+synthetic C=50 D=8                    550     50      107.5       8.8
+synthetic C=50 D=16                   950     50      187.2      15.0
+
+file                               funcs sites  slice min/mean/max in-slice% unresolved markers
+ticketing/app_service.py              10     5       2/ 3.2/7         100%          2       1
+                                     unresolved: self._clock, self._emit
+order_service/service.py              15     3       2/ 6.7/13        100%          3       0
+                                     unresolved: self._clock, self._emit, self._sleep
+session_service/service.py            20     3       4/ 8.7/17        100%          4       0
+                                     unresolved: <dynamic>, self._clock, self._emit, self._sleep
+todo_app/service.py                   18     3       2/ 6.7/14        100%          3       0
+                                     unresolved: self._clock, self._emit, self._sleep

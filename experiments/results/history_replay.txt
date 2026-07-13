@@ -1,0 +1,11 @@
+service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos, matching
+service.py       19a1ebe  silent                 GitHub Actions CI: test matrix py3.10-3.14 on ubuntu-24.04, 
+service.py       2049b69  silent                 Documentation accuracy pass: seven reviewer-identified corre
+service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos, matching
+service.py       376dc44  added                  Interactive todo board: user-driven events with a live monit
+app.py           4b22945  silent                 Redesign the todo board as a modern app with live policy car
+app.py           376dc44  silent                 Interactive todo board: user-driven events with a live monit
+app_service.py   b0dbf4f  behavior-risk          Guide: what happens when the APP's logic changes -- the runt
+app_service.py   45f8b7a  added                  Ticketing example grown to five steps; catalog.json made vis
+
+9 historical app-file changes: 5 flagged, 4 silent
