@@ -1,8 +1,8 @@
 # Emit-Site Impact Analysis: Statically Scoping Application Changes to Runtime-Verification Policies
 
-*Capability description and experimental evaluation. Prepared for inclusion in
-the paper; every number below is produced by a committed, rerunnable script
-(section 8), measured 2026-07-13 on this repository.*
+*Capability description and experimental evaluation. Every number below is
+produced by a committed, rerunnable script (section 8), measured 2026-07-13
+on this repository.*
 
 ## 1. Summary
 
@@ -388,23 +388,3 @@ python -m pytest tests/ demo/ -q          # 383 tests; E-series + campaign pinne
 The E-series expectations, the zero-miss property, and the exact by-design
 false-alarm family are asserted in the permanent test suite, so any
 regression in the analyzer fails CI, not just a rerun of this document.
-
-## 9. What the paper may and may not claim
-
-May claim: a static, sound-up-to-declared-fragment change-impact analysis
-from application code to runtime-verification policies, anchored at
-syntactically identifiable emission sites; empirically zero misses on 83
-adversarial mutants and 17 curated cases with executed ground truth, zero
-false alarms outside a declared four-case conservatism family, sound
-scoping on all 43 verdict-affecting mutants including a non-obvious
-event-time coupling rule; linear cost (~0.2 ms/function); and a committed,
-reviewable contract artifact integrating with CI. May also claim the
-methodological point: the blind spots were found by the evaluation protocol
-itself (four defects from the first mutation run, one from the history
-replay), each converted into either a fix with a regression test or a
-declared, measured conservatism.
-
-Must not claim: semantic refactoring-equivalence, coverage of data-driven or
-environment-timing behavior, applicability beyond the in-process anchored
-convention, field-scale precision evidence, or independence of the
-evaluation from the implementers.
