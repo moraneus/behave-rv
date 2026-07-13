@@ -423,7 +423,7 @@ E17   a benign attribute added in the constructor              same     same    
 Every stream change is caught (0 misses), every no-op stays silent except
 the four DECLARED conservatisms (E13-E15 and E17, the constructor rule),
 which are asserted to be exactly that family and nothing more. The E-series
-is the curated benchmark; the adversarial one -- an 83-mutant campaign with
+is the curated benchmark; the adversarial one -- an 86-mutant campaign with
 executed ground truth, which found and drove the closure of four
 detection/scoping holes -- is reported with full honesty in
 [docs/APP_SURFACE_EVALUATION.md](docs/APP_SURFACE_EVALUATION.md).

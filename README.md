@@ -410,7 +410,7 @@ and names the policies at risk, before any runtime violation. **The complete
 mechanism -- all four defense paths with real worked examples, the CLI
 workflow, and the measured detection tables (22 step-side cases, 17 app-side
 cases) -- is documented in [`STABILITY.md`](STABILITY.md); the app-side
-capability's full experimental evaluation (an 83-mutant campaign with
+capability's full experimental evaluation (an 86-mutant campaign with
 executed ground truth, zero misses after hardening, honest threats to
 validity) is
 [`docs/APP_SURFACE_EVALUATION.md`](docs/APP_SURFACE_EVALUATION.md).**
@@ -470,11 +470,14 @@ The implementation is validated against that specification by property based tes
 large generated input spaces, including adversarial event orderings, plus two
 real mutation-testing campaigns: one over the engine (see `MUTATION.md`: 1873
 mutants, 89.9% killed, every survivor classified) and one over the app-surface
-analyzer (see `docs/APP_SURFACE_EVALUATION.md`: 83 mutants with executed
+analyzer (see `docs/APP_SURFACE_EVALUATION.md`: 86 mutants with executed
 stream-level ground truth, zero misses after a hardening pass the campaign
 itself drove). The full test suite is 325 core tests (383 with the demo suites)
 at the time of writing. This is strong evidence over the tested space, not
 a proof, and the space it covers is stated plainly rather than overclaimed.
+Every experiment behind these numbers is re-runnable with one command:
+`./run_experiments.sh` (add `--with-tests` for the full suite and
+`--with-perf` for the time/memory matrices).
 
 ## Limitations and scope
 

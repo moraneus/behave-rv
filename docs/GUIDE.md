@@ -849,7 +849,7 @@ Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
 code structure, so behavior driven by runtime data (config, database
 contents, request payloads) is invisible to it, and its conservatisms are
 measured and declared (the 17-case E-series in
-[`STABILITY.md`](../STABILITY.md), an 83-mutant adversarial campaign with
+[`STABILITY.md`](../STABILITY.md), an 86-mutant adversarial campaign with
 zero misses, and a replay of this repo's own git history with every
 classification correct — full honest results in
 [`APP_SURFACE_EVALUATION.md`](APP_SURFACE_EVALUATION.md)). It is the

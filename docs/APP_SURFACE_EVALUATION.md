@@ -27,9 +27,11 @@ constants, and policies involved.
 
 The evaluation is reported honestly, including its initial failures: the
 mutation campaign's **first run found 8 missed detections and 8 unsound
-scopings** across 83 mutants, reducing to four distinct root causes; three
-were fixed and one absorbed into a conservative scoping rule, after which all
-83 mutants are handled correctly. We consider the found-then-fixed trajectory
+scopings** across its then-83 mutants, reducing to four distinct root causes;
+three were fixed and one absorbed into a conservative scoping rule, after
+which the campaign is clean -- and has remained clean as the corpus grew to
+its current 86 mutants (the baseline subject gained a constant-guarded path
+with case E16). We consider the found-then-fixed trajectory
 itself part of the result: it demonstrates what the method's blind spots look
 like and that they are discoverable by systematic testing rather than by
 production incidents.
@@ -215,11 +217,12 @@ comparison operator swaps, boolean operator swaps, if-condition negation,
 statement deletion — to three subjects: the E-series baseline service (27
 mutants), the ticketing example application (42), and a probe *designed to
 stress the suspected weakest point* — a module-level, non-event-type constant
-participating in emission logic (14). 83 mutants total; each is executed
+participating in emission logic (14). 86 mutants total; each is executed
 under fixed traffic for stream ground truth (a mutant that raises counts as
 stream-changing) and independently analyzed.
 
-**First run: 8 misses and 8 unsound scopings.** Root-cause analysis reduced
+**First run (on the then-83-mutant corpus): 8 misses and 8 unsound
+scopings.** Root-cause analysis reduced
 them to four defects, which we report as findings, not embarrassments —
 each is a hole any reader would want to know the shape of:
 
@@ -250,12 +253,12 @@ each is a hole any reader would want to know the shape of:
 
 ```
 subject     mutants  crash-at-traffic  stream-changed & flagged  MISSED  stream-same & flagged  stream-same & silent
-jobs        27       5                 25                        0       0                      2
+jobs        30       8                 28                        0       0                      2
 ticketing   42       6                 42                        0       0                      0
 probe       14       4                 14                        0       0                      0
 ```
 
-83/83 correct: zero misses, and — notable — **zero alarms on
+86/86 correct: zero misses, and — notable — **zero alarms on
 stream-preserving mutants**; the only two stream-preserving mutants in the
 corpus (edits to functions outside every slice) were correctly silent. The
 class-level-constant sibling of defect 1 (`self.LIMIT` reading a class
@@ -353,7 +356,7 @@ claim to its true scope.
   difference on this traffic", not "provably equivalent". The E13/E14/E17
   alarms are argued equivalent by construction, not proven.
 - **The evaluation drove the hardening.** The mutation campaign found the
-  holes and the same authors fixed them and re-ran; the final 83/83 is
+  holes and the same authors fixed them and re-ran; the final 86/86 is
   therefore a fixed-point of this benchmark, not an independent test. New
   operator families (e.g. reordering statements across functions, mutating
   mutable module state, decorator changes) could find new holes; mutable
@@ -373,12 +376,20 @@ claim to its true scope.
 
 ## 8. Reproducibility
 
-All experiments run from the repository root, standard library plus the
+One command re-runs everything (plus the step-side stability catalog and the
+CI gates; it stops on the first discrepancy, so a clean run IS the
+reproduction):
+
+```bash
+./run_experiments.sh              # add --with-tests / --with-perf for more
+```
+
+Or individually -- all from the repository root, standard library plus the
 package itself, deterministic (no randomness, no timestamps):
 
 ```bash
 python -m tests.stability_app_surface     # RQ1: the 17-case E-series
-python -m tests.exp_app_mutation          # RQ2/RQ3: 83 mutants, exit 1 on any miss
+python -m tests.exp_app_mutation          # RQ2/RQ3: 86 mutants, exit 1 on any miss
 python -m tests.measure_app_history       # RQ4: this repo's own commits
 python -m tests.exp_app_scaling           # RQ5: cost vs size
 python -m tests.exp_app_coverage          # RQ6: resolvability and tightness
