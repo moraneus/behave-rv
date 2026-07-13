@@ -50,7 +50,7 @@ def test_c4_helper_changes_are_now_detected_by_the_call_graph_fingerprint():
     # This test previously asserted C4 as the documented MISS, xfail-style,
     # with the promise that a mechanism catching it must update docs and test
     # together. That happened: the interprocedural fingerprint
-    # (docs/design/interprocedural-fingerprint.md) resolves same-module and
+    # (see STABILITY.md) resolves same-module and
     # same-package calls, so the helper's body change moves the caller's
     # fingerprint and the diff breaks. The new documented boundary is C4b
     # (calls through values), asserted below.

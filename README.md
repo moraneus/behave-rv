@@ -405,7 +405,7 @@ The fingerprint is a conservative, AST-based approximation of the matching
 contract, not a semantic-equivalence check: it is invariant to identifier names
 and formatting, sensitive to structure and constants, and it covers the
 normalized bodies of every helper the predicate statically reaches (same-module
-and same-package calls, transitively — `docs/design/interprocedural-fingerprint.md`).
+and same-package calls, transitively — the mechanism is specified in `STABILITY.md`).
 Known false positives (a break reported where behavior is unchanged):
 introducing a temporary variable, commutative reordering of `and`/`or`
 operands, extracting or splitting logic into helpers. Known false negative: a

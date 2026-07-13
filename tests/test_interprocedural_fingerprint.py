@@ -1,5 +1,5 @@
 """The call-graph fingerprint: directed tests for the C4 fix
-(docs/design/interprocedural-fingerprint.md)."""
+(the C4 fix; see STABILITY.md)."""
 
 import json
 

@@ -21,8 +21,7 @@ the referenced fields (the phrasing's placeholders), the exposed payload
 fields read in the body, and a *fingerprint* of the matching contract — the
 alpha-normalized AST of the predicate body, the binding-parameter names, and
 the normalized bodies of every helper the predicate statically reaches
-(same-module and same-package calls, transitively; see
-`docs/design/interprocedural-fingerprint.md`). Call sites the resolver cannot
+(same-module and same-package calls, transitively). Call sites the resolver cannot
 follow — dynamic dispatch, functions passed as values, object methods,
 builtins — are recorded in the signature's `unresolved_calls`, so the
 protection boundary is visible per step.
@@ -266,7 +265,7 @@ and the conservative probes alarm 4/4 by design.
    value (a parameter default, a callback, dynamic dispatch, an object
    method) is not followed — deliberately: a resolver clever enough to chase
    values is a resolver that can err in the quiet direction, which inverts
-   the trust model (see `docs/design/interprocedural-fingerprint.md`). The
+   the trust model: the tool's whole value is that silence means safe. The
    boundary is visible per step in the signature's `unresolved_calls`.
 2. **Stream representativeness**: liveness vouches only for what the observed
    trace shows. A value that never appeared cannot be flagged as newly

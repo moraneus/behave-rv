@@ -15,7 +15,7 @@ from behave_rv.catalog.entry import CatalogEntry
 
 # v2 (2026-07-12): signatures gained helper_hashes and unresolved_calls, and
 # the fingerprint algorithm covers the reachable call graph
-# (docs/design/interprocedural-fingerprint.md). v1 catalogs are refused with a
+# (see STABILITY.md). v1 catalogs are refused with a
 # recompute message rather than producing spurious breaks.
 CATALOG_FORMAT_VERSION = 2
 
