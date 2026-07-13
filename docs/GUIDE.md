@@ -531,6 +531,123 @@ layers answer it, each with a concrete command or surface:
    details) plus per-policy "⚠ no matching events observed" badges driven by
    the actual event flow. So yes — the web monitor now shows it.
 
+### Worked examples: which changes break policies, and which don't
+
+All outputs below are real, produced by running `catalog diff` against the
+ticketing example's committed catalog. First, the catalog's role in one
+sentence: **the diff only has meaning against the committed snapshot** — it
+compares what the steps' contracts ARE now with what they WERE when
+`catalog save` last ran, so "regenerate and commit the catalog" is how you
+*declare* that a contract change was intended.
+
+#### Change with NO impact: renaming the function and its internals
+
+```python
+# BEFORE
+def ticket_is(ctx, event, status):
+    if event.type == "ticket.status" and event.payload.get("status") == status:
+        ctx.bind(ticket_id=event.bindings["ticket_id"])
+        ...
+
+# AFTER — function renamed, every internal identifier renamed
+def ticket_status_predicate(mctx, incoming, status):
+    if incoming.type == "ticket.status" and incoming.payload.get("status") == status:
+        mctx.bind(ticket_id=incoming.bindings["ticket_id"])
+        ...
+```
+
+```
+  ticket.status.is: unchanged        (…all five steps: unchanged)
+ok: no breaks
+```
+
+Nothing observable moved: the step still watches the same event type, reads
+the same field, matches the same condition — names are representation, not
+contract. Also absorbed: reformatting the body, rewording the phrasing when
+the old wording is kept as an alias (`registry.alias(...)`), and renaming or
+reordering helper functions. One honest caveat: structural refactors that
+*preserve* behavior (introducing a temporary variable, extracting logic into
+a helper) DO alarm — the fingerprint is conservative by design, and the
+break message says "review the step body"; that costs a glance, where a
+missed alarm would cost a dormant policy.
+
+Note what did NOT protect you here: the parameter `status` kept its name.
+It binds the phrasing's `{status}` placeholder BY NAME, so renaming *it* is
+a real break — and the diff reports it as one.
+
+#### Break type 1: renaming the payload field the step reads
+
+```python
+# BEFORE                                          # AFTER
+event.payload.get("status") == status             event.payload.get("state") == status
+```
+
+```
+  ticket.status.is: changed
+
+# BREAKS (4) — scoped to the policies that use the step
+  ✗ a ticket may only be resolved after it was assigned  [policies]  via ticket.status.is
+    contract: payload_fields {'status': 'any'} -> {'state': 'any'}; trigger condition changed (…)
+  ✗ an opened ticket is assigned within the window …
+  ✗ an escalated ticket must not be closed until resolved …
+  ✗ every ticket is eventually resolved …
+
+FAIL: 4 break(s)
+```
+
+Why it breaks: the app still emits `{"status": ...}`, the step now reads a
+field that never exists — every event stops matching, and all four policies
+built on this step would go dormant while looking healthy. Notice the
+scoping: the reply-SLA and on-call policies use OTHER steps and are NOT
+notified, even though two of those steps watch the same event type.
+
+#### Break type 2: changing the declared event type
+
+```python
+# BEFORE                                          # AFTER
+event_type="ticket.status"                        event_type="ticket.lifecycle"
+```
+
+```
+  ✗ a ticket may only be resolved after it was assigned  [policies]  via ticket.status.is
+    contract: event_type 'ticket.status' -> 'ticket.lifecycle'; …
+FAIL: 4 break(s)
+```
+
+The step now listens for events the app never emits. Same dormancy, same
+loud report, same scoping. (A helper-function body change is caught the same
+way — the fingerprint follows same-module and same-package calls — with the
+break naming the changed helper.)
+
+#### The change the catalog honestly CANNOT see: the app-side rename
+
+The step is untouched; someone edits the SERVICE:
+
+```python
+# BEFORE                                          # AFTER
+self._status(ticket_id, "resolved")               self._status(ticket_id, "Resolved")
+```
+
+`catalog diff` truthfully reports `unchanged` — no step contract moved. The
+policies still die: `'a ticket is "resolved"'` never matches `"Resolved"`.
+This is what the `--trace` layer exists for. Against a stream recorded from
+the changed app:
+
+```
+# liveness (…) — against after_rename.jsonl
+  ! policy 'a ticket may only be resolved after it was assigned' depends on
+    step 'ticket.status.is' with status='resolved', but no 'ticket.status'
+    event carrying that value has been observed in the available stream;
+    the policy may be uncheckable.
+  ! policy 'every ticket is eventually resolved' depends on … status='resolved' …
+```
+
+Read liveness warnings with its boundary in mind: it flags EVERYTHING the
+trace doesn't show, so an unrepresentative trace (one that never exercised
+replies, say) warns about those policies too. The signal you act on is the
+warning naming the value you just touched. At runtime, the dashboard's
+"⚠ no matching events observed" badge is the live form of the same signal.
+
 Full mechanism, worked examples for every path, the measured 22-case
 detection table, and the stated boundaries (calls through values, stream
 representativeness): [`STABILITY.md`](../STABILITY.md).
