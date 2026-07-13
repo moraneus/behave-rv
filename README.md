@@ -41,6 +41,10 @@ maintains one independent monitor instance per entity, and produces a three valu
 verdict (`satisfied`, `violated`, or `pending`) for each entity, together with an
 explanation for every violation.
 
+**New here? The complete usage guide -- exposing events, writing steps and
+policies, every engine option, live status watching, and the built-in web
+dashboard -- is [`docs/GUIDE.md`](docs/GUIDE.md).**
+
 Three roles keep this honest and separate:
 
 - **The code** exposes a monitorable surface: small predicates that observe
@@ -391,7 +395,7 @@ This is the distinctive feature. When the code that exposes predicates changes,
 human policies should not rot in silence. behave_rv keeps them aligned with a
 behavioural signature. **The complete mechanism -- all three defense paths with
 real worked examples, the CLI workflow, and the measured detection table over
-an 18-case code-change catalog -- is documented in
+a 22-case code-change catalog -- is documented in
 [`STABILITY.md`](STABILITY.md).**
 
 Each registered step has a stable `step_id` and a **behavioural signature**: the

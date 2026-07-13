@@ -215,11 +215,11 @@ and fixed the version dependence.
 
 ## The measured table
 
-Eighteen realistic code changes, each with ground truth *verified* by
+Twenty-two realistic code changes, each with ground truth *verified* by
 replaying the same seeded-fault trace through baseline and changed versions
 and comparing verdict sets. Reproduce with `python -m tests.stability_catalog`
 (asserted permanently in `tests/test_stability_catalog.py`). Measured
-2026-07-11:
+2026-07-12 (extended to 22 cases with the call-graph fingerprint):
 
 ```
 case behavior?  diff                   liveness  classification             description

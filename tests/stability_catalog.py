@@ -1,6 +1,6 @@
 """The code-change catalog: specification stability, measured with ground truth.
 
-Seventeen realistic code changes, each applied one at a time against a fixed
+Twenty-two realistic code changes, each applied one at a time against a fixed
 baseline (the order demo's real service, step, and 11 policies), each with
 ground truth declared in advance. For every case the harness:
 

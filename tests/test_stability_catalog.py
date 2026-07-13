@@ -14,7 +14,7 @@ def _by_id():
     return {o.case.case_id: o for o in run_catalog()}
 
 
-OUTCOMES = _by_id()      # once per session; ~2s for all eighteen cases
+OUTCOMES = _by_id()      # once per session; a few seconds for all 22 cases
 
 
 def test_every_declared_ground_truth_matches_the_replayed_one():
