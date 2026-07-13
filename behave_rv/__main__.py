@@ -12,17 +12,24 @@ log as JSON lines, followed by a rendered counterexample for every violation.
 
 The specification-stability workflow (see STABILITY.md):
 
-    python -m behave_rv catalog save --steps <steps.py> --catalog catalog.json
+    python -m behave_rv catalog save --steps <steps.py> --catalog catalog.json \\
+        [--app <app.py-or-dir> ...]
     python -m behave_rv catalog diff --steps <steps.py> --catalog catalog.json \\
-        --policies <dir-or-.feature> [--trace <trace.jsonl>] [--owner <who>]
+        --policies <dir-or-.feature> [--app <app.py-or-dir> ...] \\
+        [--trace <trace.jsonl>] [--owner <who>] [--fail-on-app-risk]
 
-``save`` computes the current steps' catalog and writes the committed artifact.
-``diff`` recomputes against the current code, diffs against the committed
-catalog, and prints the notifications: breaks (with the contract diff and the
-affected policies via their recorded used_step_ids), and suggestions. With a
-representative ``--trace``, compile-time liveness warnings (type- and
-value-level) print in the same output. Exit codes: 0 clean, 1 breaks found,
-2 usage or compile errors -- so ``catalog diff`` can gate CI.
+``save`` computes the current steps' catalog and writes the committed artifact;
+with ``--app`` it also fingerprints the application's emit sites into the
+catalog's app_surface section. ``diff`` recomputes against the current code,
+diffs against the committed catalog, and prints the notifications: breaks
+(with the contract diff and the affected policies via their recorded
+used_step_ids), suggestions, and -- with ``--app`` -- the emit-site impact
+analysis: app-side interface breaks and behavior risks, each scoped to the
+policies observing that event type. With a representative ``--trace``,
+compile-time liveness warnings (type- and value-level) print in the same
+output. Exit codes: 0 clean, 1 breaks found (app behavior risks count only
+under ``--fail-on-app-risk``), 2 usage or compile errors -- so ``catalog
+diff`` can gate CI.
 """
 
 from __future__ import annotations
@@ -35,8 +42,17 @@ import uuid
 import warnings
 from pathlib import Path
 
+from behave_rv.catalog.app_surface import (
+    APP_REMOVED,
+    BEHAVIOR_RISK,
+    DYNAMIC,
+    INTERFACE_BREAK,
+    affected_step_ids,
+    analyze_app,
+    classify_app_changes,
+)
 from behave_rv.catalog.diff import classify_changes
-from behave_rv.catalog.store import load_catalog, save_catalog
+from behave_rv.catalog.store import load_app_surface, load_catalog, save_catalog
 from behave_rv.compile.compiler import (
     CompileError,
     UncheckablePolicyWarning,
@@ -141,8 +157,16 @@ def catalog_save_command(args) -> int:
         if not entries:
             print(f"no steps registered by {args.steps}", file=sys.stderr)
             return 2
-        save_catalog(args.catalog, entries)
-    print(f"catalog: {len(entries)} step(s) written to {args.catalog}")
+        app_surface = None
+        if args.app:
+            app_surface = analyze_app(args.app)
+            if not app_surface:
+                print("warning: no emit sites found under the given --app paths "
+                      "(is behave_rv's Event imported and constructed there?)",
+                      file=sys.stderr)
+        save_catalog(args.catalog, entries, app_surface=app_surface)
+    print(f"catalog: {len(entries)} step(s) written to {args.catalog}"
+          + (f" ({len(app_surface)} app emit site(s))" if app_surface is not None else ""))
     return 0
 
 
@@ -210,12 +234,75 @@ def catalog_diff_command(args) -> int:
         for message in liveness:
             print(f"  ! {message}")
 
-    if notes.breaks:
-        print(f"\nFAIL: {len(notes.breaks)} break(s)")
+    app_breaks, app_risks = _app_surface_diff(args, current, uses)
+
+    failures = len(notes.breaks) + len(app_breaks)
+    if args.fail_on_app_risk:
+        failures += len(app_risks)
+    if failures:
+        print(f"\nFAIL: {failures} break(s)"
+              + (f" (of which {len(app_risks)} app behavior risk(s), promoted by "
+                 "--fail-on-app-risk)" if args.fail_on_app_risk and app_risks else ""))
         return 1
-    print("\nok: no breaks"
-          + ("" if not liveness else f" ({len(liveness)} liveness warning(s) above)"))
+    trailer = [f"{len(liveness)} liveness warning(s)"] if liveness else []
+    trailer += [f"{len(app_risks)} app behavior risk(s)"] if app_risks else []
+    print("\nok: no breaks" + (f" ({', '.join(trailer)} above)" if trailer else ""))
     return 0
+
+
+def _app_surface_diff(args, current_entries, uses) -> tuple[list[str], list[str]]:
+    """Diff the app's emit sites against the committed app surface and print the
+    scoped report. Returns (breaks, risks) -- breaks always gate the exit code,
+    risks only under --fail-on-app-risk."""
+    if not args.app:
+        return [], []
+    current_sites = analyze_app(args.app)
+    if not current_sites:
+        print("\n# app surface: no emit sites found under the given --app paths "
+              "(is behave_rv's Event imported and constructed there?)")
+    committed_sites = load_app_surface(args.catalog)
+    if committed_sites is None:
+        print("\n# app surface: the committed catalog has no app_surface section; "
+              "run 'catalog save --app ...' and commit it to enable this check")
+        return [], []
+
+    users_of: dict[str, list[str]] = {}
+    for use in uses:
+        for step_id in use.step_ids:
+            users_of.setdefault(step_id, []).append(use.policy_id)
+
+    changes = classify_app_changes(committed_sites, current_sites)
+    print(f"\n# app surface diff ({len(changes)} emit site(s))")
+    for change in changes:
+        print(f"  {change.site_id}: {change.status}")
+
+    breaks: list[str] = []
+    risks: list[str] = []
+    for change in changes:
+        bucket = {INTERFACE_BREAK: breaks, APP_REMOVED: breaks,
+                  BEHAVIOR_RISK: risks}.get(change.status)
+        if bucket is None:
+            continue
+        site = change.new or change.old
+        if site.event_type == DYNAMIC:
+            scope = "cannot scope: dynamic event type — review ALL policies"
+        else:
+            step_ids = affected_step_ids(site, current_entries)
+            policies = sorted({p for sid in step_ids for p in users_of.get(sid, [])})
+            scope = (f"policies at risk: {', '.join(policies)}" if policies
+                     else "no compiled policy observes this event type")
+        bucket.append(f"{change.site_id} (event {site.event_type!r})\n"
+                      f"      {change.detail}\n      {scope}")
+
+    if breaks:
+        print(f"\n# APP BREAKS ({len(breaks)}) — the emitted interface changed")
+        for line in breaks:
+            print(f"  ✗ {line}")
+    if risks:
+        print(f"\n# APP BEHAVIOR RISKS ({len(risks)}) — logic on an emit path changed")
+        for line in risks:
+            print(f"  ! {line}")
+    return breaks, risks
 
 
 # -- entry ---------------------------------------------------------------------
@@ -230,6 +317,8 @@ def main(argv: list[str] | None = None) -> int:
         save = sub.add_parser("save", help="write the committed catalog for a steps module")
         save.add_argument("--steps", required=True, help="path to the RV steps module")
         save.add_argument("--catalog", required=True, help="path of the catalog artifact")
+        save.add_argument("--app", nargs="*", default=[],
+                          help="application .py files/dirs whose emit sites to fingerprint")
         diff = sub.add_parser("diff", help="diff current steps against the committed catalog")
         diff.add_argument("--steps", required=True, help="path to the RV steps module")
         diff.add_argument("--catalog", required=True, help="the committed catalog artifact")
@@ -237,6 +326,11 @@ def main(argv: list[str] | None = None) -> int:
                           help=".feature files or directories (for break scoping)")
         diff.add_argument("--trace", help="representative JSONL stream for liveness")
         diff.add_argument("--owner", default="policies", help="owner label for breaks")
+        diff.add_argument("--app", nargs="*", default=[],
+                          help="application .py files/dirs to diff against the committed "
+                               "app surface (emit-site impact analysis)")
+        diff.add_argument("--fail-on-app-risk", action="store_true",
+                          help="exit 1 on app behavior risks too, not only breaks")
         args = parser.parse_args(argv[1:])
         try:
             if args.action == "save":
