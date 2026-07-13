@@ -744,6 +744,62 @@ def run_catalog() -> list[Outcome]:
     return [run_case(case) for case in CASES]
 
 
+# ---------------------------------------------------------------------------
+# the raw-definition baseline: what a naive comparison tool has WITHOUT stable
+# identities or structural normalization -- every registered phrasing (primary
+# and alias) mapped to its dispatch metadata and EXACT predicate source text.
+# It flags when any baseline phrasing's definition changed or vanished (new
+# phrasings are additions, not changes). This is the comparison row for the
+# published Table: it quantifies what the identities + signatures buy.
+
+
+def raw_definition_record(registry) -> dict:
+    import inspect
+    record = {}
+    for entry in registry.entries():
+        try:
+            source = inspect.getsource(registry._funcs[entry.step_id])
+        except (OSError, TypeError):
+            source = "<unavailable>"
+        for phrasing in (entry.phrasing, *registry._aliases.get(entry.step_id, [])):
+            record[phrasing] = (entry.signature.event_type,
+                                tuple(entry.signature.correlation_key), source)
+    return record
+
+
+def raw_diff_flags(case: Case) -> bool:
+    baseline = raw_definition_record(case.baseline_registry())
+    variant_registry = (case.variant_registry() if case.variant_registry
+                        else case.baseline_registry())
+    variant = raw_definition_record(variant_registry)
+    return any(variant.get(phrase) != rec for phrase, rec in baseline.items())
+
+
+def raw_baseline_row(outcomes: list[Outcome]) -> dict:
+    """(detected, missed, silent, false alarms) for the raw baseline over the
+    same 22 cases and the same replayed ground truth."""
+    row = {"detected": 0, "missed": 0, "silent": 0, "false_alarms": 0}
+    for outcome in outcomes:
+        flagged = raw_diff_flags(outcome.case)
+        if outcome.behavior_changed:
+            row["detected" if flagged else "missed"] += 1
+        else:
+            row["false_alarms" if flagged else "silent"] += 1
+    return row
+
+
+def behave_rv_row(outcomes: list[Outcome]) -> dict:
+    """The same four columns for the full tool (diff + liveness paths)."""
+    row = {"detected": 0, "missed": 0, "silent": 0, "false_alarms": 0}
+    for o in outcomes:
+        caught = bool(o.diff_breaks) or bool(o.liveness) or o.compile_refused
+        if o.behavior_changed:
+            row["detected" if caught else "missed"] += 1
+        else:
+            row["false_alarms" if caught else "silent"] += 1
+    return row
+
+
 def render_table(outcomes: list[Outcome]) -> str:
     lines = [
         f"{'case':4} {'behavior?':10} {'diff':22} {'liveness':9} {'classification':26} description",
@@ -766,4 +822,11 @@ def render_table(outcomes: list[Outcome]) -> str:
 
 
 if __name__ == "__main__":
-    print(render_table(run_catalog()))
+    outcomes = run_catalog()
+    print(render_table(outcomes))
+    print()
+    print(f"{'method':20} {'detected':9} {'missed':7} {'silent':7} false-alarms")
+    for name, row in (("raw-definition diff", raw_baseline_row(outcomes)),
+                      ("behave_rv", behave_rv_row(outcomes))):
+        print(f"{name:20} {row['detected']:>9} {row['missed']:>7} "
+              f"{row['silent']:>7} {row['false_alarms']:>12}")

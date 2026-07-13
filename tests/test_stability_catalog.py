@@ -105,3 +105,19 @@ def test_catalog_save_is_stable_across_processes(tmp_path):
         subprocess.run([sys.executable, "-c", script, str(tmp_path / name)],
                        check=True, cwd=".")
     assert (tmp_path / "one.json").read_bytes() == (tmp_path / "two.json").read_bytes()
+
+
+def test_the_raw_definition_baseline_row_is_pinned():
+    # the published comparison row: what a naive phrasing+metadata+exact-source
+    # diff achieves on the same 22 cases -- measured, not assumed. Note the
+    # A5 helper rename: its call site changes inside the predicate source, so
+    # an exact-source diff MUST flag it (a false alarm, not a silent absorb).
+    from tests.stability_catalog import raw_baseline_row
+    assert raw_baseline_row(list(OUTCOMES.values())) == {
+        "detected": 7, "missed": 5, "silent": 2, "false_alarms": 8}
+
+
+def test_the_behave_rv_row_is_pinned():
+    from tests.stability_catalog import behave_rv_row
+    assert behave_rv_row(list(OUTCOMES.values())) == {
+        "detected": 11, "missed": 1, "silent": 6, "false_alarms": 4}
