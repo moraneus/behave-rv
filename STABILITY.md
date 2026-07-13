@@ -13,7 +13,7 @@ mechanism, shows real input and output for every path, states the measured
 detection rates, and names the residual limitations next to the features they
 bound.
 
-## The three defense paths and their division of labor
+## The four defense paths and their division of labor
 
 **Path A — the signature diff (build time, static).** Every registered step
 carries a behavioral signature: the declared event type, the correlation key,

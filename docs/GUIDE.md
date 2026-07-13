@@ -695,7 +695,7 @@ warning naming the value you just touched. At runtime, the dashboard's
 "⚠ no matching events observed" badge is the live form of the same signal.
 
 Full mechanism, worked examples for every path, the measured detection
-tables (22 step-side cases, 15 app-side cases), and the stated boundaries
+tables (22 step-side cases, 17 app-side cases), and the stated boundaries
 (calls through values, stream representativeness, function-granularity
 conservatism): [`STABILITY.md`](../STABILITY.md).
 

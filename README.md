@@ -75,6 +75,11 @@ everything downstream of parsing with a runtime engine.
   internals) are absorbed silently; a phrasing rename is backward compatible when
   the previous wording is retained as an alias; a genuine change in behaviour
   surfaces as a scoped notification.
+- **App-side impact analysis.** The committed catalog is two-sided: it also
+  fingerprints the APPLICATION's emit sites (event construction, the functions
+  and constants that can reach each one). `catalog diff --app` then flags an
+  app logic change at build time -- before anything runs -- scoped to the exact
+  policies at risk. Static, AST-only; app code is never imported.
 - **Explanations as the authored scenario.** A violation is rendered as the human's
   own scenario with the failing step marked and the real event values shown.
 
@@ -207,7 +212,8 @@ directory holds a complete, runnable set.
 behave-rv/
   behave_rv/                the runtime package
     steps/                  the RV step decorators (trigger, scope, obligation)
-    catalog/                step registry, behavioural signatures, catalog, diff
+    catalog/                step registry, signatures, catalog, diff, and the
+                            app-surface impact analysis (emit-site slices)
     compile/                Gherkin to automaton compiler and parser bridge
     engine/                 event loop, dispatch, timers, garbage collection
     events/                 event model, sources (in-process, replay), watermark
@@ -219,6 +225,9 @@ behave-rv/
     order_steps.py          the monitorable steps for the order example
     order_authorized.feature a policy
     order_trace.jsonl       a recorded event stream
+    ticketing/              a complete example project: app, steps, six
+                            policies, committed two-sided catalog, live + CI
+                            entry points (walked through in docs/GUIDE.md)
   tests/                    unit and property based tests
   SEMANTICS.md              the operator semantics, in trace terms
   LICENSE
@@ -391,12 +400,20 @@ that raises is recorded on `engine.sink_errors` and evaluation continues.
 
 ## How stability across code change works
 
-This is the distinctive feature. When the code that exposes predicates changes,
-human policies should not rot in silence. behave_rv keeps them aligned with a
-behavioural signature. **The complete mechanism -- all three defense paths with
-real worked examples, the CLI workflow, and the measured detection table over
-a 22-case code-change catalog -- is documented in
-[`STABILITY.md`](STABILITY.md).**
+This is the distinctive feature. When code changes, human policies should not
+rot in silence -- and "code" means BOTH sides of the event boundary. When the
+code that exposes predicates changes, behave_rv keeps policies aligned with a
+behavioural signature. When the APPLICATION changes -- a guard added before an
+emission, a helper reworked two calls deep, an emitted value renamed -- the
+emit-site impact analysis (`catalog save/diff --app`) flags it at build time
+and names the policies at risk, before any runtime violation. **The complete
+mechanism -- all four defense paths with real worked examples, the CLI
+workflow, and the measured detection tables (22 step-side cases, 17 app-side
+cases) -- is documented in [`STABILITY.md`](STABILITY.md); the app-side
+capability's full experimental evaluation (an 83-mutant campaign with
+executed ground truth, zero misses after hardening, honest threats to
+validity) is
+[`docs/APP_SURFACE_EVALUATION.md`](docs/APP_SURFACE_EVALUATION.md).**
 
 Each registered step has a stable `step_id` and a **behavioural signature**: the
 event type it observes, the fields a policy can reference, the correlation key, the
@@ -450,10 +467,13 @@ interaction of terminal retirement and quiescence reclamation with reordering.
 
 The implementation is validated against that specification by property based tests
 (Hypothesis) that check the engine's verdict against an independent oracle across
-large generated input spaces, including adversarial event orderings, plus a real
-mutation-testing campaign (see `MUTATION.md`: 1873 mutants, 89.9% killed, every
-survivor classified). The full test suite is 231 core tests (286 with the demo
-suites) at the time of writing. This is strong evidence over the tested space, not
+large generated input spaces, including adversarial event orderings, plus two
+real mutation-testing campaigns: one over the engine (see `MUTATION.md`: 1873
+mutants, 89.9% killed, every survivor classified) and one over the app-surface
+analyzer (see `docs/APP_SURFACE_EVALUATION.md`: 83 mutants with executed
+stream-level ground truth, zero misses after a hardening pass the campaign
+itself drove). The full test suite is 325 core tests (383 with the demo suites)
+at the time of writing. This is strong evidence over the tested space, not
 a proof, and the space it covers is stated plainly rather than overclaimed.
 
 ## Limitations and scope
