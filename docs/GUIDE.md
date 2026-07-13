@@ -338,7 +338,7 @@ byte for byte), replays it through the engine with `emit_pending=True`, and
 prints every verdict plus full explanations for violations. Real output ends:
 
 ```
-41 verdicts, 5 violation(s)
+31 verdicts, 5 violation(s)
 ```
 
 Six tickets: the two healthy ones (T-1 with a full answered conversation,
@@ -690,7 +690,102 @@ representativeness): [`STABILITY.md`](../STABILITY.md).
 
 ---
 
-## 7. Gotchas, honestly
+## 7. Changes to the APP itself: what the monitor catches at runtime
+
+Section 6 was about protecting the *monitoring surface*. This section answers
+the more fundamental question: **when the main application's logic changes,
+does behave_rv catch it?** Yes — that is the tool's primary function, not a
+stability feature. The division of labor, plainly:
+
+| What changed | Who catches it | How it surfaces |
+|---|---|---|
+| App logic now BEHAVES differently (skips a step, wrong order, missing action) | **the runtime monitor** — the policies themselves | a `violated` verdict with the explanation, at runtime |
+| App refactored, behavior preserved (same events) | nobody, correctly | verdicts identical before and after |
+| App renamed its vocabulary (values, types, fields) — behavior "same", spelling different | liveness (`--trace`) + the dashboard's unobserved badge | policies go quiet; the warning names the missing value |
+| The monitoring steps/helpers changed | the catalog diff (§6) | a break at build time, before anything runs |
+
+All outputs below are real, from replaying ONE fixed traffic script (open →
+assign → escalate → resolve → close) through modified versions of the
+ticketing service.
+
+#### An app logic change that breaks a rule → a runtime violation
+
+Someone "optimizes" resolution into a nightly batch job:
+
+```python
+# BEFORE                                   # AFTER
+def resolve(self, ticket_id):              def resolve(self, ticket_id):
+    self._status(ticket_id, "resolved")        self._pending_batch.append(ticket_id)
+                                               # resolution deferred to a batch job;
+                                               # no "resolved" event at call time
+```
+
+The same user actions now violate two policies, each explained with the
+authored scenario and the deciding events:
+
+```
+POLICY 'an escalated ticket must not be closed until resolved'  ENTITY ticket_id=T-1
+VERDICT violated @ t=11.0
+    Given a ticket is "escalated" until a ticket is "resolved"
+✗   Then a ticket is "closed" never happens   # violated
+Deciding events:
+  t=7.0   ticket.status  {'status': 'escalated'}
+  t=11.0  ticket.status  {'status': 'closed'}
+
+POLICY 'every ticket is eventually resolved'  ENTITY ticket_id=T-1
+VERDICT violated @ t=11.001
+✗   Then a ticket is "resolved" has happened   # violated
+```
+
+No catalog, no diff, no stability machinery involved: the policies watch the
+app's *behavior*, and the behavior changed. This works for any logic change
+whose effect reaches the event stream — which is exactly what your policies
+are written about.
+
+#### An app refactor that preserves behavior → nothing, correctly
+
+Extract `resolve()` into a helper, rename its internals, restructure the
+class — as long as the same events come out, the monitor is indifferent:
+
+```
+verdicts identical to baseline: True
+```
+
+App-internal helpers, class structure, and variable names are invisible on
+purpose: the monitor observes events, not code. (Contrast with §6: for the
+*step* code, structure does matter, because steps ARE the contract.)
+
+#### A refactor that silently drops a tap → caught from two directions
+
+A rewrite of `assign()` keeps the internal state change but loses the
+`_status(ticket_id, "assigned", ...)` emission:
+
+```
+ VIOLATED: a ticket may only be resolved after it was assigned   @ t=10.0
+ VIOLATED: an opened ticket is assigned within the window        @ t=11.001
+```
+
+The dropped emission is not silent, because absence is exactly what these
+policies assert about: the `before` rule fires when "resolved" arrives with
+no "assigned" in the past, and the SLA timer fires because "assigned" never
+came. Liveness adds the second direction: `--trace` against this app's
+stream warns that `status='assigned'` is never observed, and the dashboard
+shows the unobserved badge. (A dropped tap watched only by quiet-style
+`never` policies would NOT self-report at runtime — that is what the
+liveness layer is for.)
+
+#### The honest boundary
+
+The monitor sees events, not code. A logic change whose effects never reach
+the event stream — a corrupted internal calculation that no emitted field
+carries, a skipped side effect nothing reports — is invisible to any policy.
+That is why the exposure convention is **over-expose**: emit state
+transitions, status enums, and boundary crossings generously (an unused tap
+is cheap; a missing one is a policy nobody can ever write).
+
+---
+
+## 8. Gotchas, honestly
 
 - **Event time is the clock.** Ordering, deadlines, and verdicts use
   `event_time`, never arrival time.
@@ -713,7 +808,7 @@ representativeness): [`STABILITY.md`](../STABILITY.md).
 
 ---
 
-## 8. Where to go deeper
+## 9. Where to go deeper
 
 [`docs/OPERATORS.md`](OPERATORS.md) — every operator, with traces ·
 [`SEMANTICS.md`](../SEMANTICS.md) — formal trace semantics ·

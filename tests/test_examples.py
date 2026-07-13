@@ -23,7 +23,7 @@ def test_quickstart_runs_with_the_documented_output():
 def test_ticketing_replay_check_finds_exactly_the_seeded_faults():
     result = _run("examples/ticketing/replay_check.py")
     assert result.returncode == 1                      # violations gate the exit code
-    assert "41 verdicts, 5 violation(s)" in result.stdout
+    assert "31 verdicts, 5 violation(s)" in result.stdout
     # the healthy tickets stay fully green
     assert "violated   T-1" not in result.stdout
     assert "violated   T-4" not in result.stdout

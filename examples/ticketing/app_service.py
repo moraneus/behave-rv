@@ -66,7 +66,9 @@ class TicketService:
     def close(self, ticket_id: str) -> None:
         # the observable state change first (policies can talk about it)...
         self._status(ticket_id, "closed")
-        # ...then the terminal event: the ticket's story is over, so the
-        # engine settles its pending obligations and frees its state
-        self._emit(Event(TERMINAL_TYPE, self._clock(),
+        # ...then the terminal event, a moment LATER: ordered actions need
+        # distinct timestamps (equal times are ordered canonically, and the
+        # terminal must not overtake the status it follows -- see the guide's
+        # Gotchas; this very line once carried that bug)
+        self._emit(Event(TERMINAL_TYPE, self._clock() + 1e-3,
                          {"ticket_id": ticket_id}, {}, "ticketing"))
