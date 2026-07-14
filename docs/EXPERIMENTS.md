@@ -187,11 +187,12 @@ total           619     46              443       0            31          145
 
 All **443 stream-changing mutants are flagged; zero misses**. Of the 176
 stream-preserving mutants, 145 are correctly silent and 31 are flagged —
-and on inspection every one of the 31 sits in code the scripted traffic
-never exercises (UI-driven `act()`/manual-unlock entry points, the lockout
-counter reset, boundary values the traffic straddles): real emission-code
-changes that replay cannot expose, the traffic-relativity caveat made
-concrete. Each is listed by name in the JSON artifact.
+and on inspection every one of the 31 affects emission behaviour the
+scripted traffic does not distinguish: UI-driven `act()`/manual-unlock
+entry points the flows never call, the lockout-counter reset, and boundary
+constants whose traffic values straddle the change. These are real
+emission-code changes that replay cannot expose — the traffic-relativity
+caveat made concrete. Each is listed by name in the JSON artifact.
 
 **The hardening record.** The campaign's first run (on its then-83-mutant
 corpus) exposed 8 misses and 8 unsound scopings, reducing to four root

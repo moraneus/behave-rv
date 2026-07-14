@@ -74,7 +74,8 @@ itself is one). The slice additionally carries the values of module-level and
 class-level constants referenced by any member. Each function is hashed under
 an alpha-normalization that canonicalizes local and parameter names, strips
 docstrings, formatting, and type annotations, and **preserves called-function
-names** (section 4). The committed catalog stores, per site, the interface
+names and decorators** (section 4); a decorator's body additionally joins the
+slice of every function it wraps. The committed catalog stores, per site, the interface
 and a fingerprint over the member-hash set plus referenced constants.
 
 **Classification.** Diffing the recomputed surface against the committed one
@@ -142,15 +143,19 @@ surface is compiled into the application.
 cheap form: differences are computed on alpha-normalized ASTs, so purely
 representational edits (renames of locals, parameters, and classes;
 formatting; annotations; docstrings; comments) produce identical hashes and
-absorb silently, while structural and constant changes flag. One asymmetry
-against the step-side catalog is deliberate: **called-function names are
-preserved** in app-side hashes. Occurrence-order canonicalization would
+absorb silently, while structural and constant changes flag. Two asymmetries
+against the step-side catalog are deliberate. First, **called-function names
+are preserved** in app-side hashes: occurrence-order canonicalization would
 assign two distinct calls the same canonical names regardless of their order,
 silently absorbing a *reorder of two emitting calls* — and emission order is
 contract (a `before` policy hangs on it). The measured price is that renaming
 a function on an emit path cannot be proven representational and flags as a
 risk (case E13); the classifier pairs such orphaned sites by interface so a
-rename never escalates to a removal-level break.
+rename never escalates to a removal-level break. Second, **decorators are
+preserved** and a decorator's body joins the wrapped function's slice: the
+step-side normalizer strips decorators as registration boilerplate, but an
+application decorator wraps the function and can change what it emits — the
+hole curated case E21 exposed and closed.
 
 ## 5. Implementation
 
@@ -227,13 +232,14 @@ body to the decorated function's slice.
 ### RQ2 — Adversarial detection completeness (mutation campaign)
 
 `python -m tests.exp_app_mutation` applies every mutant a deterministic
-operator set can produce — string and numeric constant perturbation,
-comparison operator swaps, boolean operator swaps, if-condition negation,
-statement deletion — to three subjects: the E-series baseline service (27
-mutants), the ticketing example application (42), and a probe *designed to
-stress the suspected weakest point* — a module-level, non-event-type constant
-participating in emission logic (16), and the three demonstration services
-with their real policy sets (order 133, session 179, todo 175 mutants).
+operator set can produce — string, numeric, and boolean constant
+perturbation, comparison and boolean-operator swaps, condition negation,
+guard removal, positional-argument swap, and statement deletion — to six
+subjects: the two-module E-series baseline service (64 mutants), the
+ticketing example application with its six policies (52), a probe *designed
+to stress the suspected weakest point* — a module-level, non-event-type
+constant participating in emission logic (16) — and the three demonstration
+services with their full real policy sets (order 133, session 179, todo 175).
 619 mutants total; each is executed
 under fixed traffic for stream ground truth (a mutant that raises counts as
 stream-changing) and independently analyzed.
@@ -266,7 +272,7 @@ each is a hole any reader would want to know the shape of:
    policies, and scoping includes those sharing the flagged site's
    correlation key, labeled as event-time coupling.
 
-**After hardening — final run, all three subjects:**
+**After hardening — final run, all six subjects:**
 
 ```
 subject     mutants  crash-at-traffic  stream-changed & flagged  MISSED  stream-same & flagged  stream-same & silent
@@ -293,9 +299,9 @@ regression test.
 
 ### RQ3 — Scoping soundness
 
-For the 43 mutants whose policy verdict sets changed (17 jobs, 26
-ticketing): is every policy whose verdicts moved contained in the reported
-at-risk set? **314/314 sound** after the two scoping fixes (35/43 on the
+For the 314 mutants whose policy verdict sets changed (jobs 39, ticketing
+36, order 66, session 83, todo 90): is every policy whose verdicts moved
+contained in the reported at-risk set? **314/314 sound** after the two scoping fixes (35/43 on the
 original corpus before them).
 Tightness is not free: the deadline-coupling rule adds the deadline policies
 of the entity to every flagged site's report (in the ticketing subject, 2 of

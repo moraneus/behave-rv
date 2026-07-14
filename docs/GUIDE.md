@@ -807,8 +807,8 @@ application's *emit sites* — every `Event(...)` construction, its event type,
 binding keys and payload fields, plus a fingerprint of everything that can
 participate in reaching it (the emitting function, its callers, their
 callees, the constructor and other methods writing the instance state it
-reads, and the module/class constants it references) — against the committed
-version. App code is never imported; the analysis is AST-only.
+reads, decorators wrapping any of them, and the module/class constants it
+references) — against the committed version. App code is never imported; the analysis is AST-only.
 
 A real example. Someone "cleans up" `assign()` in the ticketing service:
 

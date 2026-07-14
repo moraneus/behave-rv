@@ -295,8 +295,10 @@ keys, payload keys; `<dynamic>`/`<splat>` markers where the source cannot be
 resolved) and computes a **function-granularity backward slice**: the
 emitting function, its transitive callers (they decide when it runs and with
 what arguments), the transitive callees of all of those (they compute the
-values), and every method assigning an instance attribute a member reads
-(emit-path state flows through attributes -- `self._emit` itself is one).
+values), every method assigning an instance attribute a member reads
+(emit-path state flows through attributes -- `self._emit` itself is one),
+and the body of every decorator wrapping a member (a decorator can change
+what the wrapped function emits).
 The slice also carries the values of module- and class-level constants its
 members reference (a `LIMIT = 10` participating in emission logic lives
 outside every function body). Each slice member is hashed with the same
