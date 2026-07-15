@@ -388,6 +388,33 @@ The lineage is three classic results, each deliberately modified:
   function on an emit path flags conservatively as a risk, never as a
   removal-level break.
 
+### Seeing the slice: the interactive explorer
+
+The slice is easiest to understand by looking at one. The explorer serves
+the committed demo applications and lets you click any source line; the page
+then shows, computed by the same analyser that runs in `catalog diff --app`,
+everything that line can affect:
+
+```bash
+python -m demo.slice_explorer        # http://127.0.0.1:7010
+```
+
+![the slice explorer: the session service with the lockout function selected — the backward slice in amber, emission anchors in red, referenced constants in violet, and the policies at risk listed](images/slice-explorer.png)
+
+Reading the screenshot: the clicked line is inside `_register_fail`, the one
+source of lockout truth in the session service. The panel answers "what can
+changing this line affect?" — the `session.status` emission, whose backward
+slice (amber) contains every flow and bug method that can reach it, the
+constants it depends on (`LOCK_AFTER`, the event types, in violet), the
+declared resolver holes (`self._emit`, `self._clock` — the injected
+transport the analysis cannot follow and says so), and the exact policies at
+risk, including the deadline policies added by event-time coupling. Lines
+outside every slice dim when selected, with the statement that no dependence
+path connects them to any emission — the selectivity that keeps warnings
+meaningful. The page's built-in "How does it know?" panel walks the
+mechanism: anchors, the dependency graph (calls, `self.attr` writers,
+constants, decorators), the fixpoint closure, and policy scoping.
+
 ### Worked example 8 — an app logic change, caught statically and scoped
 
 The steps are untouched. Someone "cleans up" `assign()` in the ticketing
