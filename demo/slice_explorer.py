@@ -218,7 +218,7 @@ _PAGE = r"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>behave_rv · slice explorer</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230f172a'/%3E%3Ctext x='50' y='74' font-size='68' text-anchor='middle' fill='white'%3E%E2%9C%82%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="__FAVICON__">
 <style>
   :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9;
           --surface:#fff; --member:#fef3c7; --memberline:#f59e0b;
@@ -470,6 +470,13 @@ loadApps();
 </body>
 </html>
 """
+
+
+_FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'"
+            " viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24'"
+            " fill='%230f172a'/%3E%3Ctext x='50' y='74' font-size='68'"
+            " text-anchor='middle' fill='white'%3E%E2%9C%82%3C/text%3E%3C/svg%3E")
+_PAGE = _PAGE.replace("__FAVICON__", _FAVICON)
 
 
 def main() -> int:
