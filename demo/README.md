@@ -89,3 +89,11 @@ and run `python -m demo.order_service.evolution`.
 
 Per-demo policy tables: [order_service](order_service/README.md),
 [session_service](session_service/README.md), [todo_app](todo_app/README.md).
+
+## The slice explorer
+
+`python -m demo.slice_explorer` serves an interactive view of the app-surface
+analysis (see `docs/STABILITY.md`, Path D): pick any of the demo applications,
+click a source line, and see the backward dependency slice the real analyser
+computes — the emissions that line can influence, the slice members,
+constants, declared resolver holes, and the policies at risk.

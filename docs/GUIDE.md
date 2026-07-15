@@ -845,6 +845,17 @@ observes yet. Renames of locals, parameters, classes, and docstring/comment
 edits are absorbed silently; renaming a function on an emit path flags
 conservatively, because callable identity pins emission order.
 
+To build intuition for what "the slice" contains, run the interactive
+explorer — pick any demo application, click a line, and see exactly which
+emissions it can influence and which policies would be named, computed by
+the same analyser:
+
+```bash
+python -m demo.slice_explorer        # http://127.0.0.1:7010
+```
+
+![the slice explorer: a clicked line, the amber backward slice, and the policies at risk](images/slice-explorer.png)
+
 Be clear about what this is: a *may-affect* analysis, not a verdict. It reads
 code structure, so behavior driven by runtime data (config, database
 contents, request payloads) is invisible to it, and its conservatisms are

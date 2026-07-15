@@ -13,6 +13,65 @@ mechanism, shows real input and output for every path, states the measured
 detection rates, and names the residual limitations next to the features they
 bound.
 
+## The mechanism in plain words
+
+A monitor whose event connection breaks is a smoke detector with a dead
+sensor and a healthy power light: the green LED stays on, the house looks
+protected, and nothing will ever ring. That is the failure this document is
+about. Say a team ships the rule *"when an order is cancelled, it is
+refunded within 5 seconds"* and a later refactor renames the emitted value
+`cancelled` to `aborted`. The trigger never fires again, so the policy never
+checks anything again -- it just sits at *pending* forever, reporting no
+violations, which looks exactly like health.
+
+The connection can break at either end, so the defense is two-sided:
+
+**The listener side (the step predicates).** Each predicate's contract is
+hashed in a *normalized* form: variable names, formatting, comments, and
+docstrings are erased before hashing; logic, constants, and the fields being
+read are kept. So renaming `order_is` to `order_status_check` changes
+nothing -- the hash is identical, the diff stays silent. But changing
+`payload.get("status")` to `payload.get("state")`, or tightening the match
+condition, moves the hash -- and because every compiled policy records which
+step identities it uses, the warning names exactly the policies that depend
+on the changed step, not "something changed somewhere". (A naive tool that
+hashes the raw source instead would alarm on every refactor and be muted
+within a week; the measured comparison below quantifies the difference.)
+
+**The shouter side (the application).** Here the predicate is untouched --
+the app itself moved. Every emission is a construction of the framework's
+`Event` type, a fixed landmark in the source. For each landmark the analyser
+computes its *dependency slice*: every function that can influence whether
+that emission fires or what it carries. Consider
+
+```python
+def check_fraud(user):
+    return score > 90          # threshold was 50 yesterday
+
+def process_payment(self, user):
+    if check_fraud(user):
+        self._emit(Event("payment.flagged", ...))   # the anchor
+    else:
+        log_activity("payment okay")                # no path to the anchor
+```
+
+Changing the threshold inside `check_fraud` flags: the slice walks backward
+from the `Event(...)` anchor, across the function boundary, to everything
+the emission depends on -- callers (they decide when it runs), callees (they
+compute its values), constructor wiring like `self._emit = emit`, referenced
+constants, and decorators. Changing `log_activity` stays silent: no
+dependence path connects it to the anchor. That selectivity is the point --
+without it, "something in the app changed" would fire on every commit and
+mean nothing. Renamed payload keys or event types at the anchor itself are
+harder failures (the emitted interface moved) and gate CI outright.
+
+One boundary, stated plainly: the static side says *may affect*, never
+*will violate*. Behaviour driven by runtime data -- a config value, a
+database row -- has no static signature, which is why replay under scripted
+traffic and the live monitor remain the layers above. To see the slice with
+your own eyes, run `python -m demo.slice_explorer`, pick a demo application,
+and click any line.
+
 ## The four defense paths and their division of labor
 
 **Path A — the signature diff (build time, static).** Every registered step
