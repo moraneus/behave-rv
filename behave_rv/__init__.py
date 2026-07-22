@@ -6,4 +6,4 @@ boundary), and everything downstream -- the deterministic per-entity engine,
 the temporal vocabulary, and the two-sided stability contract -- is new.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
