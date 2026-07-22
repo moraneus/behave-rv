@@ -308,8 +308,43 @@ def _app_surface_diff(args, current_entries, compiled_policies
 # -- entry ---------------------------------------------------------------------
 
 
+_DOCS = {
+    "guide": ("GUIDE.md", "the complete usage guide"),
+    "operators": ("OPERATORS.md", "the authoring reference for all nine forms"),
+    "semantics": ("SEMANTICS.md", "the formal trace semantics"),
+    "stability": ("STABILITY.md", "the two-sided stability mechanism"),
+    "experiments": ("EXPERIMENTS.md", "the complete experiment record"),
+    "mutation": ("MUTATION.md", "the engine mutation-testing campaign"),
+    "app-surface-evaluation": ("APP_SURFACE_EVALUATION.md",
+                               "the emit-site impact analysis evaluation"),
+}
+
+
+def docs_command(argv: list[str]) -> int:
+    # list or print the documentation shipped inside the installed package
+    from importlib import resources
+    if not argv:
+        print("documents shipped with this installation "
+              "(print one with 'python -m behave_rv docs <name>'):")
+        for name, (_file, blurb) in _DOCS.items():
+            print(f"  {name:24} {blurb}")
+        return 0
+    name = argv[0]
+    if name not in _DOCS:
+        print(f"unknown document: {name} (known: {', '.join(_DOCS)})",
+              file=sys.stderr)
+        return 2
+    filename = _DOCS[name][0]
+    print(resources.files("behave_rv.docs").joinpath(filename)
+          .read_text(encoding="utf-8"))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+
+    if argv[:1] == ["docs"]:
+        return docs_command(argv[1:])
 
     if argv[:1] == ["catalog"]:
         parser = argparse.ArgumentParser(prog="behave_rv catalog")

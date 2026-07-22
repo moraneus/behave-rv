@@ -191,6 +191,13 @@ behave_rv requires Python 3.10 or newer and depends on `behave`.
 pip install behave-rv
 ```
 
+The full documentation ships inside the package — list and read it offline:
+
+```bash
+python -m behave_rv docs           # list available documents
+python -m behave_rv docs guide     # print the usage guide
+```
+
 Or from source:
 
 ```bash

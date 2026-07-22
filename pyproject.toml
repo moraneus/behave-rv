@@ -45,6 +45,9 @@ license-files = ["LICENSE", "NOTICE"]
 [tool.setuptools.packages.find]
 include = ["behave_rv*"]
 
+[tool.setuptools.package-data]
+"behave_rv.docs" = ["*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = [
