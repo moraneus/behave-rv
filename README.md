@@ -43,7 +43,7 @@ explanation for every violation.
 
 **New here? The complete usage guide -- exposing events, writing steps and
 policies, every engine option, live status watching, and the built-in web
-dashboard -- is [`docs/GUIDE.md`](docs/GUIDE.md).**
+dashboard -- is [`docs/GUIDE.md`](https://github.com/moraneus/behave-rv/blob/main/docs/GUIDE.md).**
 
 Three roles keep this honest and separate:
 
@@ -118,7 +118,7 @@ self-contained and takes no `When` (its own predicate is the forbidden event).
 ### Temporal operators
 
 The complete authoring reference, with satisfying and violating traces for
-every form, is [`docs/OPERATORS.md`](docs/OPERATORS.md).
+every form, is [`docs/OPERATORS.md`](https://github.com/moraneus/behave-rv/blob/main/docs/OPERATORS.md).
 
 | Operator | Authorable phrasing | Meaning (see `docs/SEMANTICS.md`) |
 | --- | --- | --- |
@@ -409,12 +409,12 @@ emit-site impact analysis (`catalog save/diff --app`) flags it at build time
 and names the policies at risk, before any runtime violation. **The complete
 mechanism -- all four defense paths with real worked examples, the CLI
 workflow, and the measured detection tables (22 step-side cases, 22 app-side
-categories) -- is documented in [`docs/STABILITY.md`](docs/STABILITY.md); the complete
+categories) -- is documented in [`docs/STABILITY.md`](https://github.com/moraneus/behave-rv/blob/main/docs/STABILITY.md); the complete
 record of every experiment with full results (including the 619-mutant
 adversarial campaign with executed ground truth and zero misses) is
-[`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md), with the app-side capability's deep
+[`docs/EXPERIMENTS.md`](https://github.com/moraneus/behave-rv/blob/main/docs/EXPERIMENTS.md), with the app-side capability's deep
 evaluation in
-[`docs/APP_SURFACE_EVALUATION.md`](docs/APP_SURFACE_EVALUATION.md).**
+[`docs/APP_SURFACE_EVALUATION.md`](https://github.com/moraneus/behave-rv/blob/main/docs/APP_SURFACE_EVALUATION.md).**
 
 Each registered step has a stable `step_id` and a **behavioural signature**: the
 event type it observes, the fields a policy can reference, the correlation key, the
@@ -461,7 +461,7 @@ same `step_id` and run identically.
 ## Semantics and correctness
 
 The meaning of each operator is specified in trace terms in
-[`docs/SEMANTICS.md`](docs/SEMANTICS.md), independently of the implementation. That
+[`docs/SEMANTICS.md`](https://github.com/moraneus/behave-rv/blob/main/docs/SEMANTICS.md), independently of the implementation. That
 specification covers `never`, `before`, and `within`, the correlation key scoping,
 the event time reordering contract, the late event admission rules, and the
 interaction of terminal retirement and quiescence reclamation with reordering.
@@ -524,8 +524,8 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
 
 behave_rv is licensed under the BSD 2-Clause License. It derives from `behave`,
 which is also BSD 2-Clause, and reuses only its Gherkin parser and model. The
-original copyright notice is retained. See [`LICENSE`](LICENSE) for the full text
-and [`NOTICE`](NOTICE) for the derivation.
+original copyright notice is retained. See [`LICENSE`](https://github.com/moraneus/behave-rv/blob/main/LICENSE) for the full text
+and [`NOTICE`](https://github.com/moraneus/behave-rv/blob/main/NOTICE) for the derivation.
 
 ## Acknowledgements
 

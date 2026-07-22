@@ -1,0 +1,5 @@
+prune tests
+prune demo
+prune examples
+prune docs
+prune experiments
