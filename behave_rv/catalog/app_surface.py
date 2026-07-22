@@ -83,10 +83,9 @@ class EmitSite:
     slice_functions: dict[str, str]  # qualname -> alpha-normalized own-hash
     slice_fingerprint: str          # hash of member hashes + referenced constants
     unresolved_calls: list[str] = field(default_factory=list)
-    # module-level constants any slice member reads, name -> repr(value): a
-    # LIMIT = 10 participating in emission logic lives outside every function
-    # body, so it must be fingerprinted separately (found by the mutation
-    # campaign, docs/APP_SURFACE_EVALUATION.md)
+    # module- and class-level constants any slice member reads, name ->
+    # repr(value): a LIMIT = 10 participating in emission logic lives outside
+    # every function body, so its value must be fingerprinted separately
     referenced_constants: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -132,7 +131,7 @@ class _AppAlpha(_Alpha):
     behavior-risk instead of absorbing (local/parameter/class renames still
     absorb). Second, DECORATORS are kept in the hash: the step-side normalizer
     strips them as registration boilerplate, but an app-side decorator wraps
-    the function and can change what it emits (found by curated case E21)."""
+    the function and can change what it emits."""
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         decorators = list(node.decorator_list)
@@ -151,10 +150,10 @@ class _AppAlpha(_Alpha):
 
 
 def _strip_docstrings(node: ast.AST) -> None:
-    """Docstrings are Expr(Constant) statements, so the hash would flag an edit
-    to one -- but a docstring cannot change emission behavior (found on real
-    history: a docstring-only commit flagged as behavior-risk). Representational,
-    so stripped. Code reading ``__doc__`` at runtime is outside the fragment."""
+    """Docstrings are Expr(Constant) statements, so the hash would otherwise
+    flag an edit to one -- but a docstring cannot change emission behavior.
+    Representational, so stripped. Code reading ``__doc__`` at runtime is
+    outside the fragment."""
     for child in ast.walk(node):
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             body = child.body
@@ -400,9 +399,9 @@ def analyze_app(paths) -> list[EmitSite]:
     def slice_of(function: str) -> set[str]:
         """Fixpoint of: callers of the seeds (they decide when/with what), their
         callees (they compute values), and -- because emit-path state flows
-        through instance attributes (self._emit itself is one; found by the
-        mutation campaign) -- every method that ASSIGNS a self-attribute some
-        member reads, which then gets the same caller/callee treatment."""
+        through instance attributes, ``self._emit`` itself being one -- every
+        method that ASSIGNS a self-attribute some member reads, which then
+        gets the same caller/callee treatment."""
         if function not in slice_cache:
             seeds = {function}
             while True:
@@ -565,9 +564,9 @@ def affected_step_ids(site: EmitSite, entries) -> list[str]:
 def scope_step_ids(change: AppChange, entries) -> Optional[list[str]]:
     """Steps at risk for a classified change, over BOTH sides: an event type
     that changed value must alert the policies observing the OLD type (their
-    events stop arriving) as well as the new one (found by the scoping
-    experiment: scoping only the new side reported a mutated type to nobody).
-    ``None`` means unscopable (a dynamic type on either side)."""
+    events stop arriving) as well as the new one -- scoping only the new side
+    would report a renamed type to nobody. ``None`` means unscopable (a
+    dynamic type on either side)."""
     sites = [s for s in (change.old, change.new) if s is not None]
     if any(s.event_type == DYNAMIC for s in sites):
         return None
@@ -584,8 +583,8 @@ def policies_at_risk(change: AppChange, entries,
     observes an affected event type (both sides). Coupled = the policy carries
     a bounded-response deadline and shares the site's correlation key --
     deadline firing is driven by event-time advancement, so any change to the
-    entity's event flow can move its verdict (found by the scoping
-    experiment). ``None`` means unscopable (dynamic event type).
+    entity's event flow can move its verdict. ``None`` means unscopable
+    (dynamic event type).
 
     The single scoping definition shared by the CLI, the dashboard's
     stability strip, and the mutation experiment, so they cannot drift."""

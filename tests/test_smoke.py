@@ -7,7 +7,12 @@ from behave_rv.verdict.record import Verdict
 
 
 def test_version():
-    assert __version__ == "0.0.1"
+    # the package version and the distribution metadata must never drift apart
+    import tomllib
+    from pathlib import Path
+    pyproject = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text())
+    assert __version__ == pyproject["project"]["version"]
 
 
 def test_event_constructs():

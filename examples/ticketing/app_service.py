@@ -69,6 +69,6 @@ class TicketService:
         # ...then the terminal event, a moment LATER: ordered actions need
         # distinct timestamps (equal times are ordered canonically, and the
         # terminal must not overtake the status it follows -- see the guide's
-        # Gotchas; this very line once carried that bug)
+        # Gotchas)
         self._emit(Event(TERMINAL_TYPE, self._clock() + 1e-3,
                          {"ticket_id": ticket_id}, {}, "ticketing"))

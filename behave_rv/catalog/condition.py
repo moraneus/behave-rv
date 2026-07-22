@@ -74,10 +74,9 @@ class _Alpha(ast.NodeTransformer):
 
 def _own_hash(fn: ast.AST, binding_params: Optional[str]) -> str:
     """Hash one function's own normalized AST. ``binding_params`` is appended
-    for the PREDICATE only: its placeholder-bound parameter names are contract
-    (the compiler calls ``func(**params)`` by name -- the B7 lesson). Helper
-    parameters are internal representation and are alpha-normalized away like
-    any local."""
+    for the PREDICATE only: the compiler calls ``func(**params)`` by name, so
+    the placeholder-bound parameter names are contract. Helper parameters are
+    internal representation and are alpha-normalized away like any local."""
     normalized = _Alpha().visit(fn)
     ast.fix_missing_locations(normalized)
     payload = _stable_dump(normalized)

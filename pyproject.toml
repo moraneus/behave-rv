@@ -64,10 +64,9 @@ select = ["E", "W", "F"]
 
 [tool.mutmut]
 # Real mutation-testing campaign (see docs/MUTATION.md). Mutates the core package
-# only; tests are the kill signal. Stubs and unchanged-vendor markers are out
-# of scope: expose/ is an unimplemented design stub, vendor_behave/ is a
-# docstring-only boundary marker.
+# only; tests are the kill signal. vendor_behave/ is a docstring-only
+# licensing-boundary marker and carries nothing to mutate.
 source_paths = [ "behave_rv/" ]
 pytest_add_cli_args_test_selection = [ "tests/" ]
-do_not_mutate = [ "behave_rv/expose/*", "behave_rv/vendor_behave/*" ]
+do_not_mutate = [ "behave_rv/vendor_behave/*" ]
 also_copy = [ "examples/", "demo/" ]

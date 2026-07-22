@@ -428,8 +428,7 @@ class Policy:
     # Deadline firing is driven by event-time advancement, so ANY change to the
     # entity's event flow -- including events of types the policy never binds --
     # can move a deadline verdict; the app-surface scoping uses this flag to
-    # include deadline policies of the same correlation key conservatively
-    # (found by the scoping experiment, docs/APP_SURFACE_EVALUATION.md).
+    # include deadline policies of the same correlation key conservatively.
     has_deadline: bool = False
 
 

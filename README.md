@@ -219,7 +219,6 @@ behave-rv/
     events/                 event model, sources (in-process, replay), watermark
     verdict/                verdict record, explanation renderer, sinks
     notify/                 break, weakening, and suggestion channels
-    expose/                 exposure API (currently a stub, see Limitations)
     __main__.py             the command line entry point
   examples/
     order_steps.py          the monitorable steps for the order example
@@ -502,9 +501,11 @@ behave_rv is a correct, honestly scoped first version. Its boundaries:
   `before`, `within`, and `previously`, and at most one `Given` (wired for
   `never` only). `Given` on the other operators, `When` with `never`, and
   `And` / `But` multi step scenarios are recognized but refused.
-- **Exposure API is a stub.** The design envisions a dedicated `@emits`, `@entity`,
-  and `@terminal` exposure API. That module is currently a stub. The real
-  monitorable taps today are the step decorators (`trigger`, `scope`, `obligation`).
+- **Exposure is by convention, not decorators.** Applications expose behaviour
+  by constructing `Event` objects directly (the convention the app-surface
+  analysis anchors on); a dedicated `@emits`/`@entity`/`@terminal` decorator
+  layer is future work. The monitorable step taps are the step decorators
+  (`trigger`, `scope`, `obligation`).
 - **Liveness boundary.** Liveness is two level: a compile time warning fires when
   a policy's event type never appeared in the observed stream, and also when the
   type appeared but a concrete value the policy binds (for example

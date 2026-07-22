@@ -12,8 +12,9 @@ uv run --with mutmut --with toml mutmut results
 ```
 
 Configuration is committed in `pyproject.toml` under `[tool.mutmut]`:
-`behave_rv/` is mutated; `behave_rv/expose/*` (an unimplemented design stub)
-and `behave_rv/vendor_behave/*` (a docstring-only boundary marker) are not;
+`behave_rv/` is mutated; `behave_rv/vendor_behave/*` (a docstring-only
+licensing-boundary marker) is not, and at the time of the campaign an
+`expose/` placeholder package (since removed) was also excluded;
 `examples/` is copied into the sandbox because the CLI tests read it.
 
 ## Result

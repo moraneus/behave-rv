@@ -8,6 +8,7 @@ name: Release
 on:
   release:
     types: [published]
+  workflow_dispatch: {}     # dry-run the build without publishing
 
 jobs:
   build:
@@ -28,6 +29,7 @@ jobs:
           path: dist/
 
   publish:
+    if: github.event_name == 'release'
     needs: build
     runs-on: ubuntu-24.04
     environment: pypi
