@@ -8,11 +8,13 @@ from behave_rv.verdict.record import Verdict
 
 def test_version():
     # the package version and the distribution metadata must never drift apart
-    import tomllib
+    # (parsed textually: tomllib only exists on Python 3.11+ and the suite
+    # runs down to 3.10)
+    import re
     from pathlib import Path
-    pyproject = tomllib.loads(
-        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text())
-    assert __version__ == pyproject["project"]["version"]
+    pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
+    declared = re.search(r'^version = "([^"]+)"$', pyproject, re.M).group(1)
+    assert __version__ == declared
 
 
 def test_event_constructs():
