@@ -2,9 +2,11 @@
 
 **Runtime verification driven by human readable Gherkin.**
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/badge/license-BSD%202--Clause-green)
-![Status](https://img.shields.io/badge/status-pre--alpha-orange)
+[![PyPI](https://img.shields.io/pypi/v/behave-rv)](https://pypi.org/project/behave-rv/)
+[![Downloads](https://img.shields.io/pypi/dm/behave-rv)](https://pypi.org/project/behave-rv/)
+[![Python versions](https://img.shields.io/pypi/pyversions/behave-rv)](https://pypi.org/project/behave-rv/)
+[![CI](https://github.com/moraneus/behave-rv/actions/workflows/ci.yml/badge.svg)](https://github.com/moraneus/behave-rv/actions/workflows/ci.yml)
+[![License](https://img.shields.io/pypi/l/behave-rv)](https://github.com/moraneus/behave-rv/blob/main/LICENSE)
 
 behave_rv turns Gherkin into runtime monitors. A human writes a policy in the same
 `Feature` / `Scenario` / `When` / `Then` language used for behaviour driven
@@ -183,8 +185,13 @@ that will not run.
 
 ## Installation
 
-behave_rv requires Python 3.10 or newer and depends on `behave`. It is pre alpha
-and not yet published to PyPI, so install it from source.
+behave_rv requires Python 3.10 or newer and depends on `behave`.
+
+```bash
+pip install behave-rv
+```
+
+Or from source:
 
 ```bash
 git clone https://github.com/moraneus/behave-rv.git

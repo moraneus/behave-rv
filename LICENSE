@@ -1,11 +1,12 @@
 BSD 2-Clause License
 
-This project (behave-rv) is a modified derivative of the `behave` BDD framework.
+This project (behave-rv) is built on the `behave` BDD framework, which it
+uses as an ordinary dependency; no `behave` source code is included in this
+distribution. The upstream copyright notice is retained in attribution:
 
-Portions derived from `behave`:
-  Copyright (c) Benno Rice, Richard Jones, Jens Engel and others.
+  behave: Copyright (c) Benno Rice, Richard Jones, Jens Engel and others.
 
-Modifications and new code (the behave_rv runtime verification system):
+The behave_rv runtime verification system (all code in this repository):
   Copyright (c) 2026 moraneus.
 
 Redistribution and use in source and binary forms, with or without
