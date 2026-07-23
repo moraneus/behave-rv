@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Iterable
-from math import isfinite
+from math import inf, isfinite, nextafter
 from time import monotonic
 from typing import Optional
 
@@ -297,33 +297,42 @@ class Engine:
         anchor_wall: Optional[float] = None   # wall instant when front last advanced
 
         while True:
-            # the next wall moment anything is waiting for: an armed deadline
-            # maturing, or a buffered event ageing past the grace window (on an
-            # idle stream nothing else would ever release it)
-            targets = []
+            # the next event-time moment anything is waiting for: an armed
+            # deadline maturing, or a buffered event ageing past the grace
+            # window (on an idle stream nothing else would ever release it).
+            # The RAW moments are kept alongside the grace-shifted wall
+            # targets: the release boundary must be computed from the raw
+            # moment, because adding and re-subtracting the grace in floats
+            # can land on either side of it at large magnitudes.
+            moments = []
             next_deadline = deadlines.peek()
             if next_deadline is not None:
-                targets.append(next_deadline + self._grace)
+                moments.append(next_deadline)
             if buffer is not None:
                 oldest = buffer.peek_oldest()
                 if oldest is not None:
-                    targets.append(oldest + self._grace)
+                    moments.append(oldest)
             wait = None
-            if targets and anchor_wall is not None:
+            if moments and anchor_wall is not None:
                 estimate = front + (monotonic() - anchor_wall)
-                wait = max(min(targets) - estimate, 0.0)
+                wait = max(min(moments) + self._grace - estimate, 0.0)
 
             item = source.next_event(wait)
             if item is CLOSED:
                 break
             if item is None:
-                # wall fire: behave as if a clock tick at the matured target
-                # arrived, except no event is dispatched and nothing joins the
-                # trace (the epsilon clears the strict release boundary)
-                tick = min(targets) + 1e-9
+                # wall fire: behave as if a clock tick just past the matured
+                # moment (plus grace) arrived, except no event is dispatched
+                # and nothing joins the trace. The boundary advances by one
+                # ulp (``nextafter``), never by an absolute epsilon: at
+                # Unix-epoch event times an absolute epsilon underflows, the
+                # strict release boundary never clears, wall deadlines fall
+                # silent, and the loop busy-spins.
+                due = min(moments)
+                tick = nextafter(due + self._grace, inf)
                 if buffer is not None:
                     buffer.advance_clock(tick)
-                    for released in buffer.releasable():
+                    for released in buffer.release_through(due):
                         self._handle_event(released, *state)
                 if tick > front:
                     front = tick

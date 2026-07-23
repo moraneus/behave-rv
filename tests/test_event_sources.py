@@ -109,9 +109,11 @@ def test_emit_record_replay_round_trip(tmp_path):
 def test_trace_recorder_tees_a_live_stream_into_a_replayable_file(tmp_path):
     """Where trace files come from: the recorder passes events through
     unchanged while appending them in the exact format ReplaySource reads
-    (and record_events writes)."""
+    (and record_events writes), closing with a clock-horizon marker at the
+    moment recording stopped."""
     from behave_rv.events.event import Event
-    from behave_rv.events.sources.replay import (ReplaySource, TraceRecorder,
+    from behave_rv.events.sources.replay import (HORIZON_EVENT_TYPE,
+                                                 ReplaySource, TraceRecorder,
                                                  record_events)
 
     events = [Event("t", 1.0, {"k": "A"}, {"status": "x"}, "app"),
@@ -124,8 +126,10 @@ def test_trace_recorder_tees_a_live_stream_into_a_replayable_file(tmp_path):
     assert passed_through == events                      # a true tee
 
     replayed = list(ReplaySource(recorded).events())
-    assert replayed == events
+    assert replayed[:2] == events
+    assert replayed[2].type == HORIZON_EVENT_TYPE        # the stop marker
+    assert replayed[2].event_time == 2.0                 # no clock: last event
 
     reference = tmp_path / "batch.jsonl"
-    record_events(reference, events)
+    record_events(reference, events, horizon=2.0)
     assert recorded.read_bytes() == reference.read_bytes()   # identical format

@@ -141,8 +141,8 @@ ternary-guarded value, a behavior-changing decorator, and emission logic in
 a second module. Ground truth per run: the emitted stream (with the policy
 verdict set verified alongside).
 
-**Result:** 18 correct, 0 misses, 4 false alarms - all four in the declared
-by-design conservatism family (emit-path function rename, extract-method,
+**Result:** 19 correct, 0 misses, 3 false alarms - all three in the declared
+by-design conservatism family (extract-method,
 event type becoming computed, constructor edit), asserted in the test suite
 to be exactly that family. Stream-changing cases: 14/14 caught.
 
@@ -230,8 +230,8 @@ existence.
 development?
 
 **Method & result.** Every commit in this repository that modified an
-application file is replayed through the analyser: 9 historical changes,
-5 flagged, 4 silent, all 9 classifications matching what the commits
+application file is replayed through the analyser: 10 historical changes,
+5 flagged, 5 silent, all 10 classifications matching what the commits
 actually did. One false alarm (a docstring-only edit) was found by this very
 measurement and fixed. Small N, honestly stated; grows with history.
 

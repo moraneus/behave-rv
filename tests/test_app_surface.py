@@ -162,16 +162,60 @@ def test_class_rename_is_absorbed_silently(tmp_path):
     assert APP_REMOVED not in changes.values()
 
 
-def test_emit_path_function_rename_flags_conservatively_as_risk_not_removal(tmp_path):
-    # callable identity is emission-order contract (see _AppAlpha), so this
-    # cannot be proven representational -- it must flag, but as a risk to
-    # glance at, never as a removal-level break
+def test_pure_emit_path_function_rename_is_proven_and_absorbed(tmp_path):
+    # the rename-invariant fingerprint proves the slices identical modulo
+    # function names, so a pure rename of the emitting function absorbs as
+    # `renamed` -- never as a removal, a break, or a risk
     changed = BASE.replace("def _status(", "def _transition(") \
                   .replace("self._status(", "self._transition(")
     changes = _statuses(_classify(tmp_path, BASE, changed))
-    assert changes["jobs_app.JobService._transition#1"] == BEHAVIOR_RISK
+    assert changes["jobs_app.JobService._transition#1"] == APP_RENAMED
     assert APP_REMOVED not in changes.values()
     assert INTERFACE_BREAK not in changes.values()
+    assert BEHAVIOR_RISK not in changes.values()
+
+
+def test_emit_path_rename_with_a_body_change_still_flags(tmp_path):
+    # the proof is exact: rename PLUS any logic change breaks the invariant
+    # match, and the conservative classification stands
+    changed = BASE.replace("def _status(", "def _transition(") \
+                  .replace("self._status(", "self._transition(") \
+                  .replace('"started"', '"running"')
+    changes = _statuses(_classify(tmp_path, BASE, changed))
+    assert BEHAVIOR_RISK in changes.values()
+
+
+def test_helper_rename_inside_a_slice_is_proven_and_absorbed(tmp_path):
+    # same proof, same-site-id path: renaming a called helper changes every
+    # caller's strict hash, but the invariant fingerprint absorbs it
+    changed = BASE.replace("def helper_value(", "def cleaned_value(") \
+                  .replace("helper_value(name)", "cleaned_value(name)")
+    changes = _statuses(_classify(tmp_path, BASE, changed))
+    assert changes["jobs_app.JobService._status#1"] == APP_RENAMED
+    assert BEHAVIOR_RISK not in changes.values()
+
+
+def test_swapping_which_helper_is_called_still_flags(tmp_path):
+    # substituting a DIFFERENT function (not a renamed identical one) embeds
+    # different callee content in the invariant hash: never absorbed
+    changed = BASE.replace("label = helper_value(name)", "label = _fmt(name) + 'x'")
+    changes = _statuses(_classify(tmp_path, BASE, changed))
+    assert changes["jobs_app.JobService._status#1"] == BEHAVIOR_RISK
+
+
+def test_rename_proof_unavailable_on_pre_field_catalogs_stays_conservative(tmp_path):
+    # a catalog saved before rename_fingerprint existed carries "" -- the
+    # proof is unavailable and the old conservative flagging is preserved
+    changed = BASE.replace("def _status(", "def _transition(") \
+                  .replace("self._status(", "self._transition(")
+    old_dir, new_dir = tmp_path / "old", tmp_path / "new"
+    old_dir.mkdir(), new_dir.mkdir()
+    old_sites = _analyze(old_dir, BASE)
+    for site in old_sites:
+        site.rename_fingerprint = ""
+    changes = {c.site_id: c.status
+               for c in classify_app_changes(old_sites, _analyze(new_dir, changed))}
+    assert changes["jobs_app.JobService._transition#1"] == BEHAVIOR_RISK
 
 
 def test_reordering_two_emissions_flags(tmp_path):

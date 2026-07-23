@@ -500,7 +500,7 @@ E9    an emission deleted                                      changed  changed 
 E10   a new emission added inside an existing method           changed  same      risk      CORRECT
 E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
 E12   a function outside every emit slice changed              same     same      silent    CORRECT
-E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E13   a function on an emit path renamed (pure)                same     same      silent    CORRECT
 E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
 E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
 E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
@@ -513,8 +513,13 @@ E22   emission logic changes in a SECOND module                changed  same    
 ```
 
 Every stream change is caught (0 misses), every no-op stays silent except
-the four DECLARED conservatisms (E13-E15 and E17, the constructor rule),
-which are asserted to be exactly that family and nothing more. The E-series
+the three DECLARED conservatisms (E14, E15, and E17, the constructor rule),
+which are asserted to be exactly that family and nothing more. E13 - a pure
+rename of the emitting function - is absorbed as `renamed`: a
+rename-invariant fingerprint (member bodies with every intra-slice call
+target replaced by the callee's content, refined to a fixpoint) PROVES the
+slices identical modulo function names, so the rename costs nothing, while
+a rename combined with any logic change fails the proof and still flags. The E-series
 is the curated benchmark; the adversarial one -- a 619-mutant campaign
 over six applications with executed ground truth, which found and drove the
 closure of five detection/scoping holes -- is reported in full in
@@ -528,24 +533,26 @@ measured on every historical change to an app file in this repo
 (`python -m tests.measure_app_history`, 2026-07-13):
 
 ```
-service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos
-service.py       19a1ebe  silent                 GitHub Actions CI: test matrix py3.10-3.14 …
-service.py       2049b69  silent                 Documentation accuracy pass: seven reviewer-identified …
-service.py       c7d8355  added,behavior-risk    Interactive boards for the order and session demos
-service.py       376dc44  added                  Interactive todo board: user-driven events …
-app.py           4b22945  silent                 Redesign the todo board as a modern app …
-app.py           376dc44  silent                 Interactive todo board: user-driven events …
-app_service.py   b0dbf4f  behavior-risk          Guide: what happens when the APP's logic changes …
-app_service.py   45f8b7a  added                  Ticketing example grown to five steps …
+service.py       7a998dd  added,behavior-risk    Interactive boards for the order and session demos
+service.py       e6381b3  silent                 GitHub Actions CI: test matrix py3.10-3.14 ...
+service.py       0b464e1  silent                 Documentation accuracy pass: seven reviewer-identified ...
+service.py       7a998dd  added,behavior-risk    Interactive boards for the order and session demos
+service.py       e3aa2e3  added                  Interactive todo board: user-driven events ...
+app.py           b223a60  silent                 Redesign the todo board as a modern app ...
+app.py           e3aa2e3  silent                 Interactive todo board: user-driven events ...
+app_service.py   35305af  silent                 Production readiness for v0.1.0: dead stub removed ...
+app_service.py   abbcb3c  behavior-risk          Guide: what happens when the APP's logic changes ...
+app_service.py   b016729  added                  Ticketing example grown to five steps ...
 
-9 historical app-file changes: 5 flagged, 4 silent
+10 historical app-file changes: 5 flagged, 5 silent
 ```
 
-All nine classifications match what the commits actually did: the five flags
+All ten classifications match what the commits actually did: the five flags
 are real emission changes (new sites, and the `close()` timestamp fix - the
 one genuine app-behavior bug fix in this repo's history, which this check
-would have surfaced before runtime); the four silents are a lint reflow, a
-docstring edit, and two changes to a file with no emit sites. The docstring
+would have surfaced before runtime); the five silents are a lint reflow, a
+docstring edit, a comment-only production-readiness pass, and two changes
+to a file with no emit sites. The docstring
 case initially flagged - a false alarm this measurement itself found, fixed
 by stripping docstrings from the normalization (they cannot change emission
 behavior). Small N, honestly stated; the method is committed and rerunnable

@@ -462,16 +462,26 @@ A trace file never appears by itself - something must record it. Three ways:
   ```python
   from behave_rv.events.sources.replay import TraceRecorder
 
-  recorder = TraceRecorder("traces/2026-07-13.jsonl")
+  recorder = TraceRecorder("traces/2026-07-13.jsonl", clock=clock)
   service = TicketService(lambda e: source.push(recorder(e)))
   # ... app runs; later:
   recorder.close()
   ```
 
-  The ticketing example does exactly this - running `live_monitor.py` leaves
+  Pass the same `clock` the service emits event times with: on `close()` the
+  recorder appends a **clock-horizon marker** (a reserved `behave_rv.clock`
+  event) at the moment recording stopped. That closes the one gap replay
+  would otherwise have: a deadline that fired live on the wall clock, in the
+  silence after the last event, has no recorded event to advance replay time
+  past it - without the marker, the recorded evidence of a violation replays
+  as `pending`. With no `clock`, the marker pins the horizon at the last
+  event's time, so replay never invents time that did not pass. The
+  ticketing example does exactly this - running `live_monitor.py` leaves
   a `live_session.jsonl` you can feed straight back to a replay or to
   `catalog diff --trace`.
-- **From a list** (tests, generators): `record_events(path, events)`.
+- **From a list** (tests, generators): `record_events(path, events)`; pass
+  `horizon=<t>` to append the marker at the moment the observation window
+  closed.
 - **From any pipeline** that writes the JSONL shape (one serialized `Event`
   per line) - e.g. an export from your event bus.
 
@@ -911,10 +921,11 @@ execution-verifier can honestly offer.
   actions whose order matters must not share a timestamp. Tick your clock
   between them (the ticketing example shows this; its first draft had the
   bug and produced spurious verdicts).
-- **Live mode wants small timestamps.** A known open issue makes wall-clock
-  deadline firing unreliable at Unix-epoch magnitudes; in live mode emit
-  service-relative times (`time.time() - START`), as the examples and demos
-  do. Replay and batch runs are unaffected.
+- **Any timestamp magnitude works live.** Wall-clock deadline firing is
+  exact at every float magnitude, including raw `time.time()` epoch values
+  (the release boundary advances by one ulp, never by an absolute epsilon).
+  Service-relative times (`time.time() - START`) remain a fine convention -
+  the examples use them for readable dashboards - but they are not required.
 - **Purity is on you.** Steps must be deterministic and side-effect free;
   the framework expects but cannot enforce it.
 - **`pending` is honest, not stuck.** Unbounded obligations settle at the

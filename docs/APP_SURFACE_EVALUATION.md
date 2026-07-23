@@ -148,10 +148,13 @@ against the step-side catalog are deliberate. First, **called-function names
 are preserved** in app-side hashes: occurrence-order canonicalization would
 assign two distinct calls the same canonical names regardless of their order,
 silently absorbing a *reorder of two emitting calls* - and emission order is
-contract (a `before` policy hangs on it). The measured price is that renaming
-a function on an emit path cannot be proven representational and flags as a
-risk (case E13); the classifier pairs such orphaned sites by interface so a
-rename never escalates to a removal-level break. Second, **decorators are
+contract (a `before` policy hangs on it). A rename-invariant fingerprint is
+computed alongside the strict one - member bodies with every intra-slice
+call target replaced by the callee's content, refined to a fixpoint - and
+equal invariants PROVE two slices identical modulo function names, so a
+pure rename of an emit-path function (case E13) absorbs as `renamed` while
+any unprovable change still flags; the classifier pairs orphaned sites by
+interface so an unproven rename never escalates to a removal-level break. Second, **decorators are
 preserved** and a decorator's body joins the wrapped function's slice: the
 step-side normalizer strips decorators as registration boilerplate, but an
 application decorator wraps the function and can change what it emits - the
@@ -205,7 +208,7 @@ E9    an emission deleted                                      changed  changed 
 E10   a new emission added inside an existing method           changed  same      risk      CORRECT
 E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
 E12   a function outside every emit slice changed              same     same      silent    CORRECT
-E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E13   a function on an emit path renamed (pure)                same     same      silent    CORRECT
 E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
 E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
 E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
@@ -217,9 +220,11 @@ E21   a decorator on an emit-path method changes behavior      changed  changed 
 E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
 ```
 
-18/22 correct, 0 misses, 4 false alarms - all four in the *declared*
+19/22 correct, 0 misses, 3 false alarms - all three in the *declared*
 conservatism family, asserted in the test suite to be exactly that family
-and nothing more. E10 exhibits the layering the design intends: a new
+and nothing more. E13 (a pure emit-path function rename) left that family
+when the rename-invariant fingerprint made the proof available: it now
+absorbs silently as `renamed`. E10 exhibits the layering the design intends: a new
 emission changes the stream but no verdict (nothing observes it yet), and it
 is still surfaced. E15 is a false alarm we defend as policy: when the event
 type stops being statically analyzable, losing the check must itself
@@ -311,8 +316,8 @@ known unaffected.
 ### RQ4 - Flag rate on real history
 
 `python -m tests.measure_app_history` replays every historical change to an
-application file in this repository (9 change-pairs across 5 files):
-5 flagged, 4 silent, and on inspection **all 9 classifications match what
+application file in this repository (10 change-pairs across 5 files):
+5 flagged, 5 silent, and on inspection **all 10 classifications match what
 the commits actually did**. The flags: three commits adding real emissions,
 and the one genuine app-behavior bug fix in the repository's history (a
 terminal-event timestamp correction that changed 10 verdicts in the
@@ -386,8 +391,9 @@ claim to its true scope.
   scripted traffic is weaker than semantic equivalence. For *soundness*
   this direction is safe (a stream change under any traffic proves a real
   change); for the *alarm* figures it means "no observed behavioral
-  difference on this traffic", not "provably equivalent". The E13/E14/E17
-  alarms are argued equivalent by construction, not proven.
+  difference on this traffic", not "provably equivalent". The E14/E17
+  alarms are argued equivalent by construction, not proven; E13 IS proven
+  (rename-invariant fingerprint equality) and absorbed.
 - **The evaluation drove the hardening.** The mutation campaign found the
   holes and the same authors fixed them and re-ran; the final 619/619 is
   therefore a fixed-point of this benchmark, not an independent test. New
@@ -426,7 +432,7 @@ python -m tests.exp_app_mutation          # RQ2/RQ3: 619 mutants, exit 1 on any 
 python -m tests.measure_app_history       # RQ4: this repo's own commits
 python -m tests.exp_app_scaling           # RQ5: cost vs size
 python -m tests.exp_app_coverage          # RQ6: resolvability and tightness
-python -m pytest tests/ demo/ -q          # 383 tests; E-series + campaign pinned
+python -m pytest tests/ demo/ -q          # 412 tests; E-series + campaign pinned
 ```
 
 The E-series expectations, the zero-miss property, and the exact by-design

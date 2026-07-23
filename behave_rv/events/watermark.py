@@ -15,7 +15,7 @@ rather than silently slotted in at the wrong point (bias toward surfacing).
 from __future__ import annotations
 
 import heapq
-from math import inf, isfinite
+from math import inf, isfinite, nextafter
 
 from behave_rv.events.event import Event
 
@@ -104,7 +104,32 @@ class ReorderBuffer:
         breaking canonical ordering. Holding them until the watermark strictly
         passes keeps every same-timestamp event in one batch, popped canonically.
         """
-        self._watermark = self._max_seen - self.grace
+        # never regress: a wall-fire commit may have pushed the watermark
+        # further than max_seen - grace lands after float rounding
+        self._watermark = max(self._watermark, self._max_seen - self.grace)
+        out: list[Event] = []
+        while self._heap and self._heap[0][0] < self._watermark:
+            out.append(heapq.heappop(self._heap)[-1])
+        return out
+
+    def release_through(self, moment: float) -> list[Event]:
+        """Release every event at or before ``moment``, advancing the watermark
+        strictly past it. This is the wall-fire commit path: the engine has
+        declared stream time advanced past ``moment``, so events AT the
+        boundary are committed now, in one canonical batch, and a
+        same-timestamp sibling arriving later is late and flagged
+        (committed-plus-flagged).
+
+        The boundary is ``nextafter(moment, inf)`` -- one ulp, so it is exact
+        at every float magnitude. An absolute epsilon would underflow at
+        Unix-epoch event times (ulp there is ~2.4e-7), leaving the strict
+        release comparison forever unsatisfied: buffered events would never
+        release, wall deadlines would fall silent, and the live loop would
+        busy-spin.
+        """
+        boundary = nextafter(moment, inf)
+        if boundary > self._watermark:
+            self._watermark = boundary
         out: list[Event] = []
         while self._heap and self._heap[0][0] < self._watermark:
             out.append(heapq.heappop(self._heap)[-1])

@@ -29,8 +29,9 @@ E-series):
   alpha-normalized version-stable AST hashing (``condition._Alpha`` /
   ``_stable_dump``), with one app-side tightening (see ``_AppAlpha``): called
   names are preserved because emission ORDER is contract. Local, parameter,
-  and class renames absorb silently; renaming a function on an emit path
-  flags conservatively.
+  and class renames absorb silently. Renaming a function on an emit path is
+  absorbed only when the rename-invariant fingerprint PROVES the slices
+  identical modulo function names; anything unproven flags conservatively.
 
 Everything is pure AST -- application modules are NEVER imported (they may
 have side effects). The resolvable fragment is deliberately narrow and every
@@ -83,6 +84,14 @@ class EmitSite:
     slice_functions: dict[str, str]  # qualname -> alpha-normalized own-hash
     slice_fingerprint: str          # hash of member hashes + referenced constants
     unresolved_calls: list[str] = field(default_factory=list)
+    # the rename-invariant fingerprint: member hashes recomputed with every
+    # intra-slice call target replaced by the CALLEE'S CONTENT (its own
+    # invariant hash, stabilized by refinement), so a pure rename of slice
+    # functions leaves it identical while any substitution of different logic
+    # changes it. Equal invariant fingerprints PROVE two slices differ only by
+    # function names; "" on catalogs saved before this field existed, which
+    # disables the proof and falls back to the conservative classification.
+    rename_fingerprint: str = ""
     # module- and class-level constants any slice member reads, name ->
     # repr(value): a LIMIT = 10 participating in emission logic lives outside
     # every function body, so its value must be fingerprinted separately
@@ -100,6 +109,7 @@ class EmitSite:
             "slice_fingerprint": self.slice_fingerprint,
             "unresolved_calls": sorted(self.unresolved_calls),
             "referenced_constants": dict(sorted(self.referenced_constants.items())),
+            "rename_fingerprint": self.rename_fingerprint,
         }
 
     @classmethod
@@ -115,6 +125,7 @@ class EmitSite:
             slice_fingerprint=data["slice_fingerprint"],
             unresolved_calls=list(data["unresolved_calls"]),
             referenced_constants=dict(data.get("referenced_constants", {})),
+            rename_fingerprint=data.get("rename_fingerprint", ""),
         )
 
 
@@ -126,10 +137,11 @@ class _AppAlpha(_Alpha):
     the NAME of a called function is preserved rather than canonicalized:
     occurrence-order canonical names would absorb a REORDER of two distinct
     calls -- harmless for pure step predicates, but app calls emit, and
-    emission order is contract (a ``before`` policy hangs on it). The cost is
-    deliberate and conservative: renaming a function on an emit path flags as
-    behavior-risk instead of absorbing (local/parameter/class renames still
-    absorb). Second, DECORATORS are kept in the hash: the step-side normalizer
+    emission order is contract (a ``before`` policy hangs on it). The strict
+    fingerprint therefore moves on any emit-path function rename; the
+    rename-invariant fingerprint computed alongside it recovers the provable
+    cases, so a pure rename is absorbed while an unprovable change still
+    flags. Second, DECORATORS are kept in the hash: the step-side normalizer
     strips them as registration boilerplate, but an app-side decorator wraps
     the function and can change what it emits."""
 
@@ -258,6 +270,16 @@ def _resolve_call(call: ast.Call, mod: _Module, class_name: Optional[str],
             if target is not None and attr in target.functions:
                 return f"{target.stem}.{attr}", None
         return None, f"{base}.{attr}"
+    if isinstance(f, ast.Attribute):
+        # a pure name/attribute chain (self._queue.discard, cfg.limits.check)
+        # is statically spellable: declare it as a NAMED hole so the report
+        # says what was called. Only genuinely computed targets -- calls on
+        # call results, subscripts, lambdas -- degrade to the <dynamic> marker.
+        chain = f
+        while isinstance(chain, ast.Attribute):
+            chain = chain.value
+        if isinstance(chain, ast.Name):
+            return None, ast.unparse(f)
     return None, DYNAMIC
 
 
@@ -419,6 +441,54 @@ def analyze_app(paths) -> list[EmitSite]:
                 seeds |= writers
         return slice_cache[function]
 
+    # -- the rename-invariant hash: member bodies with every intra-slice call
+    # target replaced by the CALLEE'S CONTENT rather than its name. Refined to
+    # a fixpoint (bounded by the member count) so the substitution is
+    # transitive through call chains. Two slices with equal invariant hash
+    # vectors are content-identical modulo the names of slice functions, which
+    # PROVES a pure rename; any substitution of different logic changes the
+    # embedded callee content and still flags. Both versions of a slice run
+    # the identical deterministic procedure, so the comparison is exact.
+
+    class _SliceCalls(ast.NodeTransformer):
+        def __init__(self, mod, class_name, members, token_of) -> None:
+            self._mod, self._class = mod, class_name
+            self._members, self._token = members, token_of
+
+        def visit_Call(self, node: ast.Call):
+            self.generic_visit(node)
+            if not _is_anchor(node, self._mod):
+                resolved, _ = _resolve_call(node, self._mod, self._class, modules)
+                if resolved in self._members:
+                    node.func = ast.Name(id=self._token(resolved), ctx=ast.Load())
+            return node
+
+    def _invariant_hash(qualname: str, members: set[str], token_of) -> str:
+        stem, local = qualname.split(".", 1)
+        class_name = local.split(".")[0] if "." in local else None
+        clone = copy.deepcopy(all_functions[qualname])
+        _strip_docstrings(clone)
+        substituted = _SliceCalls(modules[stem], class_name, members, token_of).visit(clone)
+        normalized = _AppAlpha().visit(substituted)
+        ast.fix_missing_locations(normalized)
+        return hashlib.sha256(_stable_dump(normalized).encode()).hexdigest()[:16]
+
+    invariant_cache: dict[str, str] = {}
+
+    def invariant_hashes(caller: str, members: set[str]) -> str:
+        if caller not in invariant_cache:
+            ordered = sorted(members)
+            inv = {qn: "m" for qn in ordered}
+            for _ in range(len(ordered)):
+                def token_of(qn: str, _inv=inv) -> str:
+                    return f"<{_inv[qn]}>"
+                refined = {qn: _invariant_hash(qn, members, token_of) for qn in ordered}
+                if refined == inv:
+                    break
+                inv = refined
+            invariant_cache[caller] = ",".join(sorted(inv.values()))
+        return invariant_cache[caller]
+
     sites: list[EmitSite] = []
     ordinal: dict[str, int] = defaultdict(int)
     for caller, stem, call in anchors:
@@ -431,10 +501,12 @@ def analyze_app(paths) -> list[EmitSite]:
         for member in members:
             for key in const_reads.get(member, ()):
                 constants[key] = const_values[key]
+        consts_blob = "|consts:" + ",".join(f"{k}={v}" for k, v in sorted(constants.items()))
         fingerprint = hashlib.sha256(
-            (",".join(sorted(set(slice_functions.values())))
-             + "|consts:" + ",".join(f"{k}={v}" for k, v in sorted(constants.items()))
+            (",".join(sorted(set(slice_functions.values()))) + consts_blob
              ).encode()).hexdigest()[:16]
+        rename_fingerprint = hashlib.sha256(
+            (invariant_hashes(caller, members) + consts_blob).encode()).hexdigest()[:16]
         holes = sorted(set().union(*(unresolved_of.get(qn, set()) for qn in members)))
         sites.append(EmitSite(
             site_id=f"{caller}#{ordinal[caller]}",
@@ -447,6 +519,7 @@ def analyze_app(paths) -> list[EmitSite]:
             slice_fingerprint=fingerprint,
             unresolved_calls=holes,
             referenced_constants=constants,
+            rename_fingerprint=rename_fingerprint,
         ))
     return sorted(sites, key=lambda s: s.site_id)
 
@@ -499,6 +572,14 @@ def _describe_risk(old: EmitSite, new: EmitSite) -> str:
     return "; ".join(parts) or "slice fingerprint changed"
 
 
+def _proven_rename(old: EmitSite, new: EmitSite) -> bool:
+    """True iff the two slices are PROVEN identical modulo function names:
+    both carry a rename-invariant fingerprint (catalogs saved before the field
+    existed carry "" and the proof is unavailable) and the fingerprints match."""
+    return bool(old.rename_fingerprint) \
+        and old.rename_fingerprint == new.rename_fingerprint
+
+
 def classify_app_changes(old_sites: list[EmitSite],
                          new_sites: list[EmitSite]) -> list[AppChange]:
     """Classify every emit site across two versions of the app surface.
@@ -506,9 +587,13 @@ def classify_app_changes(old_sites: list[EmitSite],
     First pass matches by ``site_id``. Orphans are then re-paired twice: sites
     whose interface AND slice fingerprint are identical are a pure move (e.g. a
     class rename) -- absorbed silently, like a step rename; sites matching on
-    interface alone are the emitting function renamed and/or changed, which
-    cannot be proven representational, so they flag as behavior-risk rather
-    than as a removal. What remains is genuinely removed or added.
+    interface alone are the emitting function renamed and/or changed. What
+    remains is genuinely removed or added.
+
+    Wherever only a fingerprint separates two interface-identical sites, the
+    rename-invariant fingerprint arbitrates: equal invariants PROVE the change
+    is a pure rename of slice functions and absorb it as ``renamed``; anything
+    unproven flags as behavior-risk, keeping the conservative bias.
     """
     old_by = {s.site_id: s for s in old_sites}
     new_by = {s.site_id: s for s in new_sites}
@@ -521,7 +606,13 @@ def classify_app_changes(old_sites: list[EmitSite],
         if _interface(o) != _interface(n):
             changes.append(AppChange(site_id, INTERFACE_BREAK, o, n, _describe_interface(o, n)))
         elif o.slice_fingerprint != n.slice_fingerprint:
-            changes.append(AppChange(site_id, BEHAVIOR_RISK, o, n, _describe_risk(o, n)))
+            if _proven_rename(o, n):
+                changes.append(AppChange(
+                    site_id, APP_RENAMED, o, n,
+                    "function rename(s) inside the emit slice, proven "
+                    "representational (rename-invariant fingerprints match)"))
+            else:
+                changes.append(AppChange(site_id, BEHAVIOR_RISK, o, n, _describe_risk(o, n)))
         else:
             changes.append(AppChange(site_id, APP_UNCHANGED, o, n))
 
@@ -538,13 +629,21 @@ def classify_app_changes(old_sites: list[EmitSite],
         else:
             unmatched_old.append(o)
     for o in unmatched_old:                    # interface-only: rename and/or change
-        n = next((s for s in unclaimed if _interface(s) == _interface(o)), None)
+        n = next((s for s in unclaimed
+                  if _interface(s) == _interface(o) and _proven_rename(o, s)), None) \
+            or next((s for s in unclaimed if _interface(s) == _interface(o)), None)
         if n is not None:
             unclaimed.remove(n)
-            changes.append(AppChange(
-                n.site_id, BEHAVIOR_RISK, o, n,
-                f"emitting function renamed and/or changed ({o.site_id} -> "
-                f"{n.site_id}); cannot be proven representational"))
+            if _proven_rename(o, n):
+                changes.append(AppChange(
+                    n.site_id, APP_RENAMED, o, n,
+                    f"emitting function renamed: {o.site_id} -> {n.site_id}, "
+                    "proven representational (rename-invariant fingerprints match)"))
+            else:
+                changes.append(AppChange(
+                    n.site_id, BEHAVIOR_RISK, o, n,
+                    f"emitting function renamed and/or changed ({o.site_id} -> "
+                    f"{n.site_id}); cannot be proven representational"))
         else:
             changes.append(AppChange(o.site_id, APP_REMOVED, o, None,
                                      f"emit site removed (event {o.event_type!r})"))

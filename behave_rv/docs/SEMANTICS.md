@@ -283,6 +283,21 @@ event is dispatched or added to any trace. Consequently:
   replay verdicts are byte-identical to before. Consumption stays
   single-threaded -- the mechanism is a blocking pull with a timeout in the
   consumer thread, not a timer thread.
+- The virtual tick's release boundary advances by **one ulp**
+  (``math.nextafter``), never by an absolute epsilon, so the commitment is
+  exact at every float magnitude including Unix-epoch event times.
+
+**The clock-horizon marker.** A recorded trace may end inside an armed
+deadline whose live verdict was fired by the wall clock; replay, being
+event-time-driven, would report it ``pending``. A recording therefore ends
+with a marker event of the reserved type ``behave_rv.clock`` (written by
+``TraceRecorder.close`` at the recorder's clock, or by
+``record_events(..., horizon=t)``) carrying no bindings and no payload. On
+replay it is an ordinary event to the pipeline: no policy observes it and it
+touches no monitor instance; its only effect is advancing event time to the
+horizon, firing exactly the deadlines the live wall clock fired. A recorder
+with no clock pins the horizon at the last event's time, so replay never
+advances past time that provably passed.
 
 ## Liveness: type-level and value-level
 

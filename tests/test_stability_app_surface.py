@@ -32,8 +32,11 @@ def test_every_false_alarm_is_a_declared_by_design_conservatism(rows):
 
 
 def test_the_by_design_family_is_exactly_the_declared_one(rows):
+    # E13 (pure emit-path function rename) left this family when the
+    # rename-invariant fingerprint made the proof available: it now absorbs
+    # silently instead of flagging by design
     assert [r.case_id for r in rows.values() if r.by_design] == \
-        ["E13", "E14", "E15", "E17"]
+        ["E14", "E15", "E17"]
 
 
 def test_e10_also_surfaces_the_new_site_as_an_addition():

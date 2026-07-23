@@ -11,7 +11,7 @@ E9    an emission deleted                                      changed  changed 
 E10   a new emission added inside an existing method           changed  same      risk      CORRECT
 E11   the terminal emission moved before the status it follows changed  changed   risk      CORRECT
 E12   a function outside every emit slice changed              same     same      silent    CORRECT
-E13   a function on an emit path renamed (pure)                same     same      risk      FALSE ALARM  (by design: callable identity is emission-order contract; cannot be proven representational, so it flags)
+E13   a function on an emit path renamed (pure)                same     same      silent    CORRECT
 E14   extract-method refactor inside an emit slice             same     same      risk      FALSE ALARM  (by design: slice membership changed; structural fingerprints cannot prove the refactor equivalent)
 E15   the event type becomes computed instead of a constant    same     same      break     FALSE ALARM  (by design: the type is no longer statically analyzable; losing the check must surface, not silently degrade)
 E16   a module-level constant used in emission logic changes   changed  changed   risk      CORRECT
@@ -22,5 +22,5 @@ E20   a ternary guard on the emitted value moves               changed  same    
 E21   a decorator on an emit-path method changes behavior      changed  changed   risk      CORRECT
 E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
 
-22 cases: 18 correct, 4 false alarm(s) (all by design), 0 miss(es)
+22 cases: 19 correct, 3 false alarm(s) (all by design), 0 miss(es)
 results written to experiments/results/app_curated.json

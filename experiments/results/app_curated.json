@@ -109,10 +109,10 @@
    "verdicts_changed": false
   },
   {
-   "by_design": "callable identity is emission-order contract; cannot be proven representational, so it flags",
+   "by_design": "",
    "case": "E13",
-   "detected": "risk",
-   "outcome": "FALSE ALARM",
+   "detected": "silent",
+   "outcome": "CORRECT",
    "stream_changed": false,
    "title": "a function on an emit path renamed (pure)",
    "verdicts_changed": false
@@ -199,8 +199,8 @@
    "verdicts_changed": false
   }
  ],
- "correct": 18,
+ "correct": 19,
  "experiment": "app_curated",
- "false_alarms": 4,
+ "false_alarms": 3,
  "misses": 0
 }

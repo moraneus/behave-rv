@@ -358,9 +358,7 @@ CASES = [
     Case("E13", "a function on an emit path renamed (pure)",
          lambda s: s.replace("def _status(", "def _transition(")
                     .replace("self._status(", "self._transition("),
-         expect="risk", stream_changes=False, verdicts_change=False,
-         by_design="callable identity is emission-order contract; cannot be "
-                   "proven representational, so it flags"),
+         expect="silent", stream_changes=False, verdicts_change=False),
     Case("E14", "extract-method refactor inside an emit slice",
          _replace("        title = clean_name(name)\n"
                   "        if len(title) > MIN_LEN:\n"
