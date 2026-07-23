@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "behave-rv"
-version = "0.2.0"
+version = "0.3.0"
 description = "Runtime verification over a live event stream, authored in Gherkin. Built on behave's parser; adds a deterministic per-entity engine and a two-sided stability contract that survives code change."
 readme = "README.md"
 requires-python = ">=3.10"
