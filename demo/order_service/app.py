@@ -128,7 +128,7 @@ BOARD_UI = {
               "cancelled": "warn", "refunded": "violet", "fraud_flagged": "warn",
               "reviewed": "ok", "double_charged": "danger", "done": "muted"},
     "gone": ["done"],
-    "hint": ("This shop never blocks an action — legality is the monitor's job. "
+    "hint": ("This shop never blocks an action - legality is the monitor's job. "
              "Try paying before authorizing, shipping a cancelled order, or cancelling "
              "and never refunding: the refund window fires at 5s on the wall clock. "
              "Close an undelivered order and watch its 'eventually' obligations settle."),

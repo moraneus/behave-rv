@@ -64,11 +64,11 @@ verdict set (including deciding events) for every policy.
 | `before` | 01 paid/auth, 02 ship/pay, 03 refund/cancel | 01 action/login, 02 logout/login | 01 complete/start, 02 edit/create |
 | `within` (wall timer) | 06 refund "5"s, 07 payment "10"s | 07 review "8"s | 06 due "5"s, 07 checkpoint "3"s |
 | `once` (has happened) | 04 invoiced, 05 delivered | 08 logout | 04 completed, 05 archived |
-| `historically` (always holds) | — | — | 12 sync ok |
-| `previously` | — | 03 lock/fail | 03 reopen/complete |
-| `since` | 11 flagged/reviewed | 10 flagged/reviewed (quiet) | — |
+| `historically` (always holds) | - | - | 12 sync ok |
+| `previously` | - | 03 lock/fail | 03 reopen/complete |
+| `since` | 11 flagged/reviewed | 10 flagged/reviewed (quiet) | - |
 | scoped `never` (Given, latching) | 10 cancelled/ship | 04 locked/act, 05 logout/act | 08 archived/edit, 09 deleted/edit |
-| `until` (Given ... until) | — | 06 locked-until-unlocked | 10 blocked-until-unblocked |
+| `until` (Given ... until) | - | 06 locked-until-unlocked | 10 blocked-until-unblocked |
 
 Every operator appears in at least one policy that the tests fire and verify;
 `within` deadlines in the live apps fire on the wall clock while the entity
@@ -95,5 +95,5 @@ Per-demo policy tables: [order_service](order_service/README.md),
 `python -m demo.slice_explorer` serves an interactive view of the app-surface
 analysis (see `docs/STABILITY.md`, Path D): pick any of the demo applications,
 click a source line, and see the backward dependency slice the real analyser
-computes — the emissions that line can influence, the slice members,
+computes - the emissions that line can influence, the slice members,
 constants, declared resolver holes, and the policies at risk.

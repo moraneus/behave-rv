@@ -127,7 +127,7 @@ BOARD_UI = {
               "logout": "muted", "review": "violet", "flagged": "warn",
               "ended": "muted"},
     "gone": ["ended"],
-    "hint": ("Three failed logins lock the account — that is real app logic, watch "
+    "hint": ("Three failed logins lock the account - that is real app logic, watch "
              "the third click. This app never blocks anything else: act while locked, "
              "act after logout, or force a lock with no failed attempt before it. "
              "Leave a lock unreviewed and the review window fires at 8s on the wall "

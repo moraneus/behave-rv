@@ -8,7 +8,7 @@ Specification stability (the catalog diff, liveness, and their measured
 detection table) is specified operationally in `STABILITY.md`; this document
 covers the runtime verdict semantics.
 
-Scope: the operators that exist today — `never`, `before`, `within` — plus the
+Scope: the operators that exist today - `never`, `before`, `within` - plus the
 event-time reordering contract. Nothing else.
 
 ## Trace, keys, canonical order
@@ -30,7 +30,7 @@ Events are evaluated in **canonical order**: sorted by
 The tie-break exists so that events sharing a timestamp have a single, total,
 **arrival-independent** order. (An equally valid alternative spec would use strict
 event-time precedence and make ties verdict-irrelevant; this implementation uses
-the canonical content tie-break. Either is arrival-independent — that is the
+the canonical content tie-break. Either is arrival-independent - that is the
 property that matters.)
 
 Verdicts are three-valued: `satisfied`, `violated`, `pending`. On a finite trace,
@@ -38,7 +38,7 @@ an obligation that has neither passed nor failed is `pending`.
 
 ## never
 
-`never(bad)` — a status must never occur. `bad` is a predicate on an event
+`never(bad)` - a status must never occur. `bad` is a predicate on an event
 (here: `payload["status"] == b`).
 
 Authorable form: a self-contained, predicate-first `Then` with no `When`, e.g.
@@ -55,7 +55,7 @@ For key `k`, over its events in canonical order:
 
 ## before
 
-`before(prior, trigger)` — the trigger must have been preceded by the prior
+`before(prior, trigger)` - the trigger must have been preceded by the prior
 condition. `prior`, `trigger` are event predicates.
 
 For key `k`, walk its events in canonical order tracking `seen_prior` (initially
@@ -70,7 +70,7 @@ If no trigger event ever occurs: **pending**. (An event that is both `prior` and
 
 ## within
 
-`within(trigger, response, seconds)` — after a trigger, a response must occur
+`within(trigger, response, seconds)` - after a trigger, a response must occur
 before the deadline. The deadline is in **event time**.
 
 For key `k`, let `H` be the clock horizon (global max `event_time`). Walk `k`'s
@@ -97,7 +97,7 @@ tie. Only the **first** trigger arms; only the first response after arming decid
 **Global clock.** `within` is the one place a key is not fully isolated: `deadline`
 is event time and event time is a single clock advanced by every event, so a
 `within` deadline for key `k` can elapse because another key's event advanced the
-clock past it. This is intentional — a real-time deadline in event time is a
+clock past it. This is intentional - a real-time deadline in event time is a
 statement about how far time has advanced, which is global.
 
 ## Scoped never (the Given scope)
@@ -114,7 +114,7 @@ forms:
 ```
 
 **The scope-lifetime decision.** Two coherent readings exist: (a) a *latching*
-scope — once the scope predicate holds it stays open forever for this entity —
+scope - once the scope predicate holds it stays open forever for this entity -
 and (b) an *interval* scope that closes on some condition. We implement **both,
 explicitly**: the two-line form is latching, because a closing rule the author
 did not write must not be guessed; the `until` form names the closing predicate
@@ -134,7 +134,7 @@ order, with scope state `open` (initially false):
 - Then: **violated** iff `open` and `bad(e)` (settle; the deciding events are
   the opening event of the current interval and `e`, deduped when one event is
   both). Otherwise **pending** while the trace continues and **satisfied** at a
-  terminal event — including the vacuous case where the scope never opened.
+  terminal event - including the vacuous case where the scope never opened.
 
 **Edge cases (defined and tested).** An event satisfying both the scope and the
 forbidden predicate opens the scope first and therefore violates. An event
@@ -145,7 +145,7 @@ distinct events ordered by the canonical tie-break and processed fully in that
 order, so the outcome is arrival-independent like everything else.
 
 State is two booleans plus one retained event (the current opening event, for
-the explanation) — within the bounded-monitor model. `Given` on the other
+the explanation) - within the bounded-monitor model. `Given` on the other
 operators remains unwired and is refused; `When` with `never` is refused
 (never takes a scope, not a trigger).
 
@@ -177,7 +177,7 @@ Recurrence: one boolean `h`, init true; on each event `h := h and phi(e)`.
 Verdict: **pending** while `h` is true; **violated** the moment `h` first becomes
 false (settle); **satisfied** at a terminal event if it never became false.
 
-**Decision 1 — the `historically` reading.** Over event-occurrence predicates,
+**Decision 1 - the `historically` reading.** Over event-occurrence predicates,
 `historically(phi)` literally means *every event so far has been a phi event*. This
 is the exact logical dual of `never`: `historically(phi) = never(not phi)`, and it
 settles `violated` on the first event that is not a phi event. It is offered mainly
@@ -203,12 +203,12 @@ an untriggered instance yields no terminal verdict.
 ### since (safety)
 
 Authorable form: `Then <phi> since <psi>` (self-contained, no `When`); binding is
-`phi since psi` — `phi` has held since `psi`.
+`phi since psi` - `phi` has held since `psi`.
 
 Recurrence: one boolean `s`, init false; on each event `s := psi(e) or (phi(e) and
 s)`. (`psi` held at some past point and `phi` has held at every point since.)
 
-**Decision 2 — the `since` verdict mapping.** Two readings exist:
+**Decision 2 - the `since` verdict mapping.** Two readings exist:
 (a) *existential-established*: satisfied the moment `s` first becomes true; but `s`
 becomes true exactly when `psi` first occurs (regardless of `phi`), so this
 degenerates to "psi has occurred" and ignores `phi`. (b) *safety-maintained*: once
@@ -218,7 +218,7 @@ safety-maintained**, because it is the useful runtime reading and reports a conc
 safety breach the way `never`, `before`, and `within` do; (a) is degenerate.
 
 Verdict under (b): **pending** until settled; **violated** the first event where the
-since-chain breaks — `s` was true and becomes false, i.e. `phi` failed after `psi`
+since-chain breaks - `s` was true and becomes false, i.e. `phi` failed after `psi`
 without `psi` re-occurring (settle); **satisfied** at a terminal event if it never
 broke, including the vacuous case where `psi` never occurred (no obligation was ever
 activated, so nothing was violated).
@@ -366,13 +366,13 @@ time-slices.
 
 **Verdict over admitted events.** The verdict is the pure function defined in the
 sections above, computed over the **admitted** events in canonical order. A dropped
-late event **does not participate** in the verdict at all — not in ordering, not in
+late event **does not participate** in the verdict at all - not in ordering, not in
 the clock horizon `H` (which is the maximum `event_time` among *admitted* events,
 since a dropped event's time is always `< watermark ≤ max_seen`). So a verdict in
 this regime is a pure function of the *admitted* set (via canonical order).
 
 **Boundary of the reordering guarantee.** Among admitted events, arrival order is
-irrelevant — the verdict depends only on their canonical order. But arrival order
+irrelevant - the verdict depends only on their canonical order. But arrival order
 *does* decide which events are admitted versus dropped (event-time-ascending
 arrival admits everything and drops nothing; a more out-of-order arrival can drop
 more). Therefore, across the full regime, the verdict is a function of arrival
@@ -381,7 +381,7 @@ order **only to the extent that arrival order changes the admitted set**. Precis
 - Two arrival orders that admit the **same** set of events produce the **same**
   verdict (the in-span guarantee, restricted to admitted events).
 - Two arrival orders can produce **different** verdicts only if they admit
-  **different** sets — i.e. only if their dropped-late sets differ, and at least
+  **different** sets - i.e. only if their dropped-late sets differ, and at least
   one drop occurred.
 
 **Trustworthiness.** A verdict computed over a trace with drops is **degraded and
@@ -390,7 +390,7 @@ explicitly flagged**, never silently wrong: any run that dropped events reports
 that changes with arrival order while nothing was flagged as late would be a
 fault. The guarantee is therefore: *the verdict is trustworthy as a statement about
 the admitted events, and the presence of any excluded (late) event is always
-surfaced* — the caller can see that the stream was too out-of-order for the chosen
+surfaced* - the caller can see that the stream was too out-of-order for the chosen
 grace and widen it or treat the verdict as computed-with-drops.
 
 Drops are purely an out-of-order-arrival phenomenon: if events arrive in
@@ -399,8 +399,8 @@ event-time (canonical) order, `engine.late_events == 0` for any grace ≥ 0.
 ## Terminal retirement and quiescence reclamation (lifecycle × reordering)
 
 Terminal events retire an instance; a quiescence TTL reclaims an instance that has
-gone silent. Both must be decided on the **same basis as the verdict** — the
-admitted events in canonical order — so that lifecycle behaviour never changes a
+gone silent. Both must be decided on the **same basis as the verdict** - the
+admitted events in canonical order - so that lifecycle behaviour never changes a
 verdict away from the pure operator semantics over the admitted canonical trace.
 
 **Everything is processed in canonical order.** Retirement and reclamation are
@@ -414,7 +414,7 @@ is a terminal event, retire the instance for its key.
 **Terminal retirement.** When a terminal event for key `k` is reached in canonical
 order, the instance for `k` is retired: it emits its terminal verdict and its trace
 is dropped. Because every canonically-earlier admitted event for `k` precedes the
-terminal, they have already been applied — retirement is consistent with the
+terminal, they have already been applied - retirement is consistent with the
 verdict. Terminal verdicts: `never` → `satisfied` if it had not already been
 violated; `within` → `violated` if armed and unresolved; `before` → no verdict.
 After retirement the key is **reusable**: a canonically-later admitted event for `k`
@@ -427,12 +427,12 @@ the watermark has passed the terminal's `event_time`, so any event with an
 `event_time ≤ it` arriving afterward is below the watermark and dropped (§ late
 regime). No admitted canonically-earlier event can arrive after retirement.
 
-**Quiescence reclamation (best-effort GC — spec decision).** Quiescence TTL is a
+**Quiescence reclamation (best-effort GC - spec decision).** Quiescence TTL is a
 **best-effort, timer-driven memory-reclamation** mechanism, not part of the verdict
 guarantee. It reclaims an instance that has gone silent for `ttl`, driven by the
 canonical clock (`last_activity` from admitted events in canonical order; a
 late-dropped event never refreshes it). Two properties are guaranteed and tested:
-reclamation is **arrival-invariant** and **deterministic** — two arrival orders that
+reclamation is **arrival-invariant** and **deterministic** - two arrival orders that
 admit the same set reclaim the same keys and produce the same verdicts.
 
 What is **deliberately not** guaranteed (recorded explicitly, rather than
@@ -444,7 +444,7 @@ leaving correctness to be inferred from the code):
   re-validation at that instant it is discarded. Consequently some instances that
   are eligible under a naive "reclaim at `last_activity + ttl`" reading are not
   reclaimed (a memory-efficiency limitation, tracked separately as timer-purge
-  robustness — out of scope for correctness). For `never`/`before` this is
+  robustness - out of scope for correctness). For `never`/`before` this is
   verdict-neutral; the exact reclaimed set is therefore **not** asserted against
   the intended-semantics oracle.
 - **TTL can suppress a `within` timeout.** If an entity goes quiescent before its
@@ -453,8 +453,8 @@ leaving correctness to be inferred from the code):
   TTL-vs-deadline relationship. **Operational guidance:** set `ttl` larger than any
   `within` deadline so obligations are not reclaimed out from under their deadline.
 
-The verdict guarantee — that the verdict equals the pure operator semantics over
-the admitted canonical trace — holds for **terminal retirement** and for the
+The verdict guarantee - that the verdict equals the pure operator semantics over
+the admitted canonical trace - holds for **terminal retirement** and for the
 **no-TTL** case; TTL reclamation is a GC action layered on top, whose *only*
 guaranteed properties are arrival-invariance and determinism.
 
@@ -462,5 +462,5 @@ guaranteed properties are arrival-invariance and determinism.
 order, the per-key verdict, the set of keys retired, and the set reclaimed are all
 decided on the admitted-canonical basis. Adding terminal or TTL behaviour never
 changes a verdict from what the operator semantics over the admitted canonical
-trace give, and never silently discards a canonically-earlier admitted event —
+trace give, and never silently discards a canonically-earlier admitted event -
 any excluded event is flagged as late.

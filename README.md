@@ -191,7 +191,7 @@ behave_rv requires Python 3.10 or newer and depends on `behave`.
 pip install behave-rv
 ```
 
-The full documentation ships inside the package — list and read it offline:
+The full documentation ships inside the package - list and read it offline:
 
 ```bash
 python -m behave_rv docs           # list available documents
@@ -354,7 +354,7 @@ The verdict log, one JSON object per verdict:
 A liveness note for any registered step whose event never appeared in the stream:
 
 ```text
-# liveness (steps never observed in this stream — possibly dead/wrong)
+# liveness (steps never observed in this stream - possibly dead/wrong)
   customer.tier.is  (event 'customer.status')
 ```
 
@@ -436,7 +436,7 @@ The fingerprint is a conservative, AST-based approximation of the matching
 contract, not a semantic-equivalence check: it is invariant to identifier names
 and formatting, sensitive to structure and constants, and it covers the
 normalized bodies of every helper the predicate statically reaches (same-module
-and same-package calls, transitively — the mechanism is specified in `STABILITY.md`).
+and same-package calls, transitively - the mechanism is specified in `STABILITY.md`).
 Known false positives (a break reported where behavior is unchanged):
 introducing a temporary variable, commutative reordering of `and`/`or`
 operands, extracting or splitting logic into helpers. Known false negative: a

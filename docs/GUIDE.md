@@ -1,7 +1,7 @@
-# Using behave_rv in your code — the complete guide
+# Using behave_rv in your code - the complete guide
 
 behave_rv watches your running application and tells you, deterministically
-and with evidence, whether the rules you wrote in plain Gherkin hold — per
+and with evidence, whether the rules you wrote in plain Gherkin hold - per
 entity, live or over a recorded trace. This guide assumes no familiarity with
 the library: it covers the files a monitored project has and how each is
 written, every concept and option, how to watch the monitor while your app
@@ -9,7 +9,7 @@ runs, and three complete working examples that are committed to this repo and
 verified to run.
 
 Setup: `pip install -e .` from a clone (dependencies: `behave`, `parse`).
-Nothing else is needed — even the live web dashboard is standard library only.
+Nothing else is needed - even the live web dashboard is standard library only.
 
 ---
 
@@ -37,7 +37,7 @@ your_app/
 
 **Important, stated up front: there is no magic path discovery.** Unlike
 classic `behave` (which auto-discovers a `features/` directory), behave_rv
-reads exactly the files you point it at — your code calls
+reads exactly the files you point it at - your code calls
 `compile_feature(path.read_text(), registry)` per file, and the CLI takes
 `--steps`, `--policies`, `--catalog`, `--trace` arguments. The layout above
 is a convention that makes those one-liners, not a requirement the engine
@@ -48,15 +48,15 @@ paths you chose.
 
 | File | Extension / format | Where (convention) | Written by | Read by | Rules |
 |---|---|---|---|---|---|
-| Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** — unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
+| Policy | `.feature`, Gherkin | `monitoring/policies/`, ONE file per policy, numbered (`01_...`) | a human | `compile_feature(...)` in your code; CLI `--policies` | exactly **one `Feature:` block per file** (the parser refuses multiple); one `Scenario:` = one policy; **scenario names are the policy ids** - unique across all files, and they appear verbatim in verdicts, logs, and dashboards, so write them as readable sentences |
 | Steps module | `.py` | `monitoring/steps.py`, next to `policies/` | the developer (or coding agent) | your code (`import`); CLI `--steps` | expose a side-effect-free `build_registry()` factory (the CLI auto-detects it), or register at import via the module decorators; details in §3 |
 | Step catalog | `catalog.json`, versioned JSON | next to `steps.py`, **committed to git** | `python -m behave_rv catalog save` | `catalog diff` (the stability check) | never hand-edited; regenerate + commit when a contract change is intended; with `--app` it also records the app's fingerprinted emit sites (the other side of the contract, §7); see [`STABILITY.md`](STABILITY.md) |
 | Trace | `.jsonl`, one JSON event per line | `traces/`, or wherever you record | `TraceRecorder` (live tee), `record_events` (from a list), or any pipeline writing the format | `ReplaySource(path)`; CLI `--trace` | the exact `Event` fields (`type`, `event_time`, `bindings`, `payload`, `source`); event times in seconds; see "Recording traces" in §4 |
-| Your app | `.py` (any structure) | anywhere | you | — | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
+| Your app | `.py` (any structure) | anywhere | you | - | the ONLY integration is calling an injected `emit(event)` at observable state changes; the app never imports the engine |
 
 Naming conventions that pay off later:
 
-- **`step_id`**: `<domain>.<event>.<what>` (e.g. `ticket.status.is`) — this is
+- **`step_id`**: `<domain>.<event>.<what>` (e.g. `ticket.status.is`) - this is
   the stable identity policies bind to across renames; choose it once, never
   reuse it.
 - **event `type`**: `<domain>.<noun>` (e.g. `ticket.status`), a stable
@@ -132,7 +132,7 @@ Deciding events:
 ```
 
 The violation is your own scenario replayed with the failing step marked and
-the real events that decided it — that is the library's reporting model
+the real events that decided it - that is the library's reporting model
 everywhere (logs, CLI, dashboard).
 
 ---
@@ -142,7 +142,7 @@ everywhere (logs, CLI, dashboard).
 Everything in this section is committed under
 [`examples/ticketing/`](../examples/ticketing/) and runs as shown.
 
-### `app_service.py` — your business logic, with taps
+### `app_service.py` - your business logic, with taps
 
 ```python
 EVENT_TYPE = "ticket.status"      # one stable type for the ticket lifecycle
@@ -169,10 +169,10 @@ class TicketService:
 What to copy from it: `emit` and `clock` are **injected** (same service runs
 live and in deterministic tests); one `_status` tap per state change and
 nothing else; `close()` emits the observable `"closed"` status *and then* the
-terminal event — policies talk about the status, the engine uses the terminal
+terminal event - policies talk about the status, the engine uses the terminal
 to settle pending obligations and free the ticket's state.
 
-### `monitoring/steps.py` — the vocabulary (five steps)
+### `monitoring/steps.py` - the vocabulary (five steps)
 
 ```python
 POLICY_DIR = Path(__file__).parent / "policies"
@@ -223,29 +223,29 @@ def load_policies(registry):
             for p in compile_feature(path.read_text(), registry)]
 ```
 
-(Step bodies 3–5 abbreviated here; the committed file has them in full.)
+(Step bodies 3-5 abbreviated here; the committed file has them in full.)
 Notice step 2: several steps may observe the SAME event type with different
-conditions — steps are predicates, not one-per-event. Steps 4 and 5 have no
+conditions - steps are predicates, not one-per-event. Steps 4 and 5 have no
 placeholder at all: the phrasing is the entire condition.
 
 The rules a step must obey (each is load-bearing):
 
 - **Pure predicate**: read the event, return `True`/`False`, change nothing.
-  Required, not enforced — impurity silently breaks reproducibility.
+  Required, not enforced - impurity silently breaks reproducibility.
 - The phrasing's `{status}` placeholder binds **by name** to the third
   parameter, so that parameter must be named `status`. It is contract:
   renaming it disconnects every policy (the catalog diff will break loudly
-  if you try). The first two parameters `(ctx, event)` are positional — name
+  if you try). The first two parameters `(ctx, event)` are positional - name
   them anything.
 - `ctx.bind(...)` is a readability declaration; entity identity actually
   comes from `event.bindings` via the decorator's declared `correlation_key`.
 - `build_registry()` as a side-effect-free factory is the recommended style:
   tests get fresh isolated registries, and the CLI detects and calls it
-  automatically. (The alternative — module-level
-  `from behave_rv.steps import trigger` decorators that register at import —
+  automatically. (The alternative - module-level
+  `from behave_rv.steps import trigger` decorators that register at import -
   also works and is what `examples/order_steps.py` shows.)
 
-### `monitoring/policies/*.feature` — one policy per file
+### `monitoring/policies/*.feature` - one policy per file
 
 ```gherkin
 # 01_resolve_after_assign.feature
@@ -256,7 +256,7 @@ Feature: assignment discipline
 ```
 
 ```gherkin
-# 02_assignment_sla.feature — a wall-clock deadline
+# 02_assignment_sla.feature - a wall-clock deadline
 Feature: assignment SLA
   Scenario: an opened ticket is assigned within the window
     When a ticket is "opened"
@@ -264,7 +264,7 @@ Feature: assignment SLA
 ```
 
 ```gherkin
-# 03_escalation_blocks_closing.feature — an interval scope
+# 03_escalation_blocks_closing.feature - an interval scope
 Feature: escalation handling
   Scenario: an escalated ticket must not be closed until resolved
     Given a ticket is "escalated" until a ticket is "resolved"
@@ -272,14 +272,14 @@ Feature: escalation handling
 ```
 
 ```gherkin
-# 04_every_ticket_resolved.feature — settles at the terminal event
+# 04_every_ticket_resolved.feature - settles at the terminal event
 Feature: resolution completeness
   Scenario: every ticket is eventually resolved
     Then a ticket is "resolved" has happened
 ```
 
 ```gherkin
-# 05_reply_sla.feature — a deadline between the two no-placeholder steps
+# 05_reply_sla.feature - a deadline between the two no-placeholder steps
 Feature: conversation SLA
   Scenario: a customer reply is answered within the window
     When a customer reply arrives
@@ -287,19 +287,19 @@ Feature: conversation SLA
 ```
 
 ```gherkin
-# 06_oncall_gets_urgent_only.feature — mixes two steps and two event types
+# 06_oncall_gets_urgent_only.feature - mixes two steps and two event types
 Feature: on-call discipline
   Scenario: the on-call agent only receives urgent tickets
     When a ticket is assigned to "oncall"
     Then a ticket priority is "urgent" before
 ```
 
-The complete operator reference — all nine forms with satisfying and
-violating traces — is [`docs/OPERATORS.md`](OPERATORS.md). Anything outside
+The complete operator reference - all nine forms with satisfying and
+violating traces - is [`docs/OPERATORS.md`](OPERATORS.md). Anything outside
 the fragment (cross-entity rules, aggregates) is **refused at compile time**
 with a clear message; refusal is what makes accepted policies trustworthy.
 
-### `live_monitor.py` — run it live, with the dashboard
+### `live_monitor.py` - run it live, with the dashboard
 
 Run: `python examples/ticketing/live_monitor.py` and open the printed URL.
 
@@ -327,13 +327,13 @@ server serves snapshots from a daemon thread. Nothing blocks the app. The
 seeded traffic in the example produces, live on the page: a healthy ticket
 with a full answered conversation (all green), a resolved-without-assignment
 violation, an escalated-then-closed violation, and the on-call agent handed
-a never-urgent ticket — each rendered as the authored scenario with the
+a never-urgent ticket - each rendered as the authored scenario with the
 failing step marked.
 
-### `replay_check.py` — the CI shape
+### `replay_check.py` - the CI shape
 
 Run: `python examples/ticketing/replay_check.py` (exits 1 on violations).
-It records a deterministic trace (`FakeClock` — same input, same trace,
+It records a deterministic trace (`FakeClock` - same input, same trace,
 byte for byte), replays it through the engine with `emit_pending=True`, and
 prints every verdict plus full explanations for violations. Real output ends:
 
@@ -343,24 +343,24 @@ prints every verdict plus full explanations for violations. Real output ends:
 
 Six tickets: the two healthy ones (T-1 with a full answered conversation,
 T-4 the urgent/on-call/escalation path) end fully satisfied, and exactly the
-five seeded faults are caught — resolve-before-assign, two assignment-SLA
+five seeded faults are caught - resolve-before-assign, two assignment-SLA
 timer firings, the on-call agent given a never-urgent ticket, and a customer
-reply never answered (the 60s reply SLA) — with still-open obligations
+reply never answered (the 60s reply SLA) - with still-open obligations
 reported honestly as pending. The suite pins this output
 (`tests/test_examples.py`), so the guide cannot drift from reality.
 
-### `monitoring/catalog.json` — what it is, who creates it, when you need it
+### `monitoring/catalog.json` - what it is, who creates it, when you need it
 
 You will not find this file until you create it, because **it is generated,
 not written**: it is NOT part of your code and the monitor does NOT need it
 to run. Plainly:
 
-- **What it is**: a JSON snapshot of every registered step's *contract* — the
+- **What it is**: a JSON snapshot of every registered step's *contract* - the
   event type it observes, its correlation key, the fields it reads, and a
   structural fingerprint of its matching condition (helpers included). Open
   the committed example
   ([`examples/ticketing/monitoring/catalog.json`](../examples/ticketing/monitoring/catalog.json))
-  and read it: five step entries, plus an `app_surface` section — the OTHER
+  and read it: five step entries, plus an `app_surface` section - the OTHER
   side of the contract: the application's five emit sites, each with its
   event type, keys, payload fields, and a fingerprint of the functions that
   can reach it (§7, "Catching it BEFORE runtime").
@@ -369,12 +369,12 @@ to run. Plainly:
   once, and committing the result (drop `--app` if you only want the step
   side). Never hand-edit it.
 - **Its role**: it is the frozen reference that `catalog diff` compares the
-  CURRENT code against after every change — so a refactor that silently
+  CURRENT code against after every change - so a refactor that silently
   changes what a step matches (and would leave your policies dormant) is
   reported as a break naming the affected policies, while harmless renames
   pass silently. It exists purely for that safety check; skip it and
   everything still runs, you just lose the drift protection.
-- **When it changes**: only when you intend a contract change — regenerate
+- **When it changes**: only when you intend a contract change - regenerate
   with the same `save` command and commit the diff alongside the code
   change, like any interface change. Full mechanism:
   [`STABILITY.md`](STABILITY.md).
@@ -401,14 +401,14 @@ python -m behave_rv catalog diff --steps examples/ticketing/monitoring/steps.py 
 
 `Event(type, event_time, bindings, payload, source)`:
 
-- `type` — stable event-type identity (`"ticket.status"`).
-- `event_time` — seconds, **from the event, never receipt time**. All
+- `type` - stable event-type identity (`"ticket.status"`).
+- `event_time` - seconds, **from the event, never receipt time**. All
   ordering, deadlines, and verdict timestamps use it.
-- `bindings` — the correlation key values (`{"ticket_id": "T-1"}`); how the
+- `bindings` - the correlation key values (`{"ticket_id": "T-1"}`); how the
   engine separates entities. One key per policy; a tuple for composite
   identity is fine; cross-entity policies are refused by design.
-- `payload` — the observable fields steps read.
-- `source` — provenance label, free-form.
+- `payload` - the observable fields steps read.
+- `source` - provenance label, free-form.
 
 ### The engine and every option
 
@@ -432,12 +432,12 @@ verdicts = engine.run(
 )
 ```
 
-Verdicts are three-valued — `satisfied`, `violated`, `pending` — and carry
+Verdicts are three-valued - `satisfied`, `violated`, `pending` - and carry
 `policy_id`, `entity_key`, `verdict`, `trigger_event`, `deciding_events`
 (the evidence), `witnessing_trace` (recent context), and `at` (event time of
 the decision). If you run `has happened` / `always holds` / `since` policies
 with no terminal configured, the engine warns once at startup
-(`NoTerminalConfiguredWarning`): they may stay pending forever — a prompt to
+(`NoTerminalConfiguredWarning`): they may stay pending forever - a prompt to
 configure a terminal, not an error.
 
 ### The three sources
@@ -453,10 +453,10 @@ Any object with an `.events()` iterator is a source; add `live = True` plus
 
 ### Recording traces (where `.jsonl` files come from)
 
-A trace file never appears by itself — something must record it. Three ways:
+A trace file never appears by itself - something must record it. Three ways:
 
 - **From a live app**: `TraceRecorder` is a pass-through tee you compose into
-  your emit chain (exactly like `dashboard.tap`) — every event is appended,
+  your emit chain (exactly like `dashboard.tap`) - every event is appended,
   flushed, replayable:
 
   ```python
@@ -468,12 +468,12 @@ A trace file never appears by itself — something must record it. Three ways:
   recorder.close()
   ```
 
-  The ticketing example does exactly this — running `live_monitor.py` leaves
+  The ticketing example does exactly this - running `live_monitor.py` leaves
   a `live_session.jsonl` you can feed straight back to a replay or to
   `catalog diff --trace`.
 - **From a list** (tests, generators): `record_events(path, events)`.
 - **From any pipeline** that writes the JSONL shape (one serialized `Event`
-  per line) — e.g. an export from your event bus.
+  per line) - e.g. an export from your event bus.
 
 So when this guide says "against `last_week.jsonl`", that file is simply a
 recording you made earlier by one of these routes, kept because yesterday's
@@ -514,19 +514,19 @@ dashboard = Dashboard(policies, registry=registry,
 
 - **The stability strip**: with `registry` and `catalog` given, the dashboard
   runs the contract diff once at startup (code cannot change inside a running
-  process) — a green strip says "catalog in sync — no policy can be silently
+  process) - a green strip says "catalog in sync - no policy can be silently
   broken by a step change"; a red strip names every broken policy with its
   contract diff, exactly like `catalog diff`. With `app=` (the application's
   .py files) the strip covers BOTH sides of the boundary: a core-code change
   on an emit path shows as an amber APP BEHAVIOR RISK naming the changed
-  function and the policies at risk — before any verdict moves — and an
+  function and the policies at risk - before any verdict moves - and an
   app-side interface change (a renamed payload field, a deleted emission)
   shows red, exactly like `catalog diff --app`:
 
   ![the stability strip reporting an app behavior risk: the changed function and the policies at risk](images/dashboard-app-risk.png)
 - **The unobserved warning**: if events are flowing (via `tap`) but NONE of a
   policy's event types has appeared, the policy gets an amber
-  "⚠ no matching events observed" badge — the runtime smell of a policy
+  "⚠ no matching events observed" badge - the runtime smell of a policy
   disconnected from the stream (an app-side rename the static check cannot
   see). It clears the moment a matching event arrives.
 
@@ -535,14 +535,14 @@ dashboard = Dashboard(policies, registry=registry,
 On the engine, during (from your sink) or after a run: `verdicts_delivered`,
 `live_instances`, `late_events` / `dropped_late`, `invalid_events`,
 `observed_types` / `observed_values` (the liveness harvest), `retired_keys`,
-and two never-fatal error logs — `sink_errors` / `first_sink_error` and
+and two never-fatal error logs - `sink_errors` / `first_sink_error` and
 `predicate_errors` / `first_predicate_error` / `predicate_error_sources`
 (which policy, which step).
 
 ### Stock sinks
 
-`JsonSink(stream)` — one JSON line per verdict; `JsonFileSink(path)` —
-appended and flushed, tail-able; `PrintSink(policies)` — violations printed
+`JsonSink(stream)` - one JSON line per verdict; `JsonFileSink(path)` -
+appended and flushed, tail-able; `PrintSink(policies)` - violations printed
 as full explanations, everything else compact; or any callable.
 
 ---
@@ -553,7 +553,7 @@ The failure this library is built to prevent: code changes, a policy stops
 matching, and it looks healthy precisely because it stopped working. Three
 layers answer it, each with a concrete command or surface:
 
-1. **The validation flag and report — `catalog diff`.** After any code
+1. **The validation flag and report - `catalog diff`.** After any code
    change (or as a CI job):
 
    ```bash
@@ -565,18 +565,18 @@ layers answer it, each with a concrete command or surface:
    the printed report names each broken policy with the exact contract diff
    (this repo's own CI runs this on every push). Renames pass silently;
    real contract moves break loudly.
-2. **Liveness against real traffic — add `--trace last_week.jsonl`** to the
+2. **Liveness against real traffic - add `--trace last_week.jsonl`** to the
    same command (the trace being a stream you recorded earlier with
-   `TraceRecorder` or `record_events` — see "Recording traces" in §4): warns
+   `TraceRecorder` or `record_events` - see "Recording traces" in §4): warns
    per policy when a value or event type it depends on never appears in a
-   representative stream — the check that catches app-side renames the
+   representative stream - the check that catches app-side renames the
    static diff honestly cannot see.
 3. **The dashboard, live.** Pass `registry=` and `catalog=` (and `app=` for
-   the application side, §5) and the page carries a stability strip — green:
+   the application side, §5) and the page carries a stability strip - green:
    in sync on both sides; amber: an app behavior risk naming the changed
-   function and the policies at risk; red: the broken policies with details —
+   function and the policies at risk; red: the broken policies with details -
    plus per-policy "⚠ no matching events observed" badges driven by the
-   actual event flow. So yes — the web monitor shows it, including core-code
+   actual event flow. So yes - the web monitor shows it, including core-code
    changes that can affect the monitor. This is what a broken contract looks
    like on the page:
 
@@ -586,7 +586,7 @@ layers answer it, each with a concrete command or surface:
 
 All outputs below are real, produced by running `catalog diff` against the
 ticketing example's committed catalog. First, the catalog's role in one
-sentence: **the diff only has meaning against the committed snapshot** — it
+sentence: **the diff only has meaning against the committed snapshot** - it
 compares what the steps' contracts ARE now with what they WERE when
 `catalog save` last ran, so "regenerate and commit the catalog" is how you
 *declare* that a contract change was intended.
@@ -600,7 +600,7 @@ def ticket_is(ctx, event, status):
         ctx.bind(ticket_id=event.bindings["ticket_id"])
         ...
 
-# AFTER — function renamed, every internal identifier renamed
+# AFTER - function renamed, every internal identifier renamed
 def ticket_status_predicate(mctx, incoming, status):
     if incoming.type == "ticket.status" and incoming.payload.get("status") == status:
         mctx.bind(ticket_id=incoming.bindings["ticket_id"])
@@ -613,18 +613,18 @@ ok: no breaks
 ```
 
 Nothing observable moved: the step still watches the same event type, reads
-the same field, matches the same condition — names are representation, not
+the same field, matches the same condition - names are representation, not
 contract. Also absorbed: reformatting the body, rewording the phrasing when
 the old wording is kept as an alias (`registry.alias(...)`), and renaming or
 reordering helper functions. One honest caveat: structural refactors that
 *preserve* behavior (introducing a temporary variable, extracting logic into
-a helper) DO alarm — the fingerprint is conservative by design, and the
+a helper) DO alarm - the fingerprint is conservative by design, and the
 break message says "review the step body"; that costs a glance, where a
 missed alarm would cost a dormant policy.
 
 Note what did NOT protect you here: the parameter `status` kept its name.
 It binds the phrasing's `{status}` placeholder BY NAME, so renaming *it* is
-a real break — and the diff reports it as one.
+a real break - and the diff reports it as one.
 
 #### Break type 1: renaming the payload field the step reads
 
@@ -636,7 +636,7 @@ event.payload.get("status") == status             event.payload.get("state") == 
 ```
   ticket.status.is: changed
 
-# BREAKS (4) — scoped to the policies that use the step
+# BREAKS (4) - scoped to the policies that use the step
   ✗ a ticket may only be resolved after it was assigned  [policies]  via ticket.status.is
     contract: payload_fields {'status': 'any'} -> {'state': 'any'}; trigger condition changed (…)
   ✗ an opened ticket is assigned within the window …
@@ -647,7 +647,7 @@ FAIL: 4 break(s)
 ```
 
 Why it breaks: the app still emits `{"status": ...}`, the step now reads a
-field that never exists — every event stops matching, and all four policies
+field that never exists - every event stops matching, and all four policies
 built on this step would go dormant while looking healthy. Notice the
 scoping: the reply-SLA and on-call policies use OTHER steps and are NOT
 notified, even though two of those steps watch the same event type.
@@ -667,7 +667,7 @@ FAIL: 4 break(s)
 
 The step now listens for events the app never emits. Same dormancy, same
 loud report, same scoping. (A helper-function body change is caught the same
-way — the fingerprint follows same-module and same-package calls — with the
+way - the fingerprint follows same-module and same-package calls - with the
 break naming the changed helper.)
 
 #### The change the catalog honestly CANNOT see: the app-side rename
@@ -679,13 +679,13 @@ The step is untouched; someone edits the SERVICE:
 self._status(ticket_id, "resolved")               self._status(ticket_id, "Resolved")
 ```
 
-`catalog diff` truthfully reports `unchanged` — no step contract moved. The
+`catalog diff` truthfully reports `unchanged` - no step contract moved. The
 policies still die: `'a ticket is "resolved"'` never matches `"Resolved"`.
 This is what the `--trace` layer exists for. Against a stream recorded from
 the changed app:
 
 ```
-# liveness (…) — against after_rename.jsonl
+# liveness (…) - against after_rename.jsonl
   ! policy 'a ticket may only be resolved after it was assigned' depends on
     step 'ticket.status.is' with status='resolved', but no 'ticket.status'
     event carrying that value has been observed in the available stream;
@@ -716,16 +716,16 @@ conservatism): [`STABILITY.md`](STABILITY.md).
 
 Section 6 was about protecting the *monitoring surface*. This section answers
 the more fundamental question: **when the main application's logic changes,
-does behave_rv catch it?** Yes — that is the tool's primary function, not a
+does behave_rv catch it?** Yes - that is the tool's primary function, not a
 stability feature. The division of labor, plainly:
 
 | What changed | Who catches it | How it surfaces |
 |---|---|---|
-| App logic now BEHAVES differently (skips a step, wrong order, missing action) | **the runtime monitor** — the policies themselves | a `violated` verdict with the explanation, at runtime |
+| App logic now BEHAVES differently (skips a step, wrong order, missing action) | **the runtime monitor** - the policies themselves | a `violated` verdict with the explanation, at runtime |
 | App refactored, behavior preserved (same events) | nobody, correctly | verdicts identical before and after |
-| App renamed its vocabulary (values, types, fields) — behavior "same", spelling different | liveness (`--trace`) + the dashboard's unobserved badge | policies go quiet; the warning names the missing value |
+| App renamed its vocabulary (values, types, fields) - behavior "same", spelling different | liveness (`--trace`) + the dashboard's unobserved badge | policies go quiet; the warning names the missing value |
 | The monitoring steps/helpers changed | the catalog diff (§6) | a break at build time, before anything runs |
-| App code on an EMIT PATH changed (a guard, a helper, an emitted value, a payload field) | `catalog diff --app` — the emit-site impact analysis | a behavior-risk or break at build time, scoped to the policies at risk, before anything runs |
+| App code on an EMIT PATH changed (a guard, a helper, an emitted value, a payload field) | `catalog diff --app` - the emit-site impact analysis | a behavior-risk or break at build time, scoped to the policies at risk, before anything runs |
 
 All outputs below are real, from replaying ONE fixed traffic script (open →
 assign → escalate → resolve → close) through modified versions of the
@@ -762,13 +762,13 @@ VERDICT violated @ t=11.001
 
 No catalog, no diff, no stability machinery involved: the policies watch the
 app's *behavior*, and the behavior changed. This works for any logic change
-whose effect reaches the event stream — which is exactly what your policies
+whose effect reaches the event stream - which is exactly what your policies
 are written about.
 
 #### An app refactor that preserves behavior → nothing, correctly
 
 Extract `resolve()` into a helper, rename its internals, restructure the
-class — as long as the same events come out, the monitor is indifferent:
+class - as long as the same events come out, the monitor is indifferent:
 
 ```
 verdicts identical to baseline: True
@@ -794,7 +794,7 @@ no "assigned" in the past, and the SLA timer fires because "assigned" never
 came. Liveness adds the second direction: `--trace` against this app's
 stream warns that `status='assigned'` is never observed, and the dashboard
 shows the unobserved badge. (A dropped tap watched only by quiet-style
-`never` policies would NOT self-report at runtime — that is what the
+`never` policies would NOT self-report at runtime - that is what the
 liveness layer is for.)
 
 #### Catching it BEFORE runtime: `catalog diff --app`
@@ -803,12 +803,12 @@ Everything above happens at runtime or against a recorded trace. Since the
 catalog became two-sided, there is also a purely static net: save the catalog
 with your app files once (`catalog save --steps … --catalog … --app
 app_service.py`) and every later `catalog diff --app` compares the
-application's *emit sites* — every `Event(...)` construction, its event type,
+application's *emit sites* - every `Event(...)` construction, its event type,
 binding keys and payload fields, plus a fingerprint of everything that can
 participate in reaching it (the emitting function, its callers, their
 callees, the constructor and other methods writing the instance state it
 reads, decorators wrapping any of them, and the module/class constants it
-references) — against the committed version. App code is never imported; the analysis is AST-only.
+references) - against the committed version. App code is never imported; the analysis is AST-only.
 
 A real example. Someone "cleans up" `assign()` in the ticketing service:
 
@@ -818,14 +818,14 @@ def assign(self, ticket_id: str, agent: str) -> None:
         self._status(ticket_id, "assigned", agent=agent)
 ```
 
-No step changed, no trace needed — the diff answers immediately:
+No step changed, no trace needed - the diff answers immediately:
 
 ```
 # app surface diff (5 emit site(s))
   app_service.TicketService._status#1: behavior-risk
   ...
 
-# APP BEHAVIOR RISKS (1) — logic on an emit path changed
+# APP BEHAVIOR RISKS (1) - logic on an emit path changed
   ! app_service.TicketService._status#1 (event 'ticket.status')
       function(s) in the emit slice changed: app_service.TicketService.assign
       policies at risk: a ticket may only be resolved after it was assigned,
@@ -846,7 +846,7 @@ edits are absorbed silently; renaming a function on an emit path flags
 conservatively, because callable identity pins emission order.
 
 To build intuition for what "the slice" contains, run the interactive
-explorer — pick any demo application, click a line, and see exactly which
+explorer - pick any demo application, click a line, and see exactly which
 emissions it can influence and which policies would be named, computed by
 the same analyser:
 
@@ -862,9 +862,9 @@ contents, request payloads) is invisible to it, and its conservatisms are
 measured and declared (the 22-category E-series in
 [`STABILITY.md`](STABILITY.md), a 619-mutant adversarial campaign across
 six applications with zero misses, and a replay of this repo's own git
-history with every classification correct — the complete record is
+history with every classification correct - the complete record is
 [`EXPERIMENTS.md`](EXPERIMENTS.md)). It is the
-earliest net, not the last one — the runtime layers above remain the ground
+earliest net, not the last one - the runtime layers above remain the ground
 truth.
 
 #### The honest boundary: the monitor never "knows" the code changed
@@ -872,29 +872,29 @@ truth.
 Be precise about what the runtime layer is: it verifies **executions, not
 programs**. At runtime nothing analyzes your application's source, and a
 violation is a statement about this execution, not a diagnosis that code
-changed — the monitor cannot tell "the code changed" apart from "the code was
+changed - the monitor cannot tell "the code changed" apart from "the code was
 always wrong and this input finally hit it." (The `--app` check above is the
 build-time complement: it does read source, and says "may affect", never
 "violated".) Runtime detection of an app change is therefore conditional on
 three things stacking:
 
-1. **Observability** — the change's effects must reach the event stream. A
+1. **Observability** - the change's effects must reach the event stream. A
    corrupted internal calculation no emitted field carries is invisible.
    Compensation: the over-expose convention (emit state transitions, status
-   enums, boundary crossings generously — an unused tap is cheap, a missing
+   enums, boundary crossings generously - an unused tap is cheap, a missing
    one is a policy nobody can ever write).
-2. **Coverage** — some policy must constrain the changed behavior. No rule,
+2. **Coverage** - some policy must constrain the changed behavior. No rule,
    no signal.
-3. **Exercise** — the violating situation must actually occur in observed
+3. **Exercise** - the violating situation must actually occur in observed
    traffic. A bug on the escalation path is silent until something
-   escalates; until then the policy is pending — honestly undecided, not
+   escalates; until then the policy is pending - honestly undecided, not
    "verified safe."
 
 Two build-time nets close most of the exercise gap. `catalog diff --app`
 flags emit-path code changes with zero traffic, at the price of "may affect"
-rather than "did affect". And **supplying the exercise yourself** — a fixed
+rather than "did affect". And **supplying the exercise yourself** - a fixed
 scripted traffic set through every build (the `replay_check.py` pattern,
-exit-coded for CI) — turns any behavior change on a covered path into a
+exit-coded for CI) - turns any behavior change on a covered path into a
 verdict change before live traffic finds it. Static analysis for the code-
 visible causes, scripted replay for the behavioral ground truth: together
 they are the closest thing to "knowing the app changed" that an
@@ -907,7 +907,7 @@ execution-verifier can honestly offer.
 - **Event time is the clock.** Ordering, deadlines, and verdicts use
   `event_time`, never arrival time.
 - **Ordered actions need distinct timestamps.** With `grace > 0`, events with
-  EQUAL times are ordered canonically (by content), not by arrival — so two
+  EQUAL times are ordered canonically (by content), not by arrival - so two
   actions whose order matters must not share a timestamp. Tick your clock
   between them (the ticketing example shows this; its first draft had the
   bug and produced spurious verdicts).
@@ -920,16 +920,16 @@ execution-verifier can honestly offer.
 - **`pending` is honest, not stuck.** Unbounded obligations settle at the
   entity's terminal event, or report as `pending` when a bounded run ends.
 - **Scenario names are ids.** Duplicate names are refused at compile time;
-  keep them unique and readable — they are what you'll see in every verdict.
+  keep them unique and readable - they are what you'll see in every verdict.
 - **One `Feature:` per `.feature` file.** The parser refuses multiple.
 
 ---
 
 ## 9. Where to go deeper
 
-[`docs/OPERATORS.md`](OPERATORS.md) — every operator, with traces ·
-[`SEMANTICS.md`](SEMANTICS.md) — formal trace semantics ·
-[`STABILITY.md`](STABILITY.md) — the code-change defenses ·
-[`MUTATION.md`](MUTATION.md) — how the suite itself is validated ·
-[`demo/README.md`](../demo/README.md) — three complete demo apps with
+[`docs/OPERATORS.md`](OPERATORS.md) - every operator, with traces ·
+[`SEMANTICS.md`](SEMANTICS.md) - formal trace semantics ·
+[`STABILITY.md`](STABILITY.md) - the code-change defenses ·
+[`MUTATION.md`](MUTATION.md) - how the suite itself is validated ·
+[`demo/README.md`](../demo/README.md) - three complete demo apps with
 interactive boards and a stability panel.

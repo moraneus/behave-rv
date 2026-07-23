@@ -108,7 +108,7 @@ def run_command(args) -> int:
     # liveness harvest: which catalog steps were never seen in this stream?
     unobserved = default_registry.mark_observed(engine.observed_types)
     if unobserved:
-        print("\n# liveness (steps never observed in this stream — possibly dead/wrong)")
+        print("\n# liveness (steps never observed in this stream - possibly dead/wrong)")
         for entry in unobserved:
             print(f"  {entry.step_id}  (event {entry.signature.event_type!r})")
 
@@ -221,17 +221,17 @@ def catalog_diff_command(args) -> int:
         print(f"  {change.step_id}: {change.status}")
 
     if notes.breaks:
-        print(f"\n# BREAKS ({len(notes.breaks)}) — scoped to the policies that use the step")
+        print(f"\n# BREAKS ({len(notes.breaks)}) - scoped to the policies that use the step")
         for b in notes.breaks:
             print(f"  ✗ {b.policy_id}  [{b.owner}]  via {b.step_id}")
             print(f"    contract: {b.detail}")
     if notes.suggestions:
         print(f"\n# suggestions ({len(notes.suggestions)})")
         for s in notes.suggestions:
-            print(f"  + {s.step_id} ({s.phrasing!r}) — {s.detail}")
+            print(f"  + {s.step_id} ({s.phrasing!r}) - {s.detail}")
     if liveness:
         print(f"\n# liveness ({len(liveness)})"
-              + (f" — against {args.trace}" if args.trace else ""))
+              + (f" - against {args.trace}" if args.trace else ""))
         for message in liveness:
             print(f"  ! {message}")
 
@@ -283,7 +283,7 @@ def _app_surface_diff(args, current_entries, compiled_policies
         site = change.new or change.old
         scoped = policies_at_risk(change, current_entries, compiled_policies)
         if scoped is None:
-            scope = "cannot scope: dynamic event type — review ALL policies"
+            scope = "cannot scope: dynamic event type - review ALL policies"
         else:
             direct, coupled = scoped
             scope = (f"policies at risk: {', '.join(direct)}" if direct
@@ -295,11 +295,11 @@ def _app_surface_diff(args, current_entries, compiled_policies
                       f"      {change.detail}\n      {scope}")
 
     if breaks:
-        print(f"\n# APP BREAKS ({len(breaks)}) — the emitted interface changed")
+        print(f"\n# APP BREAKS ({len(breaks)}) - the emitted interface changed")
         for line in breaks:
             print(f"  ✗ {line}")
     if risks:
-        print(f"\n# APP BEHAVIOR RISKS ({len(risks)}) — logic on an emit path changed")
+        print(f"\n# APP BEHAVIOR RISKS ({len(risks)}) - logic on an emit path changed")
         for line in risks:
             print(f"  ! {line}")
     return breaks, risks

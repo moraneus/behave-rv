@@ -251,7 +251,7 @@ def apply_change(change_id: str) -> dict:
     if change_id == "helper_change":
         _ACTIVE_HELPER = _helper_v1     # restore the sandbox
 
-    flips = {p: (baseline_verdicts.get(p, "—"), variant_verdicts.get(p, "—"))
+    flips = {p: (baseline_verdicts.get(p, " - "), variant_verdicts.get(p, " - "))
              for p in sorted(set(baseline_verdicts) | set(variant_verdicts))
              if baseline_verdicts.get(p) != variant_verdicts.get(p)}
 
@@ -291,7 +291,7 @@ def apply_change(change_id: str) -> dict:
         "liveness": liveness,
         "verdict_flips": flips,
         "marquee": {"policy": MARQUEE,
-                    "before": baseline_verdicts.get(MARQUEE, "—"),
-                    "after": variant_verdicts.get(MARQUEE, "—")},
+                    "before": baseline_verdicts.get(MARQUEE, " - "),
+                    "after": variant_verdicts.get(MARQUEE, " - ")},
         "narrative": narratives[spec["kind"]],
     }

@@ -27,7 +27,7 @@ event by design; its entities stay live (visible in the memory numbers).
 
 Event times are monotone per entity; arrival order is perturbed with a seeded
 jitter of ±0.2s so the reorder buffer does real work, against the engine's
-default grace of 5.0s — zero late drops (throughput measurement, not a
+default grace of 5.0s - zero late drops (throughput measurement, not a
 correctness test).
 
 Committed: the 1K and 10K files (~5 MB total) plus `CHECKSUMS.sha256` over
@@ -46,7 +46,7 @@ everything with `python -m demo.perf.generate_traces --write-checksums`.
 | P4 | 04 eventually-invoiced (`once`) | 06 locked-until-unlocked (`until`) | 12 sync-historically-ok (`historically`) |
 | P5 | 11 flagged-only-reviewed (`since`) | 07 review-window (`within`) | 04 eventually-completed (`once`) |
 
-P0 is the baseline: no policies registered — events flow through the source,
+P0 is the baseline: no policies registered - events flow through the source,
 the reorder buffer, and dispatch with nothing to match, isolating pipeline
 cost from evaluation cost.
 
@@ -58,7 +58,7 @@ cost from evaluation cost.
   null sink (no-op callable), so sink cost is constant and verdicts are never
   accumulated in a list. 5 timed repetitions per cell; median and min/max
   reported.
-- **Memory**: `tracemalloc` peak — Python allocations, **not RSS** — from a
+- **Memory**: `tracemalloc` peak - Python allocations, **not RSS** - from a
   SEPARATE single run per cell (tracemalloc adds real overhead; timing and
   memory runs are never mixed). tracemalloc starts before engine
   construction, so the pre-parsed trace itself is not counted; the peak is

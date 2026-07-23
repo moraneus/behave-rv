@@ -120,7 +120,7 @@ class Dashboard:
             site = change.new or change.old
             scoped = policies_at_risk(change, entries, self._policies)
             if scoped is None:
-                affected = ["(dynamic event type — review ALL policies)"]
+                affected = ["(dynamic event type - review ALL policies)"]
             else:
                 direct, coupled = scoped
                 affected = direct + [f"{pid} (event-time coupling)"

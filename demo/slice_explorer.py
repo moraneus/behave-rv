@@ -273,7 +273,7 @@ _PAGE = r"""<!doctype html>
   <h1>behave_rv slice explorer</h1>
   <select id="apps"></select>
   <span id="blurb"></span>
-  <span style="margin-left:auto">click any line — the REAL analyser's slice, live</span>
+  <span style="margin-left:auto">click any line - the REAL analyser's slice, live</span>
 </header>
 <main>
   <div class="panel">
@@ -291,7 +291,7 @@ _PAGE = r"""<!doctype html>
     <details>
       <summary>How does it know how to slice? (the mechanism)</summary>
       <p><b>1. Anchors.</b> Every emission is a construction of behave_rv's
-      <code>Event</code> type — a fixed, findable landmark. The analyser parses
+      <code>Event</code> type - a fixed, findable landmark. The analyser parses
       the source (it never imports it) and marks each one.</p>
       <p><b>2. The dependency graph.</b> It then builds, from the syntax tree
       alone: who calls whom (including <code>self.method</code> calls and
@@ -303,15 +303,15 @@ _PAGE = r"""<!doctype html>
       (they decide when it runs and with what arguments), the callees of all
       of those (they compute the emitted values), the writers of instance
       state any member reads, plus referenced constants and decorators.
-      Everything in the closure can change when or what this anchor emits —
+      Everything in the closure can change when or what this anchor emits -
       nothing outside it can.</p>
       <p><b>4. Honest holes.</b> Calls the resolver cannot follow (injected
       callables like <code>self._emit</code>, dynamic dispatch) are listed as
-      <i>unresolved</i> rather than silently ignored — the boundary is
+      <i>unresolved</i> rather than silently ignored - the boundary is
       visible, per emission.</p>
       <p><b>5. Policies at risk.</b> Each emission's event type maps to the
       catalogue steps observing it, and each compiled policy records which
-      steps it uses — so a flagged slice names exact policies. Deadline
+      steps it uses - so a flagged slice names exact policies. Deadline
       policies of the same entity are added conservatively: any change to the
       entity's event flow can move event time past a deadline.</p>
       <p>It is a <i>may-affect</i> analysis: it says "review these", never

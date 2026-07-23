@@ -19,7 +19,7 @@ licensing-boundary marker) is not, and at the time of the campaign an
 
 ## Result
 
-**Final full run: 1873 mutants — 1673 killed, 189 survived, 2 timeouts,
+**Final full run: 1873 mutants - 1673 killed, 189 survived, 2 timeouts,
 9 skipped. Kill rate 89.9% (killed + timeouts, over the 1864 checked).**
 
 Every one of the 189 survivors is classified below: 42 CLI glue, 68
@@ -33,12 +33,12 @@ The campaign took four full runs plus named-mutant confirmation runs:
 | 1 (baseline) | 1514 | 347 | triage -> 39 tests for the engine, live loop, compiler messages |
 | 2 | 1596 | 265 | 28 more tests for the smaller modules; 4 missed targets fixed |
 | 3 | 1650 | 212 | seed-flip pins (see below) + rendering/condition contract tests |
-| 4 (final) | 1673 | 189 | — |
+| 4 (final) | 1673 | 189 | - |
 
 **Seed-dependent kills.** A handful of mutants flipped between killed and
 survived across runs because the property-based tests draw randomized
 examples: their kills were luck of the seed. Each flip was treated as a
-finding — the behavior only chance was checking (`since`/`historically`
+finding - the behavior only chance was checking (`since`/`historically`
 settling satisfied at a terminal, the satisfied `previously` verdict's
 deciding evidence) got a deterministic pinning test. Stopping rule: a
 post-final flip gets pinned or classified with a note, not another full
@@ -78,7 +78,7 @@ spec; where a new test contradicted the engine, the spec won (see the
 Plus assertion extensions in `tests/test_notifications.py` (suggestion
 semantics, owners, details) and the small contract tests for sinks, replay,
 subscription, registry entries, catalog store round-trip, explanation marks
-and `safe_value` boundaries described below — see the file for the mutant ids.
+and `safe_value` boundaries described below - see the file for the mutant ids.
 
 ### Equivalent (unkillable, with the argument)
 
@@ -95,7 +95,7 @@ and `safe_value` boundaries described below — see the file for the mutant ids.
 | `SinceMonitor` `_started` premature set (2: the `and` -> `or`, the init `True`) | `_started` is implied by `_s`: whenever the chain is live, correct code has already set it, so the violation condition (`_started and _s and not new_s`) cannot diverge |
 | `WithinMonitor.on_event` `<=` -> `<` at the deadline | engine-unreachable: due timers fire before the event dispatches, so `on_event` never sees a response with `event_time >= deadline`; the documented tie rule (SEMANTICS.md "Deadline boundary": the timeout wins) is enforced by the timer path and now pinned by `test_within_response_exactly_at_the_deadline_loses_the_tie` |
 | `_reschedule` TTL at `last_activity - ttl` | the reclaim guard re-validates `now - last_activity >= ttl` against live state, which subsumes the schedule time; the only effect is heap churn |
-| watermark/timers sequence-counter tweaks (7) | the counter only breaks exact heap ties, and a tie requires identical `(time, type, bindings, payload, source)` — value-equal events whose mutual order is unobservable; `Event.__eq__` resolves the heap comparison without ordering, so not even a crash distinguishes them |
+| watermark/timers sequence-counter tweaks (7) | the counter only breaks exact heap ties, and a tie requires identical `(time, type, bindings, payload, source)` - value-equal events whose mutual order is unobservable; `Event.__eq__` resolves the heap comparison without ordering, so not even a crash distinguishes them |
 | watermark `_tiebreak` without bindings | the bindings component only orders same-time events of *different* entities, and per-key isolation makes that order unobservable |
 | `advance_clock` `>` -> `>=` | equality re-assigns the same value |
 | `flush` watermark `None` | the buffer's lifecycle ends at flush; no admission decision follows |

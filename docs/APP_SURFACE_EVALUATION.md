@@ -17,9 +17,9 @@ risk**, computed before anything runs.
 The key structural observation is that in-process runtime verification makes
 the application's output ports *syntactically identifiable*: every emission
 is a construction of the framework's `Event` type. Anchoring backward
-dependency slices at these construction sites — rather than at test
+dependency slices at these construction sites - rather than at test
 executions (regression selection) or at arbitrary program points (general
-slicing) — yields an analysis that is (i) cheap enough for a pre-commit hook,
+slicing) - yields an analysis that is (i) cheap enough for a pre-commit hook,
 (ii) empirically complete on three adversarial ground-truth benchmarks after
 an iterative hardening process that the evaluation itself drove, and (iii)
 precise enough that its per-change reports name the specific functions,
@@ -33,8 +33,8 @@ which the campaign is clean -- and has remained clean as the corpus grew to
 its current 619 mutants across six applications (the corpus has since
 grown twice: the baseline subject gained new emission shapes with the
 curated categories, and the three demonstration services joined as subjects
-with their full real policy sets; a fifth defect — decorators stripped from
-hashes — was found by curated case E21 and fixed the same way; the complete
+with their full real policy sets; a fifth defect - decorators stripped from
+hashes - was found by curated case E21 and fixed the same way; the complete
 per-experiment record is [EXPERIMENTS.md](EXPERIMENTS.md)). We consider the found-then-fixed trajectory
 itself part of the result: it demonstrates what the method's blind spots look
 like and that they are discoverable by systematic testing rather than by
@@ -46,9 +46,9 @@ A runtime monitor dies silently under code change. The monitored
 application's author renames a payload field, tightens a guard before an
 emission, or reworks a helper two calls deep; no step definition changed, no
 test fails, and the policy that depended on the old behavior either fires a
-late violation in production or — worse — goes quiet while looking deployed
+late violation in production or - worse - goes quiet while looking deployed
 and healthy. The step-side catalog (the companion capability, [STABILITY.md](STABILITY.md)
-paths A–C) protects the *monitoring* code; it truthfully reports `unchanged`
+paths A-C) protects the *monitoring* code; it truthfully reports `unchanged`
 when only the *application* moved. Prior to this work, application drift was
 caught by exactly two nets, both requiring execution: replaying scripted
 traffic and comparing verdicts, or waiting for live traffic to exercise the
@@ -69,7 +69,7 @@ constants, or dictionary literals, with declared markers (`<dynamic>`,
 closed under: the emitting function; transitive callers (they decide when the
 emission executes and with what arguments); transitive callees of all members
 (they compute emitted values); and methods assigning any instance attribute
-some member reads (emit-path state flows through attributes — `self._emit`
+some member reads (emit-path state flows through attributes - `self._emit`
 itself is one). The slice additionally carries the values of module-level and
 class-level constants referenced by any member. Each function is hashed under
 an alpha-normalization that canonicalizes local and parameter names, strips
@@ -80,19 +80,19 @@ and a fingerprint over the member-hash set plus referenced constants.
 
 **Classification.** Diffing the recomputed surface against the committed one
 yields, per site: `unchanged`; `renamed` (identical interface and
-fingerprint under a moved identity, e.g. a class rename — absorbed silently);
+fingerprint under a moved identity, e.g. a class rename - absorbed silently);
 `behavior-risk` (interface intact, slice fingerprint moved); `interface-break`
 (the emitted type, keys, or fields changed, or the site was deleted); or
 `added`. Breaks gate CI (exit 1); risks warn by default and gate under a
 flag; additions surface on the suggestion channel.
 
 **Scoping.** A flagged site maps to policies through event type → catalog
-step signatures → the `used_step_ids` each compiled policy recorded — over
+step signatures → the `used_step_ids` each compiled policy recorded - over
 *both* the old and new interface (a changed type must alert the policies
 observing the old one). Additionally, policies carrying a bounded-response
 deadline and sharing the site's correlation key are conservatively included:
 deadline firing is driven by event-time advancement, so any change to an
-entity's event flow — including events of types the policy never binds — can
+entity's event flow - including events of types the policy never binds - can
 move a deadline verdict (section 6, a discovery of the scoping experiment).
 
 **Claimed:** within the declared resolvable fragment, every change that can
@@ -101,7 +101,7 @@ in the reported at-risk set. This is a *may-affect* analysis: it says
 "review these", never "violated".
 
 **Explicitly not claimed:** semantic equivalence checking (structure-
-preserving refactors flag — measured, section 6); coverage of behavior driven
+preserving refactors flag - measured, section 6); coverage of behavior driven
 by runtime data (configuration, database contents, request payloads);
 coverage of emissions not constructed as a recognizable `Event` (a target
 yielding zero anchors warns rather than passing); coverage of dynamic
@@ -115,8 +115,8 @@ signature).
 Three classical results, each deliberately modified; the modifications are
 where the engineering content lies.
 
-**Interprocedural slicing** (Ferrante–Ottenstein–Warren program dependence
-graphs, TOPLAS 1987; Horwitz–Reps–Binkley system-dependence-graph slicing,
+**Interprocedural slicing** (Ferrante-Ottenstein-Warren program dependence
+graphs, TOPLAS 1987; Horwitz-Reps-Binkley system-dependence-graph slicing,
 PLDI 1988). Classical backward slicing from an output statement is the exact
 conceptual fit: the slice of an emission is the set of program parts whose
 change may change that observable output. We reduce it from statement-level
@@ -125,7 +125,7 @@ context-insensitive closure over an assignment-based call graph**, extended
 with an instance-attribute def-use fixpoint and constant capture. The
 motivation is Python: dynamic dispatch, duck typing, and `**kwargs` defeat
 the precision summary edges pay for, and the reduction loses precision only
-toward over-approximation — extra warnings, never missed ones — which is the
+toward over-approximation - extra warnings, never missed ones - which is the
 one direction a trust-carrying tool is permitted to be wrong in. The
 per-function hash granularity also makes the committed artifact reviewable:
 a risk report names the changed functions, not opaque statement sets.
@@ -147,14 +147,14 @@ absorb silently, while structural and constant changes flag. Two asymmetries
 against the step-side catalog are deliberate. First, **called-function names
 are preserved** in app-side hashes: occurrence-order canonicalization would
 assign two distinct calls the same canonical names regardless of their order,
-silently absorbing a *reorder of two emitting calls* — and emission order is
+silently absorbing a *reorder of two emitting calls* - and emission order is
 contract (a `before` policy hangs on it). The measured price is that renaming
 a function on an emit path cannot be proven representational and flags as a
 risk (case E13); the classifier pairs such orphaned sites by interface so a
 rename never escalates to a removal-level break. Second, **decorators are
 preserved** and a decorator's body joins the wrapped function's slice: the
 step-side normalizer strips decorators as registration boilerplate, but an
-application decorator wraps the function and can change what it emits — the
+application decorator wraps the function and can change what it emits - the
 hole curated case E21 exposed and closed.
 
 ## 5. Implementation
@@ -166,7 +166,7 @@ truth are test-side only). Complexity is linear parsing plus linear
 graph construction plus per-site closures; measured cost is ~0.19 ms per
 function end to end (section 6, RQ5). The artifact is committed JSON
 (catalog format v3, an `app_surface` section beside the step entries),
-diffable in review, stable across CPython 3.10–3.14 via a version-stable AST
+diffable in review, stable across CPython 3.10-3.14 via a version-stable AST
 serialization shared with the step-side fingerprint. CLI: `catalog save
 --app`, `catalog diff --app [--fail-on-app-risk]`, exit-coded for CI.
 
@@ -174,7 +174,7 @@ serialization shared with the step-side fingerprint. CLI: `catalog save
 
 Five experiments; all scripts committed and rerunnable (section 8). Two
 ground-truth notions are used, both *executed*, never assumed: the **emitted
-stream** (every field of every event under a fixed scripted traffic — the
+stream** (every field of every event under a fixed scripted traffic - the
 app's observable behavior, exactly what the analysis claims to guard) and the
 **policy verdict set** (for scoping). Stream equivalence under one traffic
 script is not semantic equivalence; we count every flagged-but-stream-
@@ -183,11 +183,11 @@ false-alarm figures upper bounds in spirit, while acknowledging (section 7)
 that a cleverer traffic script could reclassify some "alarms" as true
 positives.
 
-### RQ1 — Detection on curated realistic changes (E-series)
+### RQ1 - Detection on curated realistic changes (E-series)
 
-Twenty-two hand-constructed changes — a taxonomy with one case per edit
+Twenty-two hand-constructed changes - a taxonomy with one case per edit
 category, spanning the absorb/flag/break space and including exception-path,
-loop, ternary, decorator, and cross-module emission — each with ground truth
+loop, ternary, decorator, and cross-module emission - each with ground truth
 verified per run by execution
 (`python -m tests.stability_app_surface`, asserted in pytest):
 
@@ -217,7 +217,7 @@ E21   a decorator on an emit-path method changes behavior      changed  changed 
 E22   emission logic changes in a SECOND module                changed  same      risk      CORRECT
 ```
 
-18/22 correct, 0 misses, 4 false alarms — all four in the *declared*
+18/22 correct, 0 misses, 4 false alarms - all four in the *declared*
 conservatism family, asserted in the test suite to be exactly that family
 and nothing more. E10 exhibits the layering the design intends: a new
 emission changes the stream but no verdict (nothing observes it yet), and it
@@ -225,20 +225,20 @@ is still surfaced. E15 is a false alarm we defend as policy: when the event
 type stops being statically analyzable, losing the check must itself
 surface. E21 is the record of the fifth found defect: decorators were
 stripped from app-side hashes, so a wrapper edited to suppress the call was
-invisible — verified as a genuine pre-fix miss (silent before the fix, risk
+invisible - verified as a genuine pre-fix miss (silent before the fix, risk
 after), fixed by keeping decorators in the hash and joining the decorator's
 body to the decorated function's slice.
 
-### RQ2 — Adversarial detection completeness (mutation campaign)
+### RQ2 - Adversarial detection completeness (mutation campaign)
 
 `python -m tests.exp_app_mutation` applies every mutant a deterministic
-operator set can produce — string, numeric, and boolean constant
+operator set can produce - string, numeric, and boolean constant
 perturbation, comparison and boolean-operator swaps, condition negation,
-guard removal, positional-argument swap, and statement deletion — to six
+guard removal, positional-argument swap, and statement deletion - to six
 subjects: the two-module E-series baseline service (64 mutants), the
 ticketing example application with its six policies (52), a probe *designed
-to stress the suspected weakest point* — a module-level, non-event-type
-constant participating in emission logic (16) — and the three demonstration
+to stress the suspected weakest point* - a module-level, non-event-type
+constant participating in emission logic (16) - and the three demonstration
 services with their full real policy sets (order 133, session 179, todo 175).
 619 mutants total; each is executed
 under fixed traffic for stream ground truth (a mutant that raises counts as
@@ -246,7 +246,7 @@ stream-changing) and independently analyzed.
 
 **First run (on the then-83-mutant corpus): 8 misses and 8 unsound
 scopings.** Root-cause analysis reduced
-them to four defects, which we report as findings, not embarrassments —
+them to four defects, which we report as findings, not embarrassments -
 each is a hole any reader would want to know the shape of:
 
 1. **Module-level constants** (predicted; the probe existed to confirm it).
@@ -260,8 +260,8 @@ each is a hole any reader would want to know the shape of:
    slices of their readers. Measured cost: any constructor edit now flags
    the class's sites (declared as case E17).
 3. **One-sided scoping.** A mutated event-type constant was caught as an
-   interface break but scoped by the *new* type name — which no step
-   observes — alerting nobody. *Fixed*: scoping covers both sides of a
+   interface break but scoped by the *new* type name - which no step
+   observes - alerting nobody. *Fixed*: scoping covers both sides of a
    change.
 4. **Deadline coupling across event types** (the subtle one). Deleting
    `ticket.status` emissions moved the verdicts of the *reply-SLA* policy,
@@ -272,7 +272,7 @@ each is a hole any reader would want to know the shape of:
    policies, and scoping includes those sharing the flagged site's
    correlation key, labeled as event-time coupling.
 
-**After hardening — final run, all six subjects:**
+**After hardening - final run, all six subjects:**
 
 ```
 subject     mutants  crash-at-traffic  stream-changed & flagged  MISSED  stream-same & flagged  stream-same & silent
@@ -286,18 +286,18 @@ total           619  46                443                       0       31     
 ```
 
 Every one of the 31 stream-preserving flags sits in code the scripted
-traffic never exercises — UI-driven entry points, the lockout-counter
+traffic never exercises - UI-driven entry points, the lockout-counter
 reset, boundary values the traffic straddles: real emission-code changes
 that replay cannot expose, each named in the committed artifact.
 
-619/619 with zero misses, and — notable — **zero unexplained alarms on
+619/619 with zero misses, and - notable - **zero unexplained alarms on
 stream-preserving mutants**; the only two stream-preserving mutants in the
 corpus (edits to functions outside every slice) were correctly silent. The
 class-level-constant sibling of defect 1 (`self.LIMIT` reading a class
 attribute) was closed symmetrically before any benchmark demanded it, with a
 regression test.
 
-### RQ3 — Scoping soundness
+### RQ3 - Scoping soundness
 
 For the 314 mutants whose policy verdict sets changed (jobs 39, ticketing
 36, order 66, session 83, todo 90): is every policy whose verdicts moved
@@ -308,7 +308,7 @@ of the entity to every flagged site's report (in the ticketing subject, 2 of
 6 policies), clearly labeled so a reviewer can discount them when timing is
 known unaffected.
 
-### RQ4 — Flag rate on real history
+### RQ4 - Flag rate on real history
 
 `python -m tests.measure_app_history` replays every historical change to an
 application file in this repository (9 change-pairs across 5 files):
@@ -316,14 +316,14 @@ application file in this repository (9 change-pairs across 5 files):
 the commits actually did**. The flags: three commits adding real emissions,
 and the one genuine app-behavior bug fix in the repository's history (a
 terminal-event timestamp correction that changed 10 verdicts in the
-committed example) — the case the capability exists for. The silents: a
+committed example) - the case the capability exists for. The silents: a
 lint reflow, a docstring-only edit, and two changes to a file containing no
 emit sites. The docstring case *initially flagged*; that false alarm was
 found by this measurement and fixed (docstrings stripped from
 normalization). N=9 is small and the history is our own; we present this as
 a sanity check on developer experience, not as a field study.
 
-### RQ5 — Cost
+### RQ5 - Cost
 
 `python -m tests.exp_app_scaling`, median of 5 runs, CPython 3.13, Apple
 Silicon:
@@ -346,10 +346,10 @@ synthetic  C=50  D=16         950      50     182.6      15.0
 
 Time and peak allocation are linear in function count (~0.19 ms and ~16 KB
 per function) and insensitive to call depth at fixed size. A 1,400-function
-emission surface analyzes in ~260 ms — a pre-commit-hook cost, run cold with
+emission surface analyzes in ~260 ms - a pre-commit-hook cost, run cold with
 no caching.
 
-### RQ6 — Fragment coverage and slice tightness
+### RQ6 - Fragment coverage and slice tightness
 
 `python -m tests.exp_app_coverage` on the four real services:
 
@@ -362,11 +362,11 @@ todo_app/service.py           18     3        2 / 6.7 / 14         100%       se
 ```
 
 Two readings, one favorable and one cautionary. Favorable: individual slices
-are tight (mean 3–9 functions of 10–20), so a flag names a small, reviewable
-set, and every unresolved call on these files is the injected transport —
+are tight (mean 3-9 functions of 10-20), so a flag names a small, reviewable
+set, and every unresolved call on these files is the injected transport -
 declared, expected, and harmless (the construction, not the transport,
 carries the contract). Cautionary: the *union* of slices covers 100% of
-these modules — in an emission-dense service module, nearly any edit flags
+these modules - in an emission-dense service module, nearly any edit flags
 *something*. The discriminating value there is the per-site scoping and the
 named functions, not binary silence; silence discrimination (case E12)
 matters in mixed modules where emission logic coexists with utility code. We
@@ -375,7 +375,7 @@ claim to its true scope.
 
 ## 7. Threats to validity, stated bluntly
 
-- **Subjects are small and self-authored.** Three services of 10–20
+- **Subjects are small and self-authored.** Three services of 10-20
   functions, written by the same project that wrote the analyzer, following
   the project's own exposure conventions. Real applications are larger,
   messier, and may construct events through wrappers the anchor recognizer
@@ -398,7 +398,7 @@ claim to its true scope.
   approximate real edits imperfectly; the history replay (RQ4) partially
   compensates with real commits, but N=9.
 - **No baseline comparison.** We did not run Chianti-class CIA tools or
-  test-selection tools on the same subjects — partly because none scope to
+  test-selection tools on the same subjects - partly because none scope to
   RV policies (the point of the work), but a comparison on the shared
   sub-problem (change → affected code regions) would still calibrate
   precision claims and is future work.
